@@ -20,7 +20,7 @@ As of 2026-02-03, all 9 packages are published to npm with comprehensive test co
 | `@furlow/dashboard` | 1.0.0 | ✅ Published | - | Express server + React client + 18 API endpoints |
 | `@furlow/cli` | 1.0.0 | ✅ Published | - | Command-line interface (init, start, validate, add, export) |
 
-**Total Tests: 712 (All Passing)**
+**Total Tests: 753 (All Passing)**
 
 ## Implementation Status: 100% Feature Complete
 
@@ -149,6 +149,70 @@ As of 2026-02-03, all 9 packages are published to npm with comprehensive test co
 | **reminders** | Personal reminders, DM delivery |
 | **utilities** | Serverinfo, userinfo, avatar, etc. |
 
+## Design Principles
+
+### State Access Pattern
+
+State is accessed in expressions using scoped notation:
+```yaml
+# Set state with scope
+- set:
+    name: counter
+    value: 10
+    scope: global
+
+# Access in expressions uses: state.{scope}.{name}
+- log:
+    message: "Counter: ${state.global.counter}"
+```
+
+**Available scopes:**
+- `state.global.X` - Shared across all guilds
+- `state.guild.X` - Per-guild state (requires guild context)
+- `state.channel.X` - Per-channel state
+- `state.user.X` - Per-user state (across guilds)
+- `state.member.X` - Per-guild-member state
+
+### Action Shorthand
+
+Users write intuitive YAML shorthand:
+```yaml
+# User writes:
+- reply:
+    content: "Hello!"
+
+# System normalizes to schema format:
+- action: reply
+  content: "Hello!"
+```
+
+This normalization happens **before** schema validation, allowing user-friendly syntax while maintaining strict schema compliance.
+
+### Long-Running Commands
+
+For commands that take more than 3 seconds (Discord's timeout), use `defer`:
+```yaml
+commands:
+  - name: slow-command
+    actions:
+      - defer:
+          ephemeral: true
+      - call_flow:
+          flow: long_running_test
+      - reply:  # Uses followUp after defer
+          content: "Done!"
+```
+
+### Building Blocks
+
+| Block | Purpose |
+|-------|---------|
+| **Actions** | Atomic operations (84 total) |
+| **Flows** | Reusable action sequences |
+| **State** | Persistent data across 5 scopes |
+| **Events** | Reactive handlers for Discord events |
+| **Pipes** | External integrations (HTTP, WS, MQTT, etc.) |
+
 ## Architecture
 
 ```
@@ -262,7 +326,7 @@ pnpm install
 # Build all packages
 pnpm run build
 
-# Run all tests (559 tests)
+# Run all tests (753 tests)
 pnpm run test
 
 # Development mode (watch)
@@ -280,7 +344,7 @@ pnpm -r publish --access public --no-git-checks
 ### 1. TypeScript Project References (Non-blocking)
 - `composite: true` not set in tsconfig files
 - Affects `pnpm typecheck` but NOT builds or tests
-- Build and all 559 tests pass successfully
+- Build and all 753 tests pass successfully
 
 ### 2. Optional Dependencies for Voice Search
 - Full music search requires optional packages: `play-dl` or `youtube-sr`
@@ -329,6 +393,8 @@ The codebase is 100% feature complete. The only remaining work is user-facing do
 ## Git History
 
 ```
+f5b13fc fix: add defer to compliance tests and fix state access pattern
+69b3cd6 v1.0.0: Fix action normalization, bump all packages
 f770958 v0.2.1: Complete documentation and voice features
 7dc56bb docs: update HANDOFF.md with v0.2.0 status and remaining work audit
 fed98ce feat: implement complete action system with 84 handlers
@@ -338,6 +404,23 @@ ba44633 3
 f67756a 2
 b621745 initial
 ```
+
+## Recent Fixes (v1.0.0)
+
+### State Scoping Fix
+State handlers now properly store values in scoped structure for expression access:
+- Before: `context.state[key]` (flat) - expressions like `${state.global.X}` failed
+- After: `context.state[scope][key]` (scoped) - expressions work correctly
+
+### Normalization Before Validation
+Action shorthand is normalized BEFORE schema validation:
+- Allows user-friendly YAML syntax like `{ reply: { content: "Hi" } }`
+- Converts to schema format `{ action: "reply", content: "Hi" }`
+- Fixed batch action normalization (`each` field, not `template`)
+
+### Compliance Spec Fixes
+- Added `defer` action to standard and full compliance specs
+- Long-running tests now properly defer before executing
 
 ## Resources
 

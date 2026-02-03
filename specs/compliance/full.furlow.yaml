@@ -803,7 +803,7 @@ flows:
           scope: global
 
       - batch:
-          items: "${values(state.results)}"
+          items: "${values(state.global.results)}"
           as: result
           actions:
             - flow_if:
@@ -815,14 +815,14 @@ flows:
                       scope: global
 
       - log:
-          message: "Full compliance tests completed: ${state.passedCount}/18 passed"
+          message: "Full compliance tests completed: ${state.global.passedCount}/18 passed"
           level: info
 
       - return:
           value:
-            passed: "${state.passedCount}"
+            passed: "${state.global.passedCount}"
             total: 18
-            results: "${state.results}"
+            results: "${state.global.results}"
 
   # ===========================================
   # COMPLETE COMPLIANCE CHECK

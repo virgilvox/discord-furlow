@@ -135,8 +135,8 @@ function normalizeNestedActions(action: Record<string, unknown>): Record<string,
   // parallel, batch - actions array
   normalizeArrayProp('actions');
 
-  // batch - template (actions for each item)
-  normalizeArrayProp('template');
+  // batch - each (actions for each item)
+  normalizeArrayProp('each');
 
   // try - try/catch/finally
   normalizeArrayProp('try');

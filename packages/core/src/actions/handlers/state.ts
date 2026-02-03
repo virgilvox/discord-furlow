@@ -44,6 +44,45 @@ function getStateContext(
 }
 
 /**
+ * Set a value in context.state with proper scoping
+ * State is stored as state.{scope}.{key} for expression access
+ */
+function setContextState(
+  context: ActionContext,
+  scope: string | undefined,
+  key: string,
+  value: unknown
+): void {
+  const scopeName = scope || 'global';
+  if (!context.state) {
+    (context as any).state = {};
+  }
+  if (!(context.state as Record<string, unknown>)[scopeName]) {
+    (context.state as Record<string, unknown>)[scopeName] = {};
+  }
+  ((context.state as Record<string, unknown>)[scopeName] as Record<string, unknown>)[key] = value;
+}
+
+/**
+ * Get a value from context.state with proper scoping
+ */
+function getContextState(
+  context: ActionContext,
+  scope: string | undefined,
+  key: string
+): unknown {
+  const scopeName = scope || 'global';
+  if (!context.state) {
+    return undefined;
+  }
+  const scopeObj = (context.state as Record<string, unknown>)[scopeName];
+  if (!scopeObj || typeof scopeObj !== 'object') {
+    return undefined;
+  }
+  return (scopeObj as Record<string, unknown>)[key];
+}
+
+/**
  * Set action handler
  */
 const setHandler: ActionHandler<SetAction> = {
@@ -80,11 +119,8 @@ const setHandler: ActionHandler<SetAction> = {
       await stateManager.set(key, value, stateContext);
     }
 
-    // Also set in context.state for immediate access
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    (context.state as Record<string, unknown>)[key] = value;
+    // Also set in context.state for immediate access (scoped structure)
+    setContextState(context, config.scope, key, value);
 
     // Store result in variable if requested
     if (config.as) {
@@ -112,22 +148,16 @@ const incrementHandler: ActionHandler<IncrementAction> = {
       const stateContext = getStateContext(config.scope, context);
       const newValue = await stateManager.increment(key, by, stateContext);
 
-      // Update context.state
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      (context.state as Record<string, unknown>)[key] = newValue;
+      // Update context.state with scoped access
+      setContextState(context, config.scope, key, newValue);
 
       return { success: true, data: newValue };
     }
 
     // Fallback to context.state only
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    const current = (context.state as Record<string, unknown>)[key] as number || 0;
+    const current = (getContextState(context, config.scope, key) as number) || 0;
     const newValue = current + by;
-    (context.state as Record<string, unknown>)[key] = newValue;
+    setContextState(context, config.scope, key, newValue);
 
     return { success: true, data: newValue };
   },
@@ -150,22 +180,16 @@ const decrementHandler: ActionHandler<DecrementAction> = {
       const stateContext = getStateContext(config.scope, context);
       const newValue = await stateManager.decrement(key, by, stateContext);
 
-      // Update context.state
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      (context.state as Record<string, unknown>)[key] = newValue;
+      // Update context.state with scoped access
+      setContextState(context, config.scope, key, newValue);
 
       return { success: true, data: newValue };
     }
 
     // Fallback to context.state only
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    const current = (context.state as Record<string, unknown>)[key] as number || 0;
+    const current = (getContextState(context, config.scope, key) as number) || 0;
     const newValue = current - by;
-    (context.state as Record<string, unknown>)[key] = newValue;
+    setContextState(context, config.scope, key, newValue);
 
     return { success: true, data: newValue };
   },
@@ -204,10 +228,7 @@ const listPushHandler: ActionHandler<ListPushAction> = {
       const current = await stateManager.get<unknown[]>(key, stateContext);
       list = Array.isArray(current) ? [...current] : [];
     } else {
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      const current = (context.state as Record<string, unknown>)[key];
+      const current = getContextState(context, config.scope, key);
       list = Array.isArray(current) ? [...current] : [];
     }
 
@@ -220,10 +241,7 @@ const listPushHandler: ActionHandler<ListPushAction> = {
       await stateManager.set(key, list, stateContext);
     }
 
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    (context.state as Record<string, unknown>)[key] = list;
+    setContextState(context, config.scope, key, list);
 
     return { success: true, data: list };
   },
@@ -250,10 +268,7 @@ const listRemoveHandler: ActionHandler<ListRemoveAction> = {
       const current = await stateManager.get<unknown[]>(key, stateContext);
       list = Array.isArray(current) ? [...current] : [];
     } else {
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      const current = (context.state as Record<string, unknown>)[key];
+      const current = getContextState(context, config.scope, key);
       list = Array.isArray(current) ? [...current] : [];
     }
 
@@ -289,10 +304,7 @@ const listRemoveHandler: ActionHandler<ListRemoveAction> = {
       await stateManager.set(key, list, stateContext);
     }
 
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    (context.state as Record<string, unknown>)[key] = list;
+    setContextState(context, config.scope, key, list);
 
     return { success: true, data: list };
   },
@@ -334,10 +346,7 @@ const setMapHandler: ActionHandler<SetMapAction> = {
       const current = await stateManager.get<Record<string, unknown>>(key, stateContext);
       map = typeof current === 'object' && current !== null ? { ...current } : {};
     } else {
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      const current = (context.state as Record<string, unknown>)[key];
+      const current = getContextState(context, config.scope, key);
       map = typeof current === 'object' && current !== null ? { ...(current as Record<string, unknown>) } : {};
     }
 
@@ -350,10 +359,7 @@ const setMapHandler: ActionHandler<SetMapAction> = {
       await stateManager.set(key, map, stateContext);
     }
 
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    (context.state as Record<string, unknown>)[key] = map;
+    setContextState(context, config.scope, key, map);
 
     return { success: true, data: map };
   },
@@ -383,10 +389,7 @@ const deleteMapHandler: ActionHandler<DeleteMapAction> = {
       const current = await stateManager.get<Record<string, unknown>>(key, stateContext);
       map = typeof current === 'object' && current !== null ? { ...current } : {};
     } else {
-      if (!context.state) {
-        (context as any).state = {};
-      }
-      const current = (context.state as Record<string, unknown>)[key];
+      const current = getContextState(context, config.scope, key);
       map = typeof current === 'object' && current !== null ? { ...(current as Record<string, unknown>) } : {};
     }
 
@@ -399,10 +402,7 @@ const deleteMapHandler: ActionHandler<DeleteMapAction> = {
       await stateManager.set(key, map, stateContext);
     }
 
-    if (!context.state) {
-      (context as any).state = {};
-    }
-    (context.state as Record<string, unknown>)[key] = map;
+    setContextState(context, config.scope, key, map);
 
     return { success: true, data: map };
   },

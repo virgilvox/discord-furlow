@@ -1001,6 +1001,9 @@ commands:
   - name: run-compliance
     description: "Run standard compliance test suite"
     actions:
+      # Defer first - tests take longer than 3 seconds
+      - defer:
+          ephemeral: true
       - call_flow:
           flow: run_standard_tests
           as: results

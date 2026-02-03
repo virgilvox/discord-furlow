@@ -1,0 +1,2918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FURLOW Design System</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ========================================
+   FURLOW DESIGN SYSTEM
+   Flexible User Rules for Live Online Workers
+   ======================================== */
+
+/* --- tokens --- */
+:root {
+  /* Background Scale */
+  --bg-void:       #060606;
+  --bg:            #0a0a0a;
+  --bg-raised:     #111111;
+  --bg-panel:      #151515;
+  --bg-card:       #1a1a1a;
+  --bg-code:       #0e0e0e;
+  --bg-sidebar:    #0c0c0c;
+  --bg-hover:      #1e1e1e;
+  --bg-active:     #222222;
+
+  /* Text Scale */
+  --text:          #b8b8b8;
+  --text-bright:   #e8e8e8;
+  --text-heading:  #f0f0f0;
+  --text-dim:      #666666;
+  --text-ghost:    #444444;
+  --text-disabled: #333333;
+
+  /* Primary Accent -- Industrial Orange */
+  --accent:        #ff6b35;
+  --accent-bright: #ff8c5a;
+  --accent-dim:    #cc5529;
+  --accent-dark:   #993d1e;
+  --accent-glow:   rgba(255, 107, 53, 0.15);
+  --accent-faint:  rgba(255, 107, 53, 0.06);
+
+  /* Semantic Colors */
+  --green:         #8bd649;
+  --green-dim:     rgba(139, 214, 73, 0.15);
+  --yellow:        #f0c040;
+  --yellow-dim:    rgba(240, 192, 64, 0.15);
+  --blue:          #5ba8f5;
+  --blue-dim:      rgba(91, 168, 245, 0.15);
+  --purple:        #9a7bca;
+  --purple-dim:    rgba(154, 123, 202, 0.15);
+  --red:           #e05555;
+  --red-dim:       rgba(224, 85, 85, 0.15);
+  --cyan:          #4ec9b0;
+  --cyan-dim:      rgba(78, 201, 176, 0.15);
+
+  /* Borders */
+  --border:        #1e1e1e;
+  --border-mid:    #2a2a2a;
+  --border-bright: #444444;
+  --border-accent: var(--accent);
+  --border-dashed: 1px dashed var(--border-mid);
+  --border-solid:  1px solid var(--border);
+  --border-strong: 1px solid var(--border-bright);
+
+  /* Surfaces & Shadows */
+  --shadow-sm:     0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:     0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,0.6);
+  --shadow-glow:   0 0 20px var(--accent-glow);
+
+  /* Spacing Scale */
+  --sp-2xs:  2px;
+  --sp-xs:   4px;
+  --sp-sm:   8px;
+  --sp-md:   12px;
+  --sp-base: 16px;
+  --sp-lg:   24px;
+  --sp-xl:   32px;
+  --sp-2xl:  48px;
+  --sp-3xl:  64px;
+  --sp-4xl:  96px;
+
+  /* Radius */
+  --radius-none: 0;
+  --radius-sm:   2px;
+  --radius-md:   4px;
+
+  /* Typography */
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-mono:    'Space Mono', 'Courier New', monospace;
+
+  /* Layout */
+  --max-width:     1200px;
+  --nav-height:    56px;
+}
+
+/* --- reset --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+body {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* --- noise overlay --- */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --- scrollbar --- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+/* ========================================
+   LOGO & IDENTITY
+   ======================================== */
+
+.logo-showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-base);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo-showcase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3xl) var(--sp-xl);
+  border: var(--border-solid);
+  position: relative;
+}
+
+.logo-showcase::before {
+  content: attr(data-label);
+  position: absolute;
+  top: var(--sp-sm);
+  right: var(--sp-sm);
+  font-size: 9px;
+  color: var(--text-ghost);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.logo-showcase-dark { background: var(--bg-void); }
+.logo-showcase-light { background: #e8e8e8; }
+.logo-showcase-mid { background: var(--bg-card); }
+.logo-showcase-accent { background: var(--accent-dark); }
+
+.logo-showcase svg { width: 140px; height: 140px; }
+.logo-showcase-wide svg { width: auto; height: 80px; }
+
+.logo-sizes {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-xl);
+  padding: var(--sp-xl);
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo-size-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.logo-size-label {
+  font-size: 9px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+.logo-clearspace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2xl);
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo-clearspace-inner {
+  position: relative;
+  padding: 24px;
+  border: 1px dashed var(--accent-dim);
+}
+
+.logo-clearspace-inner::before,
+.logo-clearspace-inner::after {
+  position: absolute;
+  font-size: 8px;
+  color: var(--accent-dim);
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+.logo-clearspace-inner::before {
+  content: '1x';
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.logo-clearspace-inner::after {
+  content: '1x';
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.logo-wordmark-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-base);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo-wordmark-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-2xl) var(--sp-xl);
+  border: var(--border-solid);
+  position: relative;
+}
+
+.logo-wordmark-cell::before {
+  content: attr(data-label);
+  position: absolute;
+  top: var(--sp-sm);
+  right: var(--sp-sm);
+  font-size: 9px;
+  color: var(--text-ghost);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.logo-anatomy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-base);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo-anatomy-cell {
+  padding: var(--sp-lg);
+  background: var(--bg-raised);
+  border: var(--border-solid);
+}
+
+.logo-anatomy-cell h4 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-sm);
+}
+
+.logo-anatomy-cell p {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.logo-family-strip {
+  display: flex;
+  gap: var(--sp-xl);
+  align-items: center;
+  padding: var(--sp-lg) var(--sp-xl);
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  margin-bottom: var(--sp-xl);
+  overflow-x: auto;
+}
+
+.logo-family-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-shrink: 0;
+}
+
+.logo-family-item svg { width: 48px; height: 48px; }
+
+.logo-family-item span {
+  font-size: 9px;
+  color: var(--text-ghost);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.logo-family-item.active {
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--accent);
+  background: var(--accent-faint);
+}
+
+.logo-family-item.active span {
+  color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  .logo-showcase-grid,
+  .logo-wordmark-grid,
+  .logo-anatomy-grid { grid-template-columns: 1fr; }
+  .logo-showcase svg { width: 100px; height: 100px; }
+}
+
+/* ========================================
+   LAYOUT
+   ======================================== */
+
+.ds-page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--sp-3xl) var(--sp-lg);
+}
+
+.ds-header {
+  border-bottom: var(--border-dashed);
+  padding-bottom: var(--sp-2xl);
+  margin-bottom: var(--sp-3xl);
+}
+
+.ds-header-mark {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-lg);
+  margin-bottom: var(--sp-lg);
+}
+
+.ds-logo {
+  width: 72px;
+  height: 72px;
+  background: var(--bg-raised);
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ds-logo::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed var(--border-mid);
+}
+
+.ds-logo svg {
+  width: 40px;
+  height: 40px;
+}
+
+.ds-header h1 {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ds-header h1 span {
+  color: var(--accent);
+}
+
+.ds-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: var(--sp-sm);
+}
+
+.ds-header-desc {
+  font-size: 14px;
+  color: var(--text);
+  max-width: 700px;
+  line-height: 1.8;
+  margin-top: var(--sp-lg);
+}
+
+.ds-header-desc strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* --- toc --- */
+.ds-toc {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--sp-sm);
+  margin-top: var(--sp-xl);
+  padding: var(--sp-lg);
+  background: var(--bg-raised);
+  border: var(--border-solid);
+}
+
+.ds-toc a {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  padding: var(--sp-xs) var(--sp-sm);
+  transition: color 0.15s;
+}
+
+.ds-toc a:hover {
+  color: var(--accent);
+}
+
+.ds-toc a i {
+  color: var(--text-ghost);
+  font-size: 10px;
+  width: 14px;
+  text-align: center;
+}
+
+.ds-toc a:hover i {
+  color: var(--accent-dim);
+}
+
+/* --- section --- */
+.ds-section {
+  margin-bottom: var(--sp-4xl);
+}
+
+.ds-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-md);
+  margin-bottom: var(--sp-xl);
+  padding-bottom: var(--sp-md);
+  border-bottom: 2px solid var(--accent);
+}
+
+.ds-section-num {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.ds-section-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-heading);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ds-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: var(--sp-xl);
+  max-width: 700px;
+}
+
+/* --- subsection --- */
+.ds-sub {
+  margin-bottom: var(--sp-2xl);
+}
+
+.ds-sub-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-bright);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-lg);
+  padding-left: var(--sp-md);
+  border-left: 3px solid var(--accent-dim);
+}
+
+.ds-label {
+  font-size: 11px;
+  color: var(--text-ghost);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-sm);
+  font-weight: 700;
+}
+
+/* ========================================
+   COLOR SWATCHES
+   ======================================== */
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-sm);
+}
+
+.swatch {
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.swatch:hover {
+  border-color: var(--border-bright);
+}
+
+.swatch-color {
+  height: 64px;
+  position: relative;
+}
+
+.swatch-color.bordered {
+  border-bottom: var(--border-solid);
+}
+
+.swatch-info {
+  padding: var(--sp-sm) var(--sp-md);
+}
+
+.swatch-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.swatch-hex {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+.swatch-token {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+/* --- large swatch row --- */
+.swatch-row {
+  display: flex;
+  gap: 0;
+  border: var(--border-solid);
+  overflow: hidden;
+  margin-bottom: var(--sp-md);
+}
+
+.swatch-row-item {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--sp-xs) var(--sp-sm);
+}
+
+.swatch-row-item span {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  opacity: 0.7;
+}
+
+/* ========================================
+   TYPOGRAPHY SPECIMENS
+   ======================================== */
+
+.type-specimen {
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  padding: var(--sp-xl);
+  margin-bottom: var(--sp-md);
+}
+
+.type-specimen-label {
+  font-size: 10px;
+  color: var(--text-ghost);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-md);
+  font-weight: 700;
+}
+
+.type-display-oswald {
+  font-family: var(--font-display);
+  color: var(--text-heading);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.type-mono {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.type-sample-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--sp-sm) var(--sp-lg);
+  align-items: baseline;
+}
+
+.type-sample-key {
+  font-size: 11px;
+  color: var(--text-ghost);
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.type-sample-val {
+  color: var(--text-bright);
+}
+
+/* ========================================
+   SPACING
+   ======================================== */
+
+.spacing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.spacing-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-lg);
+}
+
+.spacing-bar {
+  height: 24px;
+  background: var(--accent-glow);
+  border-left: 3px solid var(--accent);
+  display: flex;
+  align-items: center;
+  padding-left: var(--sp-sm);
+}
+
+.spacing-bar span {
+  font-size: 10px;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.spacing-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  min-width: 120px;
+}
+
+.spacing-token {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+  min-width: 80px;
+}
+
+/* ========================================
+   BORDERS & SURFACES
+   ======================================== */
+
+.surface-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-md);
+}
+
+.surface-card {
+  padding: var(--sp-xl);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.surface-card-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--sp-xs);
+}
+
+.surface-card-token {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+}
+
+.surface-card-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: var(--sp-xs);
+}
+
+/* --- border samples --- */
+.border-samples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+}
+
+.border-sample {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-lg);
+}
+
+.border-sample-line {
+  flex: 1;
+  height: 0;
+}
+
+.border-sample-info {
+  min-width: 200px;
+}
+
+.border-sample-name {
+  font-size: 12px;
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+}
+
+.border-sample-token {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+}
+
+/* ========================================
+   COMPONENT PATTERNS
+   ======================================== */
+
+/* --- buttons --- */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-md);
+  align-items: center;
+}
+
+.btn {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  padding: var(--sp-sm) var(--sp-lg);
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  line-height: 1;
+}
+
+.btn i { font-size: 12px; }
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+.btn-primary:hover {
+  background: var(--accent-bright);
+  box-shadow: var(--shadow-glow);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+.btn-secondary:hover {
+  background: var(--accent-glow);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-mid);
+}
+.btn-ghost:hover {
+  border-color: var(--border-bright);
+  color: var(--text-bright);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #c94444;
+}
+
+.btn-sm {
+  font-size: 11px;
+  padding: var(--sp-xs) var(--sp-md);
+  letter-spacing: 1.5px;
+}
+
+.btn-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* --- cards --- */
+.card {
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  padding: var(--sp-xl);
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--border-mid);
+}
+
+.card-accent {
+  border-left: 3px solid var(--accent);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-heading);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-sm);
+}
+
+.card-body {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.card-footer {
+  margin-top: var(--sp-lg);
+  padding-top: var(--sp-md);
+  border-top: var(--border-dashed);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* --- badges --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+}
+
+.badge-accent {
+  background: var(--accent-glow);
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+}
+
+.badge-green {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(139, 214, 73, 0.3);
+}
+
+.badge-yellow {
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  border: 1px solid rgba(240, 192, 64, 0.3);
+}
+
+.badge-blue {
+  background: var(--blue-dim);
+  color: var(--blue);
+  border: 1px solid rgba(91, 168, 245, 0.3);
+}
+
+.badge-purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+  border: 1px solid rgba(154, 123, 202, 0.3);
+}
+
+.badge-red {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(224, 85, 85, 0.3);
+}
+
+.badge-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px dashed var(--border-mid);
+}
+
+/* --- tags --- */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-xs);
+}
+
+.tag {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  border: 1px dashed var(--border-mid);
+  transition: all 0.15s;
+  cursor: default;
+}
+
+.tag:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-faint);
+}
+
+/* --- code blocks --- */
+.code-block {
+  background: var(--bg-code);
+  border: var(--border-solid);
+  border-left: 3px solid var(--accent-dim);
+  padding: var(--sp-lg);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-x: auto;
+  position: relative;
+}
+
+.code-block-label {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 9px;
+  color: var(--text-ghost);
+  background: var(--bg-panel);
+  padding: 2px 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  border-left: var(--border-solid);
+  border-bottom: var(--border-solid);
+}
+
+/* YAML syntax highlighting */
+.yk { color: var(--yellow); }       /* keys */
+.ys { color: var(--green); }        /* strings */
+.yn { color: var(--blue); }         /* numbers */
+.ye { color: var(--accent); }       /* expressions ${...} */
+.yc { color: var(--text-ghost); font-style: italic; }  /* comments */
+.yb { color: var(--purple); }       /* booleans */
+.ya { color: var(--cyan); }         /* action names */
+
+.code-inline {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-code);
+  color: var(--accent);
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+}
+
+/* --- form elements --- */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-xs);
+}
+
+.input-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.input {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--bg-code);
+  border: var(--border-solid);
+  color: var(--text-bright);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.input::placeholder {
+  color: var(--text-ghost);
+}
+
+.input-hint {
+  font-size: 11px;
+  color: var(--text-ghost);
+}
+
+.select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--bg-code);
+  border: var(--border-solid);
+  color: var(--text-bright);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.select:focus {
+  border-color: var(--accent);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+}
+
+.toggle {
+  width: 40px;
+  height: 22px;
+  background: var(--border-mid);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-dim);
+  transition: all 0.2s;
+}
+
+.toggle.active {
+  background: var(--accent-dim);
+}
+
+.toggle.active::after {
+  left: 21px;
+  background: var(--accent);
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* --- nav pills --- */
+.nav-pills {
+  display: flex;
+  gap: 0;
+  border: var(--border-solid);
+  overflow: hidden;
+  background: var(--bg-raised);
+}
+
+.nav-pill {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: var(--sp-sm) var(--sp-lg);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: var(--border-solid);
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+}
+
+.nav-pill:last-child { border-right: none; }
+
+.nav-pill:hover {
+  color: var(--text-bright);
+  background: var(--bg-hover);
+}
+
+.nav-pill.active {
+  color: var(--accent);
+  background: var(--bg-active);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* --- sidebar nav items --- */
+.sidebar-demo {
+  background: var(--bg-sidebar);
+  border: var(--border-solid);
+  padding: var(--sp-lg) 0;
+  max-width: 280px;
+}
+
+.sidebar-section {
+  padding: 0 var(--sp-lg);
+  margin-bottom: var(--sp-lg);
+}
+
+.sidebar-section-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-ghost);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-sm);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: var(--sp-xs) var(--sp-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+}
+
+.sidebar-link:hover {
+  color: var(--text-bright);
+  background: var(--bg-hover);
+}
+
+.sidebar-link.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-faint);
+}
+
+.sidebar-link i {
+  width: 16px;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* --- status indicators --- */
+.status-row {
+  display: flex;
+  gap: var(--sp-xl);
+  flex-wrap: wrap;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: 12px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green-dim); }
+.status-dot.warning { background: var(--yellow); box-shadow: 0 0 6px var(--yellow-dim); }
+.status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red-dim); }
+.status-dot.idle { background: var(--text-ghost); }
+
+/* --- tables --- */
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ds-table th {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-ghost);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: left;
+  padding: var(--sp-sm) var(--sp-md);
+  border-bottom: 2px solid var(--border-mid);
+}
+
+.ds-table td {
+  padding: var(--sp-sm) var(--sp-md);
+  border-bottom: var(--border-dashed);
+  color: var(--text);
+}
+
+.ds-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+.ds-table code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--bg-code);
+  padding: 1px 5px;
+}
+
+/* --- alert / callout --- */
+.callout {
+  padding: var(--sp-lg);
+  border: var(--border-solid);
+  display: flex;
+  gap: var(--sp-md);
+  align-items: flex-start;
+}
+
+.callout i {
+  font-size: 14px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.callout-body {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.callout-body strong {
+  color: var(--text-bright);
+  font-weight: 700;
+}
+
+.callout-info {
+  background: var(--blue-dim);
+  border-color: rgba(91, 168, 245, 0.2);
+}
+.callout-info i { color: var(--blue); }
+
+.callout-warn {
+  background: var(--yellow-dim);
+  border-color: rgba(240, 192, 64, 0.2);
+}
+.callout-warn i { color: var(--yellow); }
+
+.callout-error {
+  background: var(--red-dim);
+  border-color: rgba(224, 85, 85, 0.2);
+}
+.callout-error i { color: var(--red); }
+
+.callout-tip {
+  background: var(--accent-faint);
+  border-color: rgba(255, 107, 53, 0.15);
+}
+.callout-tip i { color: var(--accent); }
+
+/* --- icon reference --- */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-sm);
+}
+
+.icon-cell {
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  padding: var(--sp-lg) var(--sp-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-sm);
+  transition: border-color 0.15s;
+}
+
+.icon-cell:hover {
+  border-color: var(--accent-dim);
+}
+
+.icon-cell i {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+.icon-cell:hover i {
+  color: var(--accent);
+}
+
+.icon-cell span {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+}
+
+/* --- motion demo --- */
+.motion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--sp-md);
+}
+
+.motion-card {
+  background: var(--bg-raised);
+  border: var(--border-solid);
+  padding: var(--sp-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-md);
+  cursor: pointer;
+}
+
+.motion-card:hover .motion-box {
+  animation-play-state: running;
+}
+
+.motion-box {
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+  animation-play-state: paused;
+  animation-fill-mode: both;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.motion-card-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-bright);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.motion-card-css {
+  font-size: 10px;
+  color: var(--text-ghost);
+  font-family: var(--font-mono);
+  text-align: center;
+}
+
+@keyframes m-fade { from { opacity: 0.1; } to { opacity: 1; } }
+@keyframes m-slide { from { transform: translateX(-20px); opacity: 0.2; } to { transform: translateX(0); opacity: 1; } }
+@keyframes m-scale { from { transform: scale(0.6); } to { transform: scale(1); } }
+@keyframes m-glow { from { box-shadow: none; } to { box-shadow: 0 0 24px var(--accent-glow), 0 0 4px var(--accent); } }
+@keyframes m-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes m-rotate { from { transform: rotate(0); } to { transform: rotate(90deg); } }
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .ds-page { padding: var(--sp-xl) var(--sp-md); }
+  .ds-header h1 { font-size: 36px; letter-spacing: 4px; }
+  .ds-section-title { font-size: 20px; }
+  .swatch-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .type-sample-grid { grid-template-columns: 1fr; }
+  .type-sample-key { text-align: left; }
+  .surface-grid { grid-template-columns: 1fr; }
+  .ds-toc { grid-template-columns: 1fr 1fr; }
+  .btn-row { gap: var(--sp-sm); }
+  .nav-pills { flex-wrap: wrap; }
+}
+
+@media (max-width: 480px) {
+  .ds-header h1 { font-size: 28px; letter-spacing: 3px; }
+  .ds-header-mark { flex-direction: column; align-items: flex-start; }
+  .swatch-grid { grid-template-columns: repeat(2, 1fr); }
+  .ds-toc { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="ds-page">
+
+  <!-- ====== HEADER ====== -->
+  <header class="ds-header" id="top">
+    <div class="ds-header-mark">
+      <div class="ds-logo">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+          <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+          <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+          <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+          <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+          <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+          <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+          <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+          <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+          <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+          <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+          <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+        </svg>
+      </div>
+      <div>
+        <h1>FUR<span>LOW</span></h1>
+        <div class="ds-subtitle">Design System v0.2</div>
+      </div>
+    </div>
+    <p class="ds-header-desc">
+      Visual language for <strong>FURLOW</strong> (Flexible User Rules for Live Online Workers).
+      A YAML-driven Discord bot configuration framework named after the desert depot mechanic
+      from Farscape who reverse-engineered wormhole tech from salvaged parts.
+      Dark industrial. No polish. No bullshit. It works or it doesn't.
+    </p>
+
+    <nav class="ds-toc">
+      <a href="#logo"><i class="fas fa-fingerprint"></i> Logo & Identity</a>
+      <a href="#colors"><i class="fas fa-palette"></i> Color Palette</a>
+      <a href="#typography"><i class="fas fa-font"></i> Typography</a>
+      <a href="#spacing"><i class="fas fa-arrows-alt-h"></i> Spacing</a>
+      <a href="#surfaces"><i class="fas fa-layer-group"></i> Surfaces & Borders</a>
+      <a href="#components"><i class="fas fa-puzzle-piece"></i> Components</a>
+      <a href="#code"><i class="fas fa-code"></i> Code & Syntax</a>
+      <a href="#forms"><i class="fas fa-keyboard"></i> Form Elements</a>
+      <a href="#navigation"><i class="fas fa-compass"></i> Navigation</a>
+      <a href="#feedback"><i class="fas fa-exclamation-circle"></i> Feedback & Status</a>
+      <a href="#icons"><i class="fas fa-icons"></i> Iconography</a>
+      <a href="#motion"><i class="fas fa-bolt"></i> Motion</a>
+      <a href="#principles"><i class="fas fa-book"></i> Design Principles</a>
+    </nav>
+  </header>
+
+  <!-- ====== 00 LOGO & IDENTITY ====== -->
+  <section class="ds-section" id="logo">
+    <div class="ds-section-header">
+      <span class="ds-section-num">00</span>
+      <span class="ds-section-title">Logo & Identity</span>
+    </div>
+    <p class="ds-note">
+      The FURLOW mark is a stack of three toggle switches -- two ON, one OFF.
+      A dashed rail connects them on the left. It's a literal representation of
+      what FURLOW does: feature switches for Discord bot configuration.
+      The middle OFF toggle uses a dashed border ("furloughed") while the active
+      ones are solid with a subtle orange fill.
+    </p>
+
+    <!-- Primary Mark -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Primary Mark</h3>
+      <div class="logo-showcase-grid">
+        <div class="logo-showcase logo-showcase-dark" data-label="on dark (primary)">
+          <svg viewBox="0 0 120 120" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+        </div>
+        <div class="logo-showcase logo-showcase-light" data-label="on light">
+          <svg viewBox="0 0 120 120" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#993d1e" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#993d1e"/>
+            <rect x="7" y="58" width="6" height="4" fill="#993d1e" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#993d1e"/>
+            <rect x="20" y="20" width="80" height="20" fill="#993d1e" opacity="0.12"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#993d1e" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#993d1e"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#993d1e" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#993d1e" opacity="0.3"/>
+            <rect x="20" y="80" width="80" height="20" fill="#993d1e" opacity="0.12"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#993d1e" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#993d1e"/>
+          </svg>
+        </div>
+        <div class="logo-showcase logo-showcase-mid" data-label="on card surface">
+          <svg viewBox="0 0 120 120" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+        </div>
+        <div class="logo-showcase logo-showcase-accent" data-label="on accent dark">
+          <svg viewBox="0 0 120 120" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#f0f0f0" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#f0f0f0"/>
+            <rect x="7" y="58" width="6" height="4" fill="#f0f0f0" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#f0f0f0"/>
+            <rect x="20" y="20" width="80" height="20" fill="#f0f0f0" opacity="0.15"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#f0f0f0" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#f0f0f0"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#f0f0f0" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#f0f0f0" opacity="0.3"/>
+            <rect x="20" y="80" width="80" height="20" fill="#f0f0f0" opacity="0.15"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#f0f0f0" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#f0f0f0"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Anatomy -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Mark Anatomy</h3>
+      <div class="logo-anatomy-grid">
+        <div class="logo-anatomy-cell">
+          <h4><i class="fas fa-toggle-on" style="color: var(--accent); margin-right: 6px;"></i> Active Toggles</h4>
+          <p>
+            Top and bottom switches are ON. Solid 2px stroke border with
+            orange fill at 20% opacity. Knob is a solid filled rectangle
+            positioned at the right end of the track.
+          </p>
+        </div>
+        <div class="logo-anatomy-cell">
+          <h4><i class="fas fa-toggle-off" style="color: var(--text-ghost); margin-right: 6px;"></i> Furloughed Toggle</h4>
+          <p>
+            Middle switch is OFF. Dashed stroke border (4 3 pattern), no
+            background fill. Knob at left end with 35% opacity. The dashed
+            border is the core FURLOW visual motif: disabled/dormant state.
+          </p>
+        </div>
+        <div class="logo-anatomy-cell">
+          <h4><i class="fas fa-grip-lines-vertical" style="color: var(--accent); margin-right: 6px;"></i> Connection Rail</h4>
+          <p>
+            Dashed vertical line on the left (3 4 pattern) connecting all
+            three toggles. Small square indicator dots at each switch level.
+            Active dots are full opacity, furloughed dot matches at 35%.
+          </p>
+        </div>
+        <div class="logo-anatomy-cell">
+          <h4><i class="fas fa-vector-square" style="color: var(--accent); margin-right: 6px;"></i> Proportions</h4>
+          <p>
+            120x120 viewBox. Toggles are 80x20 each with 10px vertical gap.
+            Knobs are 28x16 (inset 2px from track edges). Rail sits at x=10
+            with 6x4 indicator dots. All geometry is rectangular, zero radius.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Size Chart -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Size Chart</h3>
+      <div class="logo-sizes">
+        <div class="logo-size-item">
+          <svg viewBox="0 0 120 120" width="128" height="128" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+          <span class="logo-size-label">128px</span>
+        </div>
+        <div class="logo-size-item">
+          <svg viewBox="0 0 120 120" width="64" height="64" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+          <span class="logo-size-label">64px</span>
+        </div>
+        <div class="logo-size-item">
+          <svg viewBox="0 0 120 120" width="48" height="48" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+          <span class="logo-size-label">48px</span>
+        </div>
+        <div class="logo-size-item">
+          <svg viewBox="0 0 120 120" width="32" height="32" fill="none">
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="3"/>
+            <rect x="68" y="23" width="28" height="14" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="3" stroke-dasharray="4 3"/>
+            <rect x="23" y="53" width="28" height="14" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="3"/>
+            <rect x="68" y="83" width="28" height="14" fill="#ff6b35"/>
+          </svg>
+          <span class="logo-size-label">32px</span>
+        </div>
+        <div class="logo-size-item">
+          <svg viewBox="0 0 120 120" width="16" height="16" fill="none">
+            <rect x="15" y="18" width="90" height="22" stroke="#ff6b35" stroke-width="4"/>
+            <rect x="72" y="22" width="28" height="14" fill="#ff6b35"/>
+            <rect x="15" y="49" width="90" height="22" stroke="#ff6b35" stroke-width="4" stroke-dasharray="5 4"/>
+            <rect x="15" y="80" width="90" height="22" stroke="#ff6b35" stroke-width="4"/>
+            <rect x="72" y="84" width="28" height="14" fill="#ff6b35"/>
+          </svg>
+          <span class="logo-size-label">16px</span>
+        </div>
+      </div>
+      <div class="callout callout-warn">
+        <i class="fas fa-exclamation-triangle"></i>
+        <div class="callout-body">
+          <strong>Below 32px:</strong> Drop the connection rail and indicator dots.
+          Increase stroke widths to maintain readability. The three-bar silhouette
+          is the minimum recognizable form.
+        </div>
+      </div>
+    </div>
+
+    <!-- Clearspace -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Clearspace</h3>
+      <p class="ds-note">
+        Minimum clearspace around the mark equals the height of one toggle track (20 units in the 120-unit viewBox,
+        or roughly 1/6th of the mark height). This keeps the logo breathing room without being precious about it.
+      </p>
+      <div class="logo-clearspace">
+        <div class="logo-clearspace-inner">
+          <svg viewBox="0 0 120 120" width="100" height="100" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wordmark Lockups -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Wordmark Lockups</h3>
+      <p class="ds-note">
+        Wordmark uses Oswald 700, uppercase, with 5px letter-spacing. "FUR" in heading white,
+        "LOW" in accent orange. The mark sits to the left of the text, vertically centered.
+        Minimum gap between mark and text is 16px at standard sizes.
+      </p>
+      <div class="logo-wordmark-grid">
+        <div class="logo-wordmark-cell logo-showcase-dark" data-label="dark bg (primary)">
+          <svg viewBox="0 0 340 120" width="300" height="106" fill="none">
+            <g>
+              <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+              <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+              <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+              <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+              <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+              <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+              <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+              <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+              <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+              <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+              <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+              <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+            </g>
+            <text x="126" y="78" font-family="Oswald, Arial Narrow, sans-serif" font-size="52" font-weight="700" letter-spacing="5">
+              <tspan fill="#f0f0f0">FUR</tspan><tspan fill="#ff6b35">LOW</tspan>
+            </text>
+          </svg>
+        </div>
+        <div class="logo-wordmark-cell logo-showcase-light" data-label="light bg">
+          <svg viewBox="0 0 340 120" width="300" height="106" fill="none">
+            <g>
+              <line x1="10" y1="30" x2="10" y2="90" stroke="#993d1e" stroke-width="2" stroke-dasharray="3 4"/>
+              <rect x="7" y="28" width="6" height="4" fill="#993d1e"/>
+              <rect x="7" y="58" width="6" height="4" fill="#993d1e" opacity="0.35"/>
+              <rect x="7" y="88" width="6" height="4" fill="#993d1e"/>
+              <rect x="20" y="20" width="80" height="20" fill="#993d1e" opacity="0.12"/>
+              <rect x="20" y="20" width="80" height="20" stroke="#993d1e" stroke-width="2"/>
+              <rect x="70" y="22" width="28" height="16" fill="#993d1e"/>
+              <rect x="20" y="50" width="80" height="20" stroke="#993d1e" stroke-width="2" stroke-dasharray="4 3"/>
+              <rect x="22" y="52" width="28" height="16" fill="#993d1e" opacity="0.3"/>
+              <rect x="20" y="80" width="80" height="20" fill="#993d1e" opacity="0.12"/>
+              <rect x="20" y="80" width="80" height="20" stroke="#993d1e" stroke-width="2"/>
+              <rect x="70" y="82" width="28" height="16" fill="#993d1e"/>
+            </g>
+            <text x="126" y="78" font-family="Oswald, Arial Narrow, sans-serif" font-size="52" font-weight="700" letter-spacing="5">
+              <tspan fill="#1a1a1a">FUR</tspan><tspan fill="#993d1e">LOW</tspan>
+            </text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ecosystem Family -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Ecosystem Family</h3>
+      <p class="ds-note">
+        FURLOW sits in the devEco tool family. Each tool has a distinct mark and accent
+        color but shares the monospace type, dark industrial foundation, and geometric DNA.
+      </p>
+      <div class="logo-family-strip">
+        <div class="logo-family-item">
+          <svg viewBox="0 0 48 48">
+            <rect width="48" height="48" fill="#000"/>
+            <rect x="0" y="0" width="24" height="48" fill="#fff"/>
+            <rect x="24" y="24" width="24" height="24" fill="#fff"/>
+            <polygon points="0,0 24,24 0,48" fill="#8ED3EF"/>
+          </svg>
+          <span>LumenCanvas</span>
+        </div>
+        <div class="logo-family-item">
+          <svg viewBox="0 0 48 48">
+            <rect width="48" height="48" fill="#0a0a0a"/>
+            <path d="M6 24 L6 10 Q6 6 10 6 L18 6 L18 10 L12 10 Q10 10 10 12 L10 24 L10 36 Q10 38 12 38 L18 38 L18 42 L10 42 Q6 42 6 38 Z" fill="#00D4AA"/>
+            <path d="M42 24 L42 10 Q42 6 38 6 L30 6 L30 10 L36 10 Q38 10 38 12 L38 24 L38 36 Q38 38 36 38 L30 38 L30 42 L38 42 Q42 42 42 38 Z" fill="#00D4AA"/>
+            <line x1="10" y1="18" x2="38" y2="18" stroke="#00D4AA" stroke-width="1" opacity="0.5"/>
+            <line x1="10" y1="24" x2="38" y2="24" stroke="#00D4AA" stroke-width="1.5"/>
+            <line x1="10" y1="30" x2="38" y2="30" stroke="#00D4AA" stroke-width="1" opacity="0.5"/>
+            <circle cx="24" cy="24" r="4" fill="#0a0a0a" stroke="#00D4AA" stroke-width="1.5"/>
+            <circle cx="24" cy="24" r="1.5" fill="#FF5F1F"/>
+          </svg>
+          <span>CLASP</span>
+        </div>
+        <div class="logo-family-item">
+          <svg viewBox="0 0 48 48">
+            <rect width="48" height="48" fill="#0a0a0a"/>
+            <rect x="8" y="8" width="32" height="9" fill="#00d4aa"/>
+            <rect x="8" y="19.5" width="16" height="9" fill="#00d4aa"/>
+            <rect x="8" y="31" width="32" height="9" fill="#00d4aa"/>
+          </svg>
+          <span>SLAB</span>
+        </div>
+        <div class="logo-family-item">
+          <svg viewBox="0 0 48 48">
+            <rect width="48" height="48" fill="#0a0a0a"/>
+            <rect x="6" y="14" width="22" height="20" rx="3" fill="#e8e8e8"/>
+            <path d="M28 20 L34 20 Q40 20 40 26 Q40 32 34 32 L28 32" fill="none" stroke="#e8e8e8" stroke-width="4" stroke-linecap="round"/>
+            <rect x="12" y="21" width="10" height="6" rx="3" fill="#0a0a0a"/>
+          </svg>
+          <span>LATCH</span>
+        </div>
+        <div class="logo-family-item active">
+          <svg viewBox="0 0 120 120" fill="none">
+            <line x1="10" y1="30" x2="10" y2="90" stroke="#ff6b35" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="7" y="28" width="6" height="4" fill="#ff6b35"/>
+            <rect x="7" y="58" width="6" height="4" fill="#ff6b35" opacity="0.35"/>
+            <rect x="7" y="88" width="6" height="4" fill="#ff6b35"/>
+            <rect x="20" y="20" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="20" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="22" width="28" height="16" fill="#ff6b35"/>
+            <rect x="20" y="50" width="80" height="20" stroke="#ff6b35" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="22" y="52" width="28" height="16" fill="#ff6b35" opacity="0.35"/>
+            <rect x="20" y="80" width="80" height="20" fill="#ff6b35" opacity="0.2"/>
+            <rect x="20" y="80" width="80" height="20" stroke="#ff6b35" stroke-width="2"/>
+            <rect x="70" y="82" width="28" height="16" fill="#ff6b35"/>
+          </svg>
+          <span>FURLOW</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SVG Code -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">SVG Code</h3>
+      <div class="code-block">
+        <span class="code-block-label">MARK ONLY</span>
+<pre><span class="yc">&lt;!-- FURLOW Logo Mark: Toggle Stack --&gt;</span>
+<span class="ya">&lt;svg</span> <span class="yk">viewBox</span>=<span class="ys">"0 0 120 120"</span> <span class="yk">fill</span>=<span class="ys">"none"</span><span class="ya">&gt;</span>
+  <span class="yc">&lt;!-- Connection rail --&gt;</span>
+  <span class="ya">&lt;line</span> <span class="yk">x1</span>=<span class="yn">"10"</span> <span class="yk">y1</span>=<span class="yn">"30"</span> <span class="yk">x2</span>=<span class="yn">"10"</span> <span class="yk">y2</span>=<span class="yn">"90"</span>
+    <span class="yk">stroke</span>=<span class="ys">"#ff6b35"</span> <span class="yk">stroke-width</span>=<span class="yn">"2"</span>
+    <span class="yk">stroke-dasharray</span>=<span class="ys">"3 4"</span><span class="ya">/&gt;</span>
+  <span class="ya">&lt;rect</span> <span class="yk">x</span>=<span class="yn">"7"</span> <span class="yk">y</span>=<span class="yn">"28"</span> <span class="yk">width</span>=<span class="yn">"6"</span> <span class="yk">height</span>=<span class="yn">"4"</span> <span class="yk">fill</span>=<span class="ys">"#ff6b35"</span><span class="ya">/&gt;</span>
+
+  <span class="yc">&lt;!-- Toggle 1: ON --&gt;</span>
+  <span class="ya">&lt;rect</span> <span class="yk">x</span>=<span class="yn">"20"</span> <span class="yk">y</span>=<span class="yn">"20"</span> <span class="yk">width</span>=<span class="yn">"80"</span> <span class="yk">height</span>=<span class="yn">"20"</span>
+    <span class="yk">fill</span>=<span class="ys">"#ff6b35"</span> <span class="yk">opacity</span>=<span class="yn">"0.2"</span><span class="ya">/&gt;</span>
+  <span class="ya">&lt;rect</span> ... <span class="yk">stroke</span>=<span class="ys">"#ff6b35"</span> <span class="yk">stroke-width</span>=<span class="yn">"2"</span><span class="ya">/&gt;</span>
+  <span class="ya">&lt;rect</span> <span class="yk">x</span>=<span class="yn">"70"</span> <span class="yk">y</span>=<span class="yn">"22"</span> <span class="yk">width</span>=<span class="yn">"28"</span> <span class="yk">height</span>=<span class="yn">"16"</span>
+    <span class="yk">fill</span>=<span class="ys">"#ff6b35"</span><span class="ya">/&gt;</span>
+
+  <span class="yc">&lt;!-- Toggle 2: OFF (dashed) --&gt;</span>
+  <span class="ya">&lt;rect</span> ... <span class="yk">stroke-dasharray</span>=<span class="ys">"4 3"</span><span class="ya">/&gt;</span>
+  <span class="ya">&lt;rect</span> <span class="yk">x</span>=<span class="yn">"22"</span> <span class="yk">y</span>=<span class="yn">"52"</span> <span class="yk">width</span>=<span class="yn">"28"</span> <span class="yk">height</span>=<span class="yn">"16"</span>
+    <span class="yk">fill</span>=<span class="ys">"#ff6b35"</span> <span class="yk">opacity</span>=<span class="yn">"0.35"</span><span class="ya">/&gt;</span>
+
+  <span class="yc">&lt;!-- Toggle 3: ON --&gt;</span>
+  <span class="yc">&lt;!-- (same structure as Toggle 1, y offset +60) --&gt;</span>
+<span class="ya">&lt;/svg&gt;</span></pre>
+      </div>
+    </div>
+
+    <!-- Usage Rules -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Usage Rules</h3>
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th style="color: var(--green);"><i class="fas fa-check"></i> Do</th>
+            <th style="color: var(--red);"><i class="fas fa-times"></i> Don't</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Use the mark on dark backgrounds (primary context)</td>
+            <td>Place on busy images or patterned backgrounds</td>
+          </tr>
+          <tr>
+            <td>Use --accent-dark (#993d1e) variant on light surfaces</td>
+            <td>Use the bright orange mark on white without swapping</td>
+          </tr>
+          <tr>
+            <td>Maintain the ON/OFF/ON toggle order</td>
+            <td>Rearrange toggle states or remove any switch</td>
+          </tr>
+          <tr>
+            <td>Scale uniformly, keep all elements proportional</td>
+            <td>Stretch, skew, rotate, or add effects to the mark</td>
+          </tr>
+          <tr>
+            <td>Drop the rail below 32px for readability</td>
+            <td>Add the rail back at small sizes where it becomes noise</td>
+          </tr>
+          <tr>
+            <td>Use the wordmark lockup for headers and splash screens</td>
+            <td>Stack the wordmark below the mark (always horizontal)</td>
+          </tr>
+          <tr>
+            <td>Keep dashed borders on the OFF toggle in all contexts</td>
+            <td>Make all three toggles identical (removes the meaning)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ====== 01 COLORS ====== -->
+  <section class="ds-section" id="colors">
+    <div class="ds-section-header">
+      <span class="ds-section-num">01</span>
+      <span class="ds-section-title">Color Palette</span>
+    </div>
+    <p class="ds-note">
+      Built on near-black with a single high-energy accent. The orange is a welding torch in a dark shop.
+      Everything else stays out of the way unless it has semantic meaning.
+    </p>
+
+    <!-- Background Scale -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Background Scale</h3>
+      <div class="swatch-row">
+        <div class="swatch-row-item" style="background:#060606"><span style="color:#555">#060606</span></div>
+        <div class="swatch-row-item" style="background:#0a0a0a"><span style="color:#555">#0a0a0a</span></div>
+        <div class="swatch-row-item" style="background:#111111"><span style="color:#666">#111111</span></div>
+        <div class="swatch-row-item" style="background:#151515"><span style="color:#666">#151515</span></div>
+        <div class="swatch-row-item" style="background:#1a1a1a"><span style="color:#666">#1a1a1a</span></div>
+        <div class="swatch-row-item" style="background:#1e1e1e"><span style="color:#666">#1e1e1e</span></div>
+        <div class="swatch-row-item" style="background:#222222"><span style="color:#777">#222222</span></div>
+      </div>
+      <div class="swatch-grid" style="margin-top: var(--sp-md);">
+        <div class="swatch"><div class="swatch-color" style="background:#060606"></div><div class="swatch-info"><div class="swatch-name">Void</div><div class="swatch-hex">#060606</div><div class="swatch-token">--bg-void</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0a0a0a"></div><div class="swatch-info"><div class="swatch-name">Base</div><div class="swatch-hex">#0a0a0a</div><div class="swatch-token">--bg</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#111111"></div><div class="swatch-info"><div class="swatch-name">Raised</div><div class="swatch-hex">#111111</div><div class="swatch-token">--bg-raised</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#151515"></div><div class="swatch-info"><div class="swatch-name">Panel</div><div class="swatch-hex">#151515</div><div class="swatch-token">--bg-panel</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1a1a1a"></div><div class="swatch-info"><div class="swatch-name">Card</div><div class="swatch-hex">#1a1a1a</div><div class="swatch-token">--bg-card</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0e0e0e"></div><div class="swatch-info"><div class="swatch-name">Code</div><div class="swatch-hex">#0e0e0e</div><div class="swatch-token">--bg-code</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#0c0c0c"></div><div class="swatch-info"><div class="swatch-name">Sidebar</div><div class="swatch-hex">#0c0c0c</div><div class="swatch-token">--bg-sidebar</div></div></div>
+      </div>
+    </div>
+
+    <!-- Text Scale -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Text Scale</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color bordered" style="background:#f0f0f0"></div><div class="swatch-info"><div class="swatch-name">Heading</div><div class="swatch-hex">#f0f0f0</div><div class="swatch-token">--text-heading</div></div></div>
+        <div class="swatch"><div class="swatch-color bordered" style="background:#e8e8e8"></div><div class="swatch-info"><div class="swatch-name">Bright</div><div class="swatch-hex">#e8e8e8</div><div class="swatch-token">--text-bright</div></div></div>
+        <div class="swatch"><div class="swatch-color bordered" style="background:#b8b8b8"></div><div class="swatch-info"><div class="swatch-name">Default</div><div class="swatch-hex">#b8b8b8</div><div class="swatch-token">--text</div></div></div>
+        <div class="swatch"><div class="swatch-color bordered" style="background:#666666"></div><div class="swatch-info"><div class="swatch-name">Dim</div><div class="swatch-hex">#666666</div><div class="swatch-token">--text-dim</div></div></div>
+        <div class="swatch"><div class="swatch-color bordered" style="background:#444444"></div><div class="swatch-info"><div class="swatch-name">Ghost</div><div class="swatch-hex">#444444</div><div class="swatch-token">--text-ghost</div></div></div>
+        <div class="swatch"><div class="swatch-color bordered" style="background:#333333"></div><div class="swatch-info"><div class="swatch-name">Disabled</div><div class="swatch-hex">#333333</div><div class="swatch-token">--text-disabled</div></div></div>
+      </div>
+    </div>
+
+    <!-- Accent -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Primary Accent -- Industrial Orange</h3>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color" style="background:#ff8c5a"></div><div class="swatch-info"><div class="swatch-name">Bright</div><div class="swatch-hex">#ff8c5a</div><div class="swatch-token">--accent-bright</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#ff6b35"></div><div class="swatch-info"><div class="swatch-name">Accent</div><div class="swatch-hex">#ff6b35</div><div class="swatch-token">--accent</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#cc5529"></div><div class="swatch-info"><div class="swatch-name">Dim</div><div class="swatch-hex">#cc5529</div><div class="swatch-token">--accent-dim</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#993d1e"></div><div class="swatch-info"><div class="swatch-name">Dark</div><div class="swatch-hex">#993d1e</div><div class="swatch-token">--accent-dark</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:rgba(255,107,53,0.15)"></div><div class="swatch-info"><div class="swatch-name">Glow</div><div class="swatch-hex">rgba(255,107,53,.15)</div><div class="swatch-token">--accent-glow</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:rgba(255,107,53,0.06)"></div><div class="swatch-info"><div class="swatch-name">Faint</div><div class="swatch-hex">rgba(255,107,53,.06)</div><div class="swatch-token">--accent-faint</div></div></div>
+      </div>
+    </div>
+
+    <!-- Semantic -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Semantic Colors</h3>
+      <p class="ds-note">Used for syntax highlighting, status indicators, badges, and callouts. Never for decoration.</p>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color" style="background:#8bd649"></div><div class="swatch-info"><div class="swatch-name">Green</div><div class="swatch-hex">#8bd649</div><div class="swatch-token">--green</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#f0c040"></div><div class="swatch-info"><div class="swatch-name">Yellow</div><div class="swatch-hex">#f0c040</div><div class="swatch-token">--yellow</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#5ba8f5"></div><div class="swatch-info"><div class="swatch-name">Blue</div><div class="swatch-hex">#5ba8f5</div><div class="swatch-token">--blue</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#9a7bca"></div><div class="swatch-info"><div class="swatch-name">Purple</div><div class="swatch-hex">#9a7bca</div><div class="swatch-token">--purple</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#e05555"></div><div class="swatch-info"><div class="swatch-name">Red</div><div class="swatch-hex">#e05555</div><div class="swatch-token">--red</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#4ec9b0"></div><div class="swatch-info"><div class="swatch-name">Cyan</div><div class="swatch-hex">#4ec9b0</div><div class="swatch-token">--cyan</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 02 TYPOGRAPHY ====== -->
+  <section class="ds-section" id="typography">
+    <div class="ds-section-header">
+      <span class="ds-section-num">02</span>
+      <span class="ds-section-title">Typography</span>
+    </div>
+    <p class="ds-note">
+      Two fonts. Oswald for display headings -- condensed, industrial, demands attention.
+      Space Mono for everything else -- the workhorse. No third font. No exceptions.
+    </p>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Oswald -- Display</h3>
+      <div class="type-specimen">
+        <div class="type-specimen-label">Font Family: 'Oswald', 'Arial Narrow', sans-serif</div>
+        <div class="type-display-oswald" style="font-size: 48px; font-weight: 700; margin-bottom: 16px;">
+          ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        </div>
+        <div class="type-display-oswald" style="font-size: 48px; font-weight: 700; margin-bottom: 24px;">
+          0123456789 !@#$%
+        </div>
+        <div class="type-sample-grid">
+          <span class="type-sample-key">700 / 48px</span>
+          <span class="type-sample-val type-display-oswald" style="font-size: 48px; font-weight: 700;">PAGE HEADING</span>
+          <span class="type-sample-key">600 / 28px</span>
+          <span class="type-sample-val type-display-oswald" style="font-size: 28px; font-weight: 600;">SECTION TITLE</span>
+          <span class="type-sample-key">500 / 16px</span>
+          <span class="type-sample-val type-display-oswald" style="font-size: 16px; font-weight: 500;">SUBSECTION HEADING</span>
+          <span class="type-sample-key">400 / 13px</span>
+          <span class="type-sample-val type-display-oswald" style="font-size: 13px; font-weight: 400;">NAV / BUTTON / LABEL</span>
+          <span class="type-sample-key">300 / 11px</span>
+          <span class="type-sample-val type-display-oswald" style="font-size: 11px; font-weight: 300;">OVERLINE / CAPTION</span>
+        </div>
+      </div>
+      <div class="callout callout-tip" style="margin-top: var(--sp-md);">
+        <i class="fas fa-info-circle"></i>
+        <div class="callout-body">
+          <strong>Always uppercase.</strong> Oswald is only used in uppercase with letter-spacing (2-6px depending on size).
+          If you're writing a sentence in Oswald, something went wrong.
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Space Mono -- Body & Code</h3>
+      <div class="type-specimen">
+        <div class="type-specimen-label">Font Family: 'Space Mono', 'Courier New', monospace</div>
+        <div class="type-mono" style="font-size: 20px; margin-bottom: 12px;">
+          The quick brown fox jumps over the lazy dog.
+        </div>
+        <div class="type-mono" style="font-size: 20px; margin-bottom: 24px;">
+          0123456789 {[( )]} &lt;/&gt; => != ${}
+        </div>
+        <div class="type-sample-grid">
+          <span class="type-sample-key">700 / 16px</span>
+          <span class="type-sample-val type-mono" style="font-size: 16px; font-weight: 700;">Bold emphasis text</span>
+          <span class="type-sample-key">400 / 14px</span>
+          <span class="type-sample-val type-mono" style="font-size: 14px;">Default body text for paragraphs and descriptions</span>
+          <span class="type-sample-key">400 / 13px</span>
+          <span class="type-sample-val type-mono" style="font-size: 13px;">Code blocks, table cells, card bodies</span>
+          <span class="type-sample-key">400 / 12px</span>
+          <span class="type-sample-val type-mono" style="font-size: 12px;">Sidebar links, secondary content, inline code</span>
+          <span class="type-sample-key">400 / 11px</span>
+          <span class="type-sample-val type-mono" style="font-size: 11px;">Labels, hints, timestamps</span>
+          <span class="type-sample-key">400i / 13px</span>
+          <span class="type-sample-val type-mono" style="font-size: 13px; font-style: italic; color: var(--text-ghost);"># yaml comments use italic</span>
+          <span class="type-sample-key">700 / 11px</span>
+          <span class="type-sample-val type-mono" style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-ghost); text-transform: uppercase;">SECTION LABEL / TOKEN NAME</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Line Height & Letter Spacing</h3>
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th>Context</th>
+            <th>Line Height</th>
+            <th>Letter Spacing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Display headings (Oswald)</td><td><code>1.0 - 1.1</code></td><td><code>3px - 6px</code></td></tr>
+          <tr><td>Section titles (Oswald)</td><td><code>1.0</code></td><td><code>2px - 3px</code></td></tr>
+          <tr><td>Body text (Space Mono)</td><td><code>1.7</code></td><td><code>0</code></td></tr>
+          <tr><td>Code blocks</td><td><code>1.8</code></td><td><code>0</code></td></tr>
+          <tr><td>Labels / tokens (either)</td><td><code>1.0</code></td><td><code>1px - 2px</code></td></tr>
+          <tr><td>Buttons (Oswald)</td><td><code>1.0</code></td><td><code>2px</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ====== 03 SPACING ====== -->
+  <section class="ds-section" id="spacing">
+    <div class="ds-section-header">
+      <span class="ds-section-num">03</span>
+      <span class="ds-section-title">Spacing</span>
+    </div>
+    <p class="ds-note">
+      Tight and utilitarian. Padding serves function, not comfort. The scale is intentionally compact
+      at the low end and jumps aggressively at the high end for section separation.
+    </p>
+
+    <div class="spacing-grid">
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-2xs</span>
+        <span class="spacing-meta">2px</span>
+        <div class="spacing-bar" style="width: 2px;"><span></span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-xs</span>
+        <span class="spacing-meta">4px</span>
+        <div class="spacing-bar" style="width: 16px;"><span>4</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-sm</span>
+        <span class="spacing-meta">8px</span>
+        <div class="spacing-bar" style="width: 40px;"><span>8</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-md</span>
+        <span class="spacing-meta">12px</span>
+        <div class="spacing-bar" style="width: 60px;"><span>12</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-base</span>
+        <span class="spacing-meta">16px</span>
+        <div class="spacing-bar" style="width: 80px;"><span>16</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-lg</span>
+        <span class="spacing-meta">24px</span>
+        <div class="spacing-bar" style="width: 120px;"><span>24</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-xl</span>
+        <span class="spacing-meta">32px</span>
+        <div class="spacing-bar" style="width: 160px;"><span>32</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-2xl</span>
+        <span class="spacing-meta">48px</span>
+        <div class="spacing-bar" style="width: 240px;"><span>48</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-3xl</span>
+        <span class="spacing-meta">64px</span>
+        <div class="spacing-bar" style="width: 320px;"><span>64</span></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-token">--sp-4xl</span>
+        <span class="spacing-meta">96px</span>
+        <div class="spacing-bar" style="width: 480px;"><span>96</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 04 SURFACES & BORDERS ====== -->
+  <section class="ds-section" id="surfaces">
+    <div class="ds-section-header">
+      <span class="ds-section-num">04</span>
+      <span class="ds-section-title">Surfaces & Borders</span>
+    </div>
+    <p class="ds-note">
+      Elevation is communicated through border brightness and background shade, not drop shadows.
+      Shadows exist but are used sparingly. The noise overlay adds texture to every surface automatically.
+    </p>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Surface Elevation</h3>
+      <div class="surface-grid">
+        <div class="surface-card" style="background: var(--bg-void); border: var(--border-solid);">
+          <div class="surface-card-name">Void</div>
+          <div class="surface-card-token">--bg-void</div>
+          <div class="surface-card-desc">Deepest layer. Page gutter, behind everything.</div>
+        </div>
+        <div class="surface-card" style="background: var(--bg); border: var(--border-solid);">
+          <div class="surface-card-name">Base</div>
+          <div class="surface-card-token">--bg</div>
+          <div class="surface-card-desc">Default page background. The shop floor.</div>
+        </div>
+        <div class="surface-card" style="background: var(--bg-raised); border: var(--border-solid);">
+          <div class="surface-card-name">Raised</div>
+          <div class="surface-card-token">--bg-raised</div>
+          <div class="surface-card-desc">Cards, panels, interactive containers.</div>
+        </div>
+        <div class="surface-card" style="background: var(--bg-panel); border: var(--border-solid);">
+          <div class="surface-card-name">Panel</div>
+          <div class="surface-card-token">--bg-panel</div>
+          <div class="surface-card-desc">Inset panels within raised surfaces.</div>
+        </div>
+        <div class="surface-card" style="background: var(--bg-hover); border: var(--border-solid);">
+          <div class="surface-card-name">Hover</div>
+          <div class="surface-card-token">--bg-hover</div>
+          <div class="surface-card-desc">Interactive hover state. Transient.</div>
+        </div>
+        <div class="surface-card" style="background: var(--bg-active); border: 1px solid var(--accent-dim);">
+          <div class="surface-card-name">Active</div>
+          <div class="surface-card-token">--bg-active</div>
+          <div class="surface-card-desc">Selected / active state.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Border Treatments</h3>
+      <div class="border-samples">
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name">Solid Default</div>
+            <div class="border-sample-token">--border-solid</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 1px solid #1e1e1e;"></div>
+        </div>
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name">Solid Mid</div>
+            <div class="border-sample-token">1px solid --border-mid</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 1px solid #2a2a2a;"></div>
+        </div>
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name">Solid Bright</div>
+            <div class="border-sample-token">--border-strong</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 1px solid #444444;"></div>
+        </div>
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name" style="color: var(--accent);">Dashed Separator</div>
+            <div class="border-sample-token">--border-dashed</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 1px dashed #2a2a2a;"></div>
+        </div>
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name" style="color: var(--accent);">Accent Border</div>
+            <div class="border-sample-token">2px solid --accent</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 2px solid #ff6b35;"></div>
+        </div>
+        <div class="border-sample">
+          <div class="border-sample-info">
+            <div class="border-sample-name">Accent Left (Code)</div>
+            <div class="border-sample-token">3px solid --accent-dim</div>
+          </div>
+          <div class="border-sample-line" style="border-top: 3px solid #cc5529;"></div>
+        </div>
+      </div>
+      <div class="callout callout-tip" style="margin-top: var(--sp-xl);">
+        <i class="fas fa-info-circle"></i>
+        <div class="callout-body">
+          <strong>Zero border radius.</strong> Everything is square. No rounded corners anywhere.
+          The only circular elements are status indicator dots (8px).
+          This is not negotiable.
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Noise Overlay</h3>
+      <p class="ds-note" style="margin-bottom: var(--sp-md);">
+        A fixed SVG feTurbulence filter covers the entire viewport at 3.5% opacity with overlay blend mode.
+        It adds the grain of photocopied paper without a raster asset. It never scrolls. It never interferes
+        with interaction. It's always there.
+      </p>
+      <div class="code-block">
+        <span class="code-block-label">CSS</span>
+<span class="yk">body::after</span> {
+  <span class="yk">content</span>: <span class="ys">''</span>;
+  <span class="yk">position</span>: <span class="yn">fixed</span>;
+  <span class="yk">inset</span>: <span class="yn">0</span>;
+  <span class="yk">pointer-events</span>: <span class="yn">none</span>;
+  <span class="yk">z-index</span>: <span class="yn">9999</span>;
+  <span class="yk">opacity</span>: <span class="yn">0.035</span>;
+  <span class="yk">mix-blend-mode</span>: <span class="yn">overlay</span>;
+  <span class="yk">background</span>: <span class="ys">url("data:image/svg+xml,...")</span>;
+}
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 05 COMPONENTS ====== -->
+  <section class="ds-section" id="components">
+    <div class="ds-section-header">
+      <span class="ds-section-num">05</span>
+      <span class="ds-section-title">Components</span>
+    </div>
+
+    <!-- Buttons -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Buttons</h3>
+      <div class="btn-row" style="margin-bottom: var(--sp-lg);">
+        <button class="btn btn-primary"><i class="fas fa-play"></i> Primary</button>
+        <button class="btn btn-secondary"><i class="fas fa-terminal"></i> Secondary</button>
+        <button class="btn btn-ghost"><i class="fas fa-cog"></i> Ghost</button>
+        <button class="btn btn-danger"><i class="fas fa-trash"></i> Danger</button>
+      </div>
+      <div class="btn-row" style="margin-bottom: var(--sp-lg);">
+        <button class="btn btn-primary btn-sm">Small Primary</button>
+        <button class="btn btn-secondary btn-sm">Small Secondary</button>
+        <button class="btn btn-ghost btn-sm">Small Ghost</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-disabled"><i class="fas fa-lock"></i> Disabled</button>
+        <button class="btn btn-secondary btn-disabled">Disabled</button>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Cards</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-md);">
+        <div class="card">
+          <div class="card-title">Default Card</div>
+          <div class="card-body">Standard container for grouped content. Solid border, raised background, square corners.</div>
+          <div class="card-footer">
+            <div class="tag-row">
+              <span class="tag">commands</span>
+              <span class="tag">events</span>
+            </div>
+            <span class="badge badge-green">ACTIVE</span>
+          </div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">Accent Card</div>
+          <div class="card-body">Left accent border draws attention. Use for featured items, current selections, or primary content.</div>
+          <div class="card-footer">
+            <span style="font-size: 11px; color: var(--text-ghost);">furlow.yaml</span>
+            <span class="badge badge-accent">v0.1</span>
+          </div>
+        </div>
+        <div class="card" style="border-style: dashed; border-color: var(--border-mid);">
+          <div class="card-title" style="color: var(--text-dim);">Placeholder Card</div>
+          <div class="card-body" style="color: var(--text-dim);">Dashed border indicates an empty state or a slot waiting to be filled. Drop zone energy.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Badges</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: var(--sp-sm); align-items: center;">
+        <span class="badge badge-accent">ACTION</span>
+        <span class="badge badge-green">ONLINE</span>
+        <span class="badge badge-yellow">WARNING</span>
+        <span class="badge badge-blue">INFO</span>
+        <span class="badge badge-purple">FLOW</span>
+        <span class="badge badge-red">ERROR</span>
+        <span class="badge badge-ghost">DRAFT</span>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Tags</h3>
+      <div class="tag-row">
+        <span class="tag">commands</span>
+        <span class="tag">events</span>
+        <span class="tag">builtins</span>
+        <span class="tag">state</span>
+        <span class="tag">pipes</span>
+        <span class="tag">permissions</span>
+        <span class="tag">webhooks</span>
+        <span class="tag">moderation</span>
+        <span class="tag">roles</span>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Data Table</h3>
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Since</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>reply</code></td>
+            <td>Messaging</td>
+            <td><span class="badge badge-green">STABLE</span></td>
+            <td style="color: var(--text-dim);">v0.1</td>
+          </tr>
+          <tr>
+            <td><code>add_role</code></td>
+            <td>Roles</td>
+            <td><span class="badge badge-green">STABLE</span></td>
+            <td style="color: var(--text-dim);">v0.1</td>
+          </tr>
+          <tr>
+            <td><code>flow_if</code></td>
+            <td>Control Flow</td>
+            <td><span class="badge badge-yellow">BETA</span></td>
+            <td style="color: var(--text-dim);">v0.1</td>
+          </tr>
+          <tr>
+            <td><code>http_request</code></td>
+            <td>Integration</td>
+            <td><span class="badge badge-accent">NEW</span></td>
+            <td style="color: var(--text-dim);">v0.2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ====== 06 CODE & SYNTAX ====== -->
+  <section class="ds-section" id="code">
+    <div class="ds-section-header">
+      <span class="ds-section-num">06</span>
+      <span class="ds-section-title">Code & Syntax</span>
+    </div>
+    <p class="ds-note">
+      FURLOW configs are YAML. The syntax theme is tuned specifically for YAML readability on dark backgrounds.
+      Every color has a job. If two things look the same, they mean the same thing.
+    </p>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">YAML Syntax Theme</h3>
+      <table class="ds-table" style="margin-bottom: var(--sp-xl);">
+        <thead>
+          <tr>
+            <th>Element</th>
+            <th>Color</th>
+            <th>Token</th>
+            <th>CSS Class</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="color: var(--yellow);">Keys</span></td>
+            <td><code>#f0c040</code></td>
+            <td>--yellow</td>
+            <td><code>.yk</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--green);">Strings</span></td>
+            <td><code>#8bd649</code></td>
+            <td>--green</td>
+            <td><code>.ys</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--blue);">Numbers</span></td>
+            <td><code>#5ba8f5</code></td>
+            <td>--blue</td>
+            <td><code>.yn</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--accent);">Expressions ${...}</span></td>
+            <td><code>#ff6b35</code></td>
+            <td>--accent</td>
+            <td><code>.ye</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--text-ghost); font-style: italic;">Comments</span></td>
+            <td><code>#444444</code></td>
+            <td>--text-ghost</td>
+            <td><code>.yc</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--purple);">Booleans</span></td>
+            <td><code>#9a7bca</code></td>
+            <td>--purple</td>
+            <td><code>.yb</code></td>
+          </tr>
+          <tr>
+            <td><span style="color: var(--cyan);">Action Names</span></td>
+            <td><code>#4ec9b0</code></td>
+            <td>--cyan</td>
+            <td><code>.ya</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <span class="code-block-label">YAML</span>
+<span class="yc"># -- A FURLOW bot config --</span>
+<span class="yk">version</span>: <span class="ys">"0.1"</span>
+
+<span class="yk">identity</span>:
+  <span class="yk">name</span>: <span class="ys">"GateKeeper"</span>
+  <span class="yk">avatar</span>: <span class="ys">"./assets/gk.png"</span>
+
+<span class="yk">presence</span>:
+  <span class="yk">status</span>: <span class="ys">online</span>
+  <span class="yk">activity</span>:
+    <span class="yk">type</span>: <span class="ys">watching</span>
+    <span class="yk">text</span>: <span class="ys">"the gates"</span>
+
+<span class="yk">commands</span>:
+  - <span class="yk">name</span>: <span class="ys">verify</span>
+    <span class="yk">description</span>: <span class="ys">"Verify and get access"</span>
+    <span class="yk">actions</span>:
+      - <span class="yk">action</span>: <span class="ya">flow_if</span>
+        <span class="yk">condition</span>: <span class="ye">"${member.roles.has(VERIFIED_ROLE)}"</span>
+        <span class="yk">then</span>:
+          - <span class="yk">action</span>: <span class="ya">reply</span>
+            <span class="yk">content</span>: <span class="ys">"Already verified."</span>
+            <span class="yk">ephemeral</span>: <span class="yb">true</span>
+        <span class="yk">else</span>:
+          - <span class="yk">action</span>: <span class="ya">add_role</span>
+            <span class="yk">role</span>: <span class="ye">"${VERIFIED_ROLE}"</span>
+          - <span class="yk">action</span>: <span class="ya">reply</span>
+            <span class="yk">content</span>: <span class="ys">"Welcome in, </span><span class="ye">${user.displayName}</span><span class="ys">."</span>
+            <span class="yk">ephemeral</span>: <span class="yb">true</span>
+
+<span class="yk">builtins</span>:
+  <span class="yk">welcome</span>:
+    <span class="yk">enabled</span>: <span class="yb">true</span>
+    <span class="yk">channel</span>: <span class="ys">"#arrivals"</span>
+    <span class="yk">message</span>: <span class="ys">"</span><span class="ye">${user.mention}</span><span class="ys"> just walked in."</span>
+    <span class="yk">auto_role</span>: <span class="ys">"Newcomer"</span>
+    <span class="yk">dm</span>: <span class="ys">"Read the rules. Then /verify."</span>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Code Block Anatomy</h3>
+      <p class="ds-note">
+        Code blocks use <code class="code-inline">--bg-code</code> (#0e0e0e), slightly darker than base.
+        A 3px left border in <code class="code-inline">--accent-dim</code> marks the block edge.
+        An optional label sits top-right in <code class="code-inline">--bg-panel</code>.
+        Line height is 1.8 for readability. Horizontal overflow scrolls, never wraps.
+      </p>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Inline Code</h3>
+      <p style="color: var(--text); font-size: 13px; line-height: 1.8;">
+        Use <code class="code-inline">action: reply</code> to send messages.
+        Set <code class="code-inline">ephemeral: true</code> for private responses.
+        Expression syntax: <code class="code-inline">${user.id}</code>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== 07 FORMS ====== -->
+  <section class="ds-section" id="forms">
+    <div class="ds-section-header">
+      <span class="ds-section-num">07</span>
+      <span class="ds-section-title">Form Elements</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-xl);">
+      <div>
+        <div class="input-group" style="margin-bottom: var(--sp-lg);">
+          <label class="input-label">Bot Name</label>
+          <input class="input" type="text" placeholder="e.g. GateKeeper" value="GateKeeper">
+          <span class="input-hint">Appears in Discord as the bot's display name</span>
+        </div>
+
+        <div class="input-group" style="margin-bottom: var(--sp-lg);">
+          <label class="input-label">Channel</label>
+          <select class="select">
+            <option>#general</option>
+            <option>#bot-commands</option>
+            <option>#welcome</option>
+          </select>
+        </div>
+
+        <div class="input-group" style="margin-bottom: var(--sp-lg);">
+          <label class="input-label">Description</label>
+          <textarea class="input" rows="3" placeholder="What does this bot do?" style="resize: vertical; font-family: var(--font-mono);">Handles verification and role assignment for new members.</textarea>
+        </div>
+      </div>
+
+      <div>
+        <div class="ds-label" style="margin-bottom: var(--sp-lg);">Toggles</div>
+        <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+          <div class="toggle-row">
+            <button class="toggle active" onclick="this.classList.toggle('active')"></button>
+            <span class="toggle-label">Enable welcome messages</span>
+          </div>
+          <div class="toggle-row">
+            <button class="toggle active" onclick="this.classList.toggle('active')"></button>
+            <span class="toggle-label">Auto-assign roles</span>
+          </div>
+          <div class="toggle-row">
+            <button class="toggle" onclick="this.classList.toggle('active')"></button>
+            <span class="toggle-label">Log to channel</span>
+          </div>
+          <div class="toggle-row">
+            <button class="toggle" onclick="this.classList.toggle('active')"></button>
+            <span class="toggle-label">DM on join</span>
+          </div>
+        </div>
+
+        <div class="ds-label" style="margin-top: var(--sp-xl); margin-bottom: var(--sp-md);">Disabled State</div>
+        <div class="input-group">
+          <label class="input-label" style="color: var(--text-disabled);">Locked Field</label>
+          <input class="input" type="text" value="Cannot edit" disabled style="opacity: 0.35; cursor: not-allowed;">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 08 NAVIGATION ====== -->
+  <section class="ds-section" id="navigation">
+    <div class="ds-section-header">
+      <span class="ds-section-num">08</span>
+      <span class="ds-section-title">Navigation</span>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Tab Pills</h3>
+      <div class="nav-pills" style="margin-bottom: var(--sp-lg);">
+        <button class="nav-pill active" onclick="activatePill(this)">Overview</button>
+        <button class="nav-pill" onclick="activatePill(this)">Commands</button>
+        <button class="nav-pill" onclick="activatePill(this)">Events</button>
+        <button class="nav-pill" onclick="activatePill(this)">Builtins</button>
+        <button class="nav-pill" onclick="activatePill(this)">CLI</button>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Sidebar Navigation</h3>
+      <div class="sidebar-demo">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Getting Started</div>
+          <a class="sidebar-link active"><i class="fas fa-home"></i> Overview</a>
+          <a class="sidebar-link"><i class="fas fa-download"></i> Installation</a>
+          <a class="sidebar-link"><i class="fas fa-file-code"></i> First Config</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Reference</div>
+          <a class="sidebar-link"><i class="fas fa-terminal"></i> Commands</a>
+          <a class="sidebar-link"><i class="fas fa-bolt"></i> Events</a>
+          <a class="sidebar-link"><i class="fas fa-cogs"></i> Actions</a>
+          <a class="sidebar-link"><i class="fas fa-plug"></i> Builtins</a>
+          <a class="sidebar-link"><i class="fas fa-database"></i> State & Storage</a>
+          <a class="sidebar-link"><i class="fas fa-exchange-alt"></i> Pipes</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Advanced</div>
+          <a class="sidebar-link"><i class="fas fa-code-branch"></i> Expressions</a>
+          <a class="sidebar-link"><i class="fas fa-shield-alt"></i> Permissions</a>
+          <a class="sidebar-link"><i class="fas fa-cube"></i> Patterns</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 09 FEEDBACK & STATUS ====== -->
+  <section class="ds-section" id="feedback">
+    <div class="ds-section-header">
+      <span class="ds-section-num">09</span>
+      <span class="ds-section-title">Feedback & Status</span>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Status Indicators</h3>
+      <div class="status-row">
+        <div class="status"><span class="status-dot online"></span> Online</div>
+        <div class="status"><span class="status-dot warning"></span> Degraded</div>
+        <div class="status"><span class="status-dot error"></span> Error</div>
+        <div class="status"><span class="status-dot idle"></span> Idle</div>
+      </div>
+    </div>
+
+    <div class="ds-sub">
+      <h3 class="ds-sub-title">Callouts</h3>
+      <div style="display: flex; flex-direction: column; gap: var(--sp-md);">
+        <div class="callout callout-info">
+          <i class="fas fa-info-circle"></i>
+          <div class="callout-body"><strong>Info:</strong> Expressions inside strings are evaluated at runtime. Use <code class="code-inline">${...}</code> syntax.</div>
+        </div>
+        <div class="callout callout-warn">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div class="callout-body"><strong>Warning:</strong> The <code class="code-inline">delete_message</code> action requires MANAGE_MESSAGES permission. Check your bot's role hierarchy.</div>
+        </div>
+        <div class="callout callout-error">
+          <i class="fas fa-times-circle"></i>
+          <div class="callout-body"><strong>Error:</strong> Invalid YAML at line 42. Expected mapping but found scalar.</div>
+        </div>
+        <div class="callout callout-tip">
+          <i class="fas fa-lightbulb"></i>
+          <div class="callout-body"><strong>Tip:</strong> Run <code class="code-inline">furlow validate</code> before deploying. Catches 90% of config mistakes before they hit production.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 10 ICONOGRAPHY ====== -->
+  <section class="ds-section" id="icons">
+    <div class="ds-section-header">
+      <span class="ds-section-num">10</span>
+      <span class="ds-section-title">Iconography</span>
+    </div>
+    <p class="ds-note">
+      Font Awesome 6 Solid, always. 11-14px depending on context. Icons are functional markers, never decoration.
+      They sit left of text with 8px gap. Color matches sibling text unless state-specific.
+    </p>
+
+    <div class="icon-grid">
+      <div class="icon-cell"><i class="fas fa-terminal"></i><span>fa-terminal</span></div>
+      <div class="icon-cell"><i class="fas fa-bolt"></i><span>fa-bolt</span></div>
+      <div class="icon-cell"><i class="fas fa-cogs"></i><span>fa-cogs</span></div>
+      <div class="icon-cell"><i class="fas fa-plug"></i><span>fa-plug</span></div>
+      <div class="icon-cell"><i class="fas fa-database"></i><span>fa-database</span></div>
+      <div class="icon-cell"><i class="fas fa-code-branch"></i><span>fa-code-branch</span></div>
+      <div class="icon-cell"><i class="fas fa-shield-alt"></i><span>fa-shield-alt</span></div>
+      <div class="icon-cell"><i class="fas fa-exchange-alt"></i><span>fa-exchange-alt</span></div>
+      <div class="icon-cell"><i class="fas fa-file-code"></i><span>fa-file-code</span></div>
+      <div class="icon-cell"><i class="fas fa-play"></i><span>fa-play</span></div>
+      <div class="icon-cell"><i class="fas fa-stop"></i><span>fa-stop</span></div>
+      <div class="icon-cell"><i class="fas fa-check"></i><span>fa-check</span></div>
+      <div class="icon-cell"><i class="fas fa-times"></i><span>fa-times</span></div>
+      <div class="icon-cell"><i class="fas fa-search"></i><span>fa-search</span></div>
+      <div class="icon-cell"><i class="fas fa-copy"></i><span>fa-copy</span></div>
+      <div class="icon-cell"><i class="fas fa-download"></i><span>fa-download</span></div>
+      <div class="icon-cell"><i class="fas fa-trash"></i><span>fa-trash</span></div>
+      <div class="icon-cell"><i class="fas fa-cube"></i><span>fa-cube</span></div>
+      <div class="icon-cell"><i class="fas fa-wrench"></i><span>fa-wrench</span></div>
+      <div class="icon-cell"><i class="fas fa-link"></i><span>fa-link</span></div>
+    </div>
+  </section>
+
+  <!-- ====== 11 MOTION ====== -->
+  <section class="ds-section" id="motion">
+    <div class="ds-section-header">
+      <span class="ds-section-num">11</span>
+      <span class="ds-section-title">Motion</span>
+    </div>
+    <p class="ds-note">
+      Animations are fast and purposeful. Nothing bounces. Nothing floats. Things appear, shift, or glow.
+      Default duration: 150ms for micro-interactions, 300ms for transitions, 0ms for unnecessary animation.
+      Easing: ease-out for entrances, ease-in for exits. Hover on these to preview.
+    </p>
+
+    <div class="motion-grid">
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-fade 0.6s ease-out infinite alternate;"></div>
+        <div class="motion-card-name">Fade</div>
+        <div class="motion-card-css">opacity 0 to 1<br>150ms ease-out</div>
+      </div>
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-slide 0.6s ease-out infinite alternate;"></div>
+        <div class="motion-card-name">Slide</div>
+        <div class="motion-card-css">translateX(-20px) to 0<br>200ms ease-out</div>
+      </div>
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-scale 0.6s ease-out infinite alternate;"></div>
+        <div class="motion-card-name">Scale</div>
+        <div class="motion-card-css">scale(0.6) to scale(1)<br>150ms ease-out</div>
+      </div>
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-glow 1.2s ease-in-out infinite alternate;"></div>
+        <div class="motion-card-name">Glow</div>
+        <div class="motion-card-css">box-shadow accent-glow<br>300ms ease-in-out</div>
+      </div>
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-pulse 1.5s ease-in-out infinite;"></div>
+        <div class="motion-card-name">Pulse</div>
+        <div class="motion-card-css">opacity 0.4 to 1 to 0.4<br>status indicators only</div>
+      </div>
+      <div class="motion-card">
+        <div class="motion-box" style="animation: m-rotate 0.8s ease-out infinite alternate;"></div>
+        <div class="motion-card-name">Rotate</div>
+        <div class="motion-card-css">rotate(0) to rotate(90deg)<br>loading states only</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== 12 PRINCIPLES ====== -->
+  <section class="ds-section" id="principles">
+    <div class="ds-section-header">
+      <span class="ds-section-num">12</span>
+      <span class="ds-section-title">Design Principles</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-md);">
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-wrench" style="color: var(--accent); margin-right: 8px;"></i> Built from Scrap</div>
+        <div class="card-body">
+          Furlow the character builds impossible tech from junkyard parts.
+          The design system reflects that same resourcefulness.
+          No third-party component libraries. No CSS frameworks.
+          Two fonts, one accent color, raw CSS. That is the entire toolkit.
+        </div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-eye-slash" style="color: var(--accent); margin-right: 8px;"></i> Function Over Form</div>
+        <div class="card-body">
+          If an element does not communicate something, remove it.
+          Decoration is noise. Rounded corners are decoration.
+          Gradient backgrounds are decoration. Drop shadows on cards are decoration.
+          Borders and background shades are information.
+        </div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-moon" style="color: var(--accent); margin-right: 8px;"></i> Dark by Default</div>
+        <div class="card-body">
+          There is no light theme. There never will be.
+          The interface is a dark workshop lit by the glow of a terminal
+          and the orange spark of a welding torch.
+          That metaphor drives every color decision.
+        </div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-file-code" style="color: var(--accent); margin-right: 8px;"></i> YAML is the UI</div>
+        <div class="card-body">
+          FURLOW is a YAML config tool. The visual design exists to make
+          YAML legible and navigable. The syntax highlighting, the code block
+          anatomy, the sidebar hierarchy: they all serve the config file.
+          If the design fights the YAML, the design is wrong.
+        </div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-cut" style="color: var(--accent); margin-right: 8px;"></i> No Polish</div>
+        <div class="card-body">
+          Dashed borders over solid where possible.
+          Noise grain over clean gradients.
+          Monospace over proportional. Uppercase over title case.
+          The aesthetic says "this was built in a garage"
+          not "this was approved by a design committee."
+        </div>
+      </div>
+      <div class="card card-accent">
+        <div class="card-title"><i class="fas fa-link" style="color: var(--accent); margin-right: 8px;"></i> Ecosystem Kinship</div>
+        <div class="card-body">
+          FURLOW sits alongside CLASP, LATCH, SLAB, and LumenCanvas.
+          They share DNA (monospace type, dark backgrounds, maker energy)
+          but each has its own accent and personality.
+          FURLOW's orange separates it from CLASP's teal and SLAB's neutral palette
+          while keeping the family resemblance unmistakable.
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-sub" style="margin-top: var(--sp-2xl);">
+      <h3 class="ds-sub-title">Do / Don't</h3>
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th style="color: var(--green);"><i class="fas fa-check"></i> Do</th>
+            <th style="color: var(--red);"><i class="fas fa-times"></i> Don't</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Use Oswald for headings, always uppercase</td>
+            <td>Use Oswald for body text or mixed case</td>
+          </tr>
+          <tr>
+            <td>Use dashed borders for separators and placeholders</td>
+            <td>Use rounded corners on anything</td>
+          </tr>
+          <tr>
+            <td>Use the noise overlay on every page</td>
+            <td>Use background images or complex textures</td>
+          </tr>
+          <tr>
+            <td>Use orange accent sparingly for emphasis</td>
+            <td>Saturate the page with accent color</td>
+          </tr>
+          <tr>
+            <td>Use semantic colors only for their purpose</td>
+            <td>Use green for decoration or blue for headings</td>
+          </tr>
+          <tr>
+            <td>Animate with 150ms transitions</td>
+            <td>Bounce, spring, or overshoot anything</td>
+          </tr>
+          <tr>
+            <td>Use Font Awesome solid icons at 11-14px</td>
+            <td>Use emoji, line icons, or custom illustrations</td>
+          </tr>
+          <tr>
+            <td>Keep code blocks left-aligned with accent bar</td>
+            <td>Center code or use pastel syntax themes</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer style="border-top: var(--border-dashed); padding-top: var(--sp-xl); margin-top: var(--sp-3xl); text-align: center;">
+    <p style="font-size: 11px; color: var(--text-ghost); letter-spacing: 1px;">
+      FURLOW Design System v0.2
+      <span style="color: var(--border-mid); margin: 0 8px;">|</span>
+      Flexible User Rules for Live Online Workers
+      <span style="color: var(--border-mid); margin: 0 8px;">|</span>
+      <span style="color: var(--accent);">devEco</span>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+function activatePill(el) {
+  el.parentElement.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Sidebar link clicks
+document.querySelectorAll('.sidebar-link').forEach(link => {
+  link.addEventListener('click', () => {
+    link.closest('.sidebar-demo').querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
