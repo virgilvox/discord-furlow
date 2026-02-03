@@ -50,7 +50,7 @@ export async function startCommand(
     // Dynamic import of core modules
     const { loadSpec } = await import('@furlow/core/parser');
     const { validateFurlowSpec } = await import('@furlow/schema');
-    const { createExpressionEvaluator } = await import('@furlow/core/expression');
+    const { createEvaluator } = await import('@furlow/core/expression');
     const { createActionRegistry, createActionExecutor } = await import('@furlow/core/actions');
     const { createEventRouter } = await import('@furlow/core/events');
     const { createFlowEngine } = await import('@furlow/core/flows');
@@ -95,7 +95,7 @@ export async function startCommand(
     const initSpinner = ora('Initializing systems...').start();
 
     // Create expression evaluator
-    const evaluator = createExpressionEvaluator();
+    const evaluator = createEvaluator();
 
     // Create storage adapter (memory by default)
     const storage = createMemoryAdapter();
@@ -248,98 +248,6 @@ export async function startCommand(
             }
           }
         });
-      }
-
-      // Set up button handlers
-      if (spec.interactions) {
-        for (const int of spec.interactions) {
-          if (int.type === 'button' || !int.type) {
-            interactionHandler.onButton(int.custom_id, async (btnInteraction) => {
-              try {
-                const context = buildActionContext({
-                  interaction: btnInteraction,
-                  client: client.getClient(),
-                  evaluator,
-                  stateManager,
-                  flowEngine,
-                  voiceManager,
-                  actionExecutor,
-                  eventRouter,
-                  spec,
-                });
-
-                const actions = normalizeActions(int.actions);
-                await actionExecutor.executeSequence(actions, context);
-              } catch (err) {
-                console.error(chalk.red(`Error in button ${int.custom_id}:`), err);
-              }
-            });
-          }
-        }
-
-        // Set up select menu handlers
-        for (const int of spec.interactions) {
-          if (int.type === 'select') {
-            interactionHandler.onSelect(int.custom_id, async (selectInteraction) => {
-              try {
-                const context = buildActionContext({
-                  interaction: selectInteraction,
-                  client: client.getClient(),
-                  evaluator,
-                  stateManager,
-                  flowEngine,
-                  voiceManager,
-                  actionExecutor,
-                  eventRouter,
-                  spec,
-                });
-
-                // Add selected values to context
-                (context as any).values = selectInteraction.values;
-
-                const actions = normalizeActions(int.actions);
-                await actionExecutor.executeSequence(actions, context);
-              } catch (err) {
-                console.error(chalk.red(`Error in select ${int.custom_id}:`), err);
-              }
-            });
-          }
-        }
-
-        // Set up modal handlers
-        for (const int of spec.interactions) {
-          if (int.type === 'modal') {
-            interactionHandler.onModal(int.custom_id, async (modalInteraction) => {
-              try {
-                const context = buildActionContext({
-                  interaction: modalInteraction,
-                  client: client.getClient(),
-                  evaluator,
-                  stateManager,
-                  flowEngine,
-                  voiceManager,
-                  actionExecutor,
-                  eventRouter,
-                  spec,
-                });
-
-                // Add modal fields to context
-                const fields: Record<string, string> = {};
-                for (const comp of modalInteraction.components) {
-                  for (const field of comp.components) {
-                    fields[field.customId] = field.value;
-                  }
-                }
-                (context as any).fields = fields;
-
-                const actions = normalizeActions(int.actions);
-                await actionExecutor.executeSequence(actions, context);
-              } catch (err) {
-                console.error(chalk.red(`Error in modal ${int.custom_id}:`), err);
-              }
-            });
-          }
-        }
       }
 
       cmdSpinner.succeed(`Registered ${spec.commands.length} command(s) to ${guildIds.length} guild(s)`);

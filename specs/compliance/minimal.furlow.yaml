@@ -1,0 +1,935 @@
+# FURLOW Minimal Compliance Test Suite
+# Tests: State operations (7), Flow control (13)
+# Total Actions: 20
+
+version: "1"
+name: "minimal-compliance-test"
+description: "Tests minimal runtime compliance - state and flow control only"
+
+# State definitions for testing
+state:
+  variables:
+    counter:
+      scope: global
+      type: number
+      default: 0
+      persist: false
+
+    testList:
+      scope: global
+      type: array
+      default: []
+      persist: false
+
+    testMap:
+      scope: global
+      type: object
+      default: {}
+      persist: false
+
+    guildCounter:
+      scope: guild
+      type: number
+      default: 0
+      persist: false
+
+    userPrefs:
+      scope: user
+      type: object
+      default: {}
+      persist: false
+
+    memberData:
+      scope: member
+      type: object
+      default: {}
+      persist: false
+
+# Test flows
+flows:
+  # ===========================================
+  # TEST 1: Basic State Operations (set, increment, decrement)
+  # ===========================================
+  - name: test_state_operations
+    description: "Test basic state get/set/increment/decrement"
+    actions:
+      # Test set
+      - set:
+          name: counter
+          value: 10
+          scope: global
+
+      # Test increment
+      - increment:
+          name: counter
+          by: 5
+          scope: global
+
+      # Test decrement
+      - decrement:
+          name: counter
+          by: 3
+          scope: global
+
+      # Final value should be 12
+      - log:
+          message: "Counter value: ${state.global.counter}"
+          level: info
+
+      - return:
+          value: "${state.global.counter == 12}"
+
+  # ===========================================
+  # TEST 2: List Operations (list_push, list_remove)
+  # ===========================================
+  - name: test_list_operations
+    description: "Test list push and remove"
+    actions:
+      # Clear list first
+      - set:
+          name: testList
+          value: []
+          scope: global
+
+      # Push items
+      - list_push:
+          name: testList
+          value: "item1"
+          scope: global
+
+      - list_push:
+          name: testList
+          value: "item2"
+          scope: global
+
+      - list_push:
+          name: testList
+          value: "item3"
+          scope: global
+
+      # List should have 3 items
+      - log:
+          message: "List length: ${length(state.global.testList)}"
+          level: info
+
+      # Remove middle item
+      - list_remove:
+          name: testList
+          value: "item2"
+          scope: global
+
+      # List should have 2 items: ["item1", "item3"]
+      - return:
+          value: "${length(state.global.testList) == 2 && first(state.global.testList) == 'item1' && last(state.global.testList) == 'item3'}"
+
+  # ===========================================
+  # TEST 3: Map Operations (set_map, delete_map)
+  # ===========================================
+  - name: test_map_operations
+    description: "Test map set and delete"
+    actions:
+      # Clear map first
+      - set:
+          name: testMap
+          value: {}
+          scope: global
+
+      # Set map keys
+      - set_map:
+          name: testMap
+          key: "name"
+          value: "Test Bot"
+          scope: global
+
+      - set_map:
+          name: testMap
+          key: "version"
+          value: "1.0.0"
+          scope: global
+
+      - set_map:
+          name: testMap
+          key: "temp"
+          value: "to-delete"
+          scope: global
+
+      # Delete one key
+      - delete_map:
+          name: testMap
+          key: "temp"
+          scope: global
+
+      # Map should have 2 keys
+      - return:
+          value: "${length(keys(state.global.testMap)) == 2 && state.global.testMap.name == 'Test Bot'}"
+
+  # ===========================================
+  # TEST 4: Flow If/Else
+  # ===========================================
+  - name: test_flow_if
+    params:
+      - name: value
+        type: number
+        required: true
+    description: "Test conditional branching"
+    actions:
+      - set:
+          name: result
+          value: ""
+          scope: global
+
+      - flow_if:
+          if: "${args.value > 50}"
+          then:
+            - set:
+                name: result
+                value: "high"
+                scope: global
+          else:
+            - set:
+                name: result
+                value: "low"
+                scope: global
+
+      - return:
+          value: "${state.global.result}"
+
+  # ===========================================
+  # TEST 5: Flow Switch
+  # ===========================================
+  - name: test_flow_switch
+    params:
+      - name: status
+        type: string
+        required: true
+    description: "Test switch/case branching"
+    actions:
+      - set:
+          name: message
+          value: ""
+          scope: global
+
+      - flow_switch:
+          value: "${args.status}"
+          cases:
+            - match: "active"
+              actions:
+                - set:
+                    name: message
+                    value: "User is active"
+                    scope: global
+            - match: "idle"
+              actions:
+                - set:
+                    name: message
+                    value: "User is idle"
+                    scope: global
+            - match: "offline"
+              actions:
+                - set:
+                    name: message
+                    value: "User is offline"
+                    scope: global
+          default:
+            - set:
+                name: message
+                value: "Unknown status"
+                scope: global
+
+      - return:
+          value: "${state.global.message}"
+
+  # ===========================================
+  # TEST 6: Flow While Loop
+  # ===========================================
+  - name: test_flow_while
+    description: "Test while loop"
+    actions:
+      - set:
+          name: counter
+          value: 0
+          scope: global
+
+      - set:
+          name: sum
+          value: 0
+          scope: global
+
+      - flow_while:
+          while: "${state.global.counter < 5}"
+          actions:
+            - increment:
+                name: counter
+                by: 1
+                scope: global
+            - set:
+                name: sum
+                value: "${state.global.sum + state.global.counter}"
+                scope: global
+
+      # Sum should be 1+2+3+4+5 = 15
+      - return:
+          value: "${state.global.sum == 15}"
+
+  # ===========================================
+  # TEST 7: Repeat Loop
+  # ===========================================
+  - name: test_repeat
+    description: "Test repeat loop with counter"
+    actions:
+      - set:
+          name: items
+          value: []
+          scope: global
+
+      - repeat:
+          times: 5
+          as: i
+          actions:
+            - list_push:
+                name: items
+                value: "item_${i}"
+                scope: global
+
+      # Should have items: ["item_0", "item_1", "item_2", "item_3", "item_4"]
+      - return:
+          value: "${length(state.global.items) == 5 && nth(state.global.items, 2) == 'item_2'}"
+
+  # ===========================================
+  # TEST 8: Parallel Execution
+  # ===========================================
+  - name: test_parallel
+    description: "Test parallel action execution"
+    actions:
+      - set:
+          name: parallelResults
+          value: []
+          scope: global
+
+      - parallel:
+          actions:
+            - list_push:
+                name: parallelResults
+                value: "task1"
+                scope: global
+            - list_push:
+                name: parallelResults
+                value: "task2"
+                scope: global
+            - list_push:
+                name: parallelResults
+                value: "task3"
+                scope: global
+
+      # All 3 tasks should complete
+      - return:
+          value: "${length(state.global.parallelResults) == 3}"
+
+  # ===========================================
+  # TEST 9: Batch Processing
+  # ===========================================
+  - name: test_batch
+    description: "Test batch processing"
+    actions:
+      - set:
+          name: processed
+          value: []
+          scope: global
+
+      - batch:
+          items: "${range(1, 4)}"
+          as: num
+          actions:
+            - list_push:
+                name: processed
+                value: "${num * 2}"
+                scope: global
+
+      # Should have [2, 4, 6]
+      - return:
+          value: "${length(state.global.processed) == 3 && last(state.global.processed) == 6}"
+
+  # ===========================================
+  # TEST 10: Try/Catch/Finally
+  # ===========================================
+  - name: test_try_catch
+    params:
+      - name: shouldFail
+        type: boolean
+        default: false
+    description: "Test error handling"
+    actions:
+      - set:
+          name: tryResult
+          value: ""
+          scope: global
+
+      - try:
+          actions:
+            - flow_if:
+                if: "${args.shouldFail}"
+                then:
+                  - abort:
+                      reason: "Intentional failure"
+                else:
+                  - set:
+                      name: tryResult
+                      value: "success"
+                      scope: global
+          catch:
+            - set:
+                name: tryResult
+                value: "caught"
+                scope: global
+          finally:
+            - log:
+                message: "Finally block executed"
+                level: info
+
+      - return:
+          value: "${state.global.tryResult}"
+
+  # ===========================================
+  # TEST 11: Call Flow (Nested)
+  # ===========================================
+  - name: calculate_factorial
+    params:
+      - name: n
+        type: number
+        required: true
+    description: "Recursive factorial calculation"
+    actions:
+      - flow_if:
+          if: "${args.n <= 1}"
+          then:
+            - return:
+                value: 1
+          else:
+            - call_flow:
+                flow: calculate_factorial
+                args:
+                  n: "${args.n - 1}"
+                as: subResult
+            - return:
+                value: "${args.n * subResult}"
+
+  - name: test_nested_flows
+    description: "Test nested flow calls"
+    actions:
+      - call_flow:
+          flow: calculate_factorial
+          args:
+            n: 5
+          as: factorial
+
+      # 5! = 120
+      - return:
+          value: "${factorial == 120}"
+
+  # ===========================================
+  # TEST 12: Wait Action
+  # ===========================================
+  - name: test_wait
+    description: "Test wait/delay"
+    actions:
+      - set:
+          name: startTime
+          value: "${timestamp()}"
+          scope: global
+
+      - wait:
+          duration: "100ms"
+
+      - set:
+          name: elapsed
+          value: "${timestamp() - state.global.startTime}"
+          scope: global
+
+      # Should have waited at least 100ms
+      - return:
+          value: "${state.global.elapsed >= 100}"
+
+  # ===========================================
+  # TEST 13: Log Action
+  # ===========================================
+  - name: test_log
+    description: "Test logging at all levels"
+    actions:
+      - log:
+          message: "Debug message"
+          level: debug
+          data:
+            key: "value"
+
+      - log:
+          message: "Info message"
+          level: info
+
+      - log:
+          message: "Warning message"
+          level: warn
+
+      - log:
+          message: "Error message"
+          level: error
+
+      - return:
+          value: true
+
+  # ===========================================
+  # TEST 14: Emit Custom Event
+  # ===========================================
+  - name: test_emit
+    description: "Test emitting custom events"
+    actions:
+      - emit:
+          event: "test_event"
+          data:
+            source: "compliance_test"
+            timestamp: "${timestamp()}"
+
+      - return:
+          value: true
+
+  # ===========================================
+  # TEST 15: Abort Action
+  # ===========================================
+  - name: test_abort
+    params:
+      - name: shouldAbort
+        type: boolean
+        default: true
+    description: "Test flow abortion"
+    actions:
+      - flow_if:
+          if: "${args.shouldAbort}"
+          then:
+            - abort:
+                reason: "Test abort"
+          else:
+            - return:
+                value: "completed"
+
+      # This should not be reached if aborted
+      - return:
+          value: "should not reach"
+
+  # ===========================================
+  # TEST 16: Return Action
+  # ===========================================
+  - name: test_return
+    description: "Test return values"
+    actions:
+      - return:
+          value:
+            status: "success"
+            count: 42
+            items:
+              - "a"
+              - "b"
+              - "c"
+
+  # ===========================================
+  # TEST 17: State Scope Isolation
+  # ===========================================
+  - name: test_scope_isolation
+    description: "Test that different scopes are isolated"
+    actions:
+      # Set same variable name in different scopes
+      - set:
+          name: testValue
+          value: "global"
+          scope: global
+
+      # Verify global scope
+      - log:
+          message: "Global testValue: ${state.global.testValue}"
+          level: info
+
+      - return:
+          value: "${state.global.testValue == 'global'}"
+
+  # ===========================================
+  # TEST 18: Expression Functions
+  # ===========================================
+  - name: test_expression_functions
+    description: "Test all expression function categories"
+    actions:
+      # Math functions
+      - set:
+          name: mathResult
+          value: "${round(abs(-3.7), 0) == 4 && max(1, 2, 3) == 3 && min(1, 2, 3) == 1}"
+          scope: global
+
+      # String functions
+      - set:
+          name: stringResult
+          value: "${lower('HELLO') == 'hello' && upper('hello') == 'HELLO' && trim('  hi  ') == 'hi'}"
+          scope: global
+
+      # Array functions
+      - set:
+          name: arrayResult
+          value: "${length([1,2,3]) == 3 && first([1,2,3]) == 1 && last([1,2,3]) == 3}"
+          scope: global
+
+      # Object functions
+      - set:
+          name: objectResult
+          value: "${length(keys({a:1,b:2})) == 2 && has({a:1}, 'a') == true}"
+          scope: global
+
+      # Type functions
+      - set:
+          name: typeResult
+          value: "${isArray([]) && isString('') && isNumber(42) && isBoolean(true)}"
+          scope: global
+
+      # Conversion functions
+      - set:
+          name: conversionResult
+          value: "${string(42) == '42' && number('42') == 42 && int(3.7) == 3}"
+          scope: global
+
+      # Utility functions
+      - set:
+          name: utilityResult
+          value: "${default(null, 'fallback') == 'fallback' && coalesce(null, null, 'found') == 'found'}"
+          scope: global
+
+      - return:
+          value: "${state.global.mathResult && state.global.stringResult && state.global.arrayResult && state.global.objectResult && state.global.typeResult && state.global.conversionResult && state.global.utilityResult}"
+
+  # ===========================================
+  # TEST 19: Expression Transforms
+  # ===========================================
+  - name: test_expression_transforms
+    description: "Test pipe transforms"
+    actions:
+      # String transforms
+      - set:
+          name: stringTransform
+          value: "${'  HELLO WORLD  ' | trim | lower}"
+          scope: global
+
+      # Array transforms
+      - set:
+          name: arrayTransform
+          value: "${[3, 1, 2] | sort | first}"
+          scope: global
+
+      # Chain transforms
+      - set:
+          name: chainTransform
+          value: "${[1, 2, 3, 4, 5] | slice(1, 4) | reverse | join(',')}"
+          scope: global
+
+      - return:
+          value: "${state.global.stringTransform == 'hello world' && state.global.arrayTransform == 1 && state.global.chainTransform == '4,3,2'}"
+
+  # ===========================================
+  # TEST 20: Conditional Action Execution (when)
+  # ===========================================
+  - name: test_conditional_when
+    description: "Test 'when' property on actions"
+    actions:
+      - set:
+          name: executed
+          value: false
+          scope: global
+
+      # This should NOT execute
+      - set:
+          name: executed
+          value: true
+          scope: global
+          when: "false"
+
+      - set:
+          name: firstCheck
+          value: "${state.global.executed == false}"
+          scope: global
+
+      # This SHOULD execute
+      - set:
+          name: executed
+          value: true
+          scope: global
+          when: "true"
+
+      - return:
+          value: "${state.global.firstCheck && state.global.executed == true}"
+
+  # ===========================================
+  # MASTER TEST: Run All Tests
+  # ===========================================
+  - name: run_all_tests
+    description: "Execute all minimal compliance tests"
+    actions:
+      - set:
+          name: results
+          value: {}
+          scope: global
+
+      - log:
+          message: "Starting minimal compliance test suite..."
+          level: info
+
+      # Test 1: State Operations
+      - call_flow:
+          flow: test_state_operations
+          as: test1
+      - set_map:
+          name: results
+          key: "state_operations"
+          value: "${test1}"
+          scope: global
+
+      # Test 2: List Operations
+      - call_flow:
+          flow: test_list_operations
+          as: test2
+      - set_map:
+          name: results
+          key: "list_operations"
+          value: "${test2}"
+          scope: global
+
+      # Test 3: Map Operations
+      - call_flow:
+          flow: test_map_operations
+          as: test3
+      - set_map:
+          name: results
+          key: "map_operations"
+          value: "${test3}"
+          scope: global
+
+      # Test 4: Flow If
+      - call_flow:
+          flow: test_flow_if
+          args:
+            value: 75
+          as: test4high
+      - call_flow:
+          flow: test_flow_if
+          args:
+            value: 25
+          as: test4low
+      - set_map:
+          name: results
+          key: "flow_if"
+          value: "${test4high == 'high' && test4low == 'low'}"
+          scope: global
+
+      # Test 5: Flow Switch
+      - call_flow:
+          flow: test_flow_switch
+          args:
+            status: "active"
+          as: test5
+      - set_map:
+          name: results
+          key: "flow_switch"
+          value: "${test5 == 'User is active'}"
+          scope: global
+
+      # Test 6: Flow While
+      - call_flow:
+          flow: test_flow_while
+          as: test6
+      - set_map:
+          name: results
+          key: "flow_while"
+          value: "${test6}"
+          scope: global
+
+      # Test 7: Repeat
+      - call_flow:
+          flow: test_repeat
+          as: test7
+      - set_map:
+          name: results
+          key: "repeat"
+          value: "${test7}"
+          scope: global
+
+      # Test 8: Parallel
+      - call_flow:
+          flow: test_parallel
+          as: test8
+      - set_map:
+          name: results
+          key: "parallel"
+          value: "${test8}"
+          scope: global
+
+      # Test 9: Batch
+      - call_flow:
+          flow: test_batch
+          as: test9
+      - set_map:
+          name: results
+          key: "batch"
+          value: "${test9}"
+          scope: global
+
+      # Test 10: Try/Catch
+      - call_flow:
+          flow: test_try_catch
+          args:
+            shouldFail: false
+          as: test10success
+      - call_flow:
+          flow: test_try_catch
+          args:
+            shouldFail: true
+          as: test10fail
+      - set_map:
+          name: results
+          key: "try_catch"
+          value: "${test10success == 'success' && test10fail == 'caught'}"
+          scope: global
+
+      # Test 11: Nested Flows
+      - call_flow:
+          flow: test_nested_flows
+          as: test11
+      - set_map:
+          name: results
+          key: "nested_flows"
+          value: "${test11}"
+          scope: global
+
+      # Test 12: Wait
+      - call_flow:
+          flow: test_wait
+          as: test12
+      - set_map:
+          name: results
+          key: "wait"
+          value: "${test12}"
+          scope: global
+
+      # Test 13: Log
+      - call_flow:
+          flow: test_log
+          as: test13
+      - set_map:
+          name: results
+          key: "log"
+          value: "${test13}"
+          scope: global
+
+      # Test 14: Emit
+      - call_flow:
+          flow: test_emit
+          as: test14
+      - set_map:
+          name: results
+          key: "emit"
+          value: "${test14}"
+          scope: global
+
+      # Test 15: Abort (via try/catch to capture)
+      - try:
+          actions:
+            - call_flow:
+                flow: test_abort
+                args:
+                  shouldAbort: true
+          catch:
+            - set_map:
+                name: results
+                key: "abort"
+                value: true
+                scope: global
+
+      # Test 16: Return
+      - call_flow:
+          flow: test_return
+          as: test16
+      - set_map:
+          name: results
+          key: "return"
+          value: "${test16.status == 'success' && test16.count == 42}"
+          scope: global
+
+      # Test 17: Scope Isolation
+      - call_flow:
+          flow: test_scope_isolation
+          as: test17
+      - set_map:
+          name: results
+          key: "scope_isolation"
+          value: "${test17}"
+          scope: global
+
+      # Test 18: Expression Functions
+      - call_flow:
+          flow: test_expression_functions
+          as: test18
+      - set_map:
+          name: results
+          key: "expression_functions"
+          value: "${test18}"
+          scope: global
+
+      # Test 19: Expression Transforms
+      - call_flow:
+          flow: test_expression_transforms
+          as: test19
+      - set_map:
+          name: results
+          key: "expression_transforms"
+          value: "${test19}"
+          scope: global
+
+      # Test 20: Conditional When
+      - call_flow:
+          flow: test_conditional_when
+          as: test20
+      - set_map:
+          name: results
+          key: "conditional_when"
+          value: "${test20}"
+          scope: global
+
+      # Calculate pass/fail
+      - set:
+          name: allPassed
+          value: true
+          scope: global
+
+      - set:
+          name: passedCount
+          value: 0
+          scope: global
+
+      - batch:
+          items: "${values(state.global.results)}"
+          as: result
+          actions:
+            - flow_if:
+                if: "${result == true}"
+                then:
+                  - increment:
+                      name: passedCount
+                      by: 1
+                      scope: global
+                else:
+                  - set:
+                      name: allPassed
+                      value: false
+                      scope: global
+
+      - log:
+          message: "Minimal compliance tests completed: ${state.global.passedCount}/20 passed"
+          level: info
+
+      - return:
+          value:
+            passed: "${state.global.passedCount}"
+            total: 20
+            allPassed: "${state.global.allPassed}"
+            results: "${state.global.results}"

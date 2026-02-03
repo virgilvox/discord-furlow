@@ -634,6 +634,10 @@ export interface VoiceSetFilterAction extends BaseAction {
 export interface VoiceSearchAction extends BaseAction {
   action: 'voice_search';
   query: Expression;
+  /** Maximum number of results to return */
+  limit?: number | Expression;
+  /** Source to search (youtube, spotify, soundcloud) */
+  source?: string | Expression;
   as?: string;
 }
 

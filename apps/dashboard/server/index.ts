@@ -8,11 +8,29 @@ import passport from 'passport';
 import { Strategy as DiscordStrategy, type Profile } from 'passport-discord';
 import { createServer } from 'http';
 import { join } from 'node:path';
-import apiRoutes from './routes/api.js';
+import { createApiRoutes } from './routes/api.js';
 import { initWebSocket, broadcastBotStatus } from './websocket.js';
+import type { StorageAdapter } from '@furlow/storage';
 
 const app: Express = express();
 const httpServer = createServer(app);
+
+// Storage adapter - will be set by configureStorage
+let storage: StorageAdapter | null = null;
+
+/**
+ * Configure the storage adapter for the dashboard
+ */
+export function configureStorage(adapter: StorageAdapter): void {
+  storage = adapter;
+}
+
+/**
+ * Get the current storage adapter
+ */
+export function getStorage(): StorageAdapter | null {
+  return storage;
+}
 
 // Middleware
 app.use(express.json());
@@ -103,8 +121,8 @@ app.get('/auth/logout', (req, res) => {
   });
 });
 
-// API routes
-app.use('/api', apiRoutes);
+// API routes (with storage injection)
+app.use('/api', createApiRoutes(() => storage));
 
 // Health check
 app.get('/health', (req, res) => {

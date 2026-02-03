@@ -28,13 +28,27 @@ import { ChannelType, type VoiceChannel, type StageChannel } from 'discord.js';
 
 /**
  * Parse duration string to milliseconds
+ * Supports: "1m30s", "90s", "5m", "1h", "1h30m", "1500ms", or plain numbers (ms)
  */
-function parseDuration(duration: string): number {
-  const match = duration.match(/^(\d+)(ms|s|m|h)?$/);
-  if (!match) return 0;
+function parseDuration(duration: string | number): number {
+  if (typeof duration === 'number') return duration;
 
-  const value = parseInt(match[1]!, 10);
-  const unit = match[2] ?? 'ms';
+  // Handle compound formats like "1m30s" or "1h30m"
+  const compoundMatch = duration.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$/);
+  if (compoundMatch && (compoundMatch[1] || compoundMatch[2] || compoundMatch[3] || compoundMatch[4])) {
+    const hours = parseInt(compoundMatch[1] || '0', 10);
+    const minutes = parseInt(compoundMatch[2] || '0', 10);
+    const seconds = parseInt(compoundMatch[3] || '0', 10);
+    const ms = parseInt(compoundMatch[4] || '0', 10);
+    return (hours * 60 * 60 * 1000) + (minutes * 60 * 1000) + (seconds * 1000) + ms;
+  }
+
+  // Handle simple formats like "90s", "5m", etc.
+  const simpleMatch = duration.match(/^(\d+)(ms|s|m|h)?$/);
+  if (!simpleMatch) return 0;
+
+  const value = parseInt(simpleMatch[1]!, 10);
+  const unit = simpleMatch[2] ?? 'ms';
 
   switch (unit) {
     case 'ms':
@@ -267,15 +281,42 @@ const voiceSkipHandler: ActionHandler<VoiceSkipAction> = {
 const voiceSeekHandler: ActionHandler<VoiceSeekAction> = {
   name: 'voice_seek',
   async execute(config, context): Promise<ActionResult> {
+    const deps = context._deps as HandlerDependencies;
+    const { evaluator } = deps;
     const voiceManager = getVoiceManager(context);
 
     if (!voiceManager) {
       return { success: false, error: new Error('Voice manager not available') };
     }
 
-    // Note: Seeking requires recreating the audio resource
-    // This is a placeholder - full implementation depends on audio source
-    return { success: true };
+    const guildId = context.guildId || (context.guild as any)?.id;
+    if (!guildId) {
+      return { success: false, error: new Error('Guild not found') };
+    }
+
+    // Parse position - can be duration string or expression
+    let position: number;
+    const positionValue = config.position;
+    if (typeof positionValue === 'string') {
+      // Check if it's a duration string (e.g., "1m30s", "90s")
+      if (/^\d+[smh]?$/.test(positionValue) || /^\d+m\d+s$/.test(positionValue)) {
+        position = parseDuration(positionValue);
+      } else {
+        position = await evaluator.evaluate<number>(positionValue, context);
+      }
+    } else {
+      position = positionValue as number;
+    }
+
+    try {
+      const success = await voiceManager.seek(guildId, position);
+      if (!success) {
+        return { success: false, error: new Error('No track currently playing') };
+      }
+      return { success: true, data: { position } };
+    } catch (err) {
+      return { success: false, error: err as Error };
+    }
   },
 };
 
@@ -337,18 +378,21 @@ const voiceSetFilterHandler: ActionHandler<VoiceSetFilterAction> = {
     const filter = await evaluator.interpolate(String(config.filter), context);
     const enabled = config.enabled !== false;
 
-    // Note: Audio filters require FFmpeg and stream manipulation
-    // This is a placeholder - full implementation depends on audio processing setup
-    const state = voiceManager.getState(guildId);
-    if (state) {
-      if (enabled) {
-        state.filters.add(filter as any);
-      } else {
-        state.filters.delete(filter as any);
-      }
+    // Validate filter name
+    const validFilters = ['bassboost', 'nightcore', 'vaporwave', '8d', 'treble', 'normalizer', 'karaoke', 'tremolo', 'vibrato', 'reverse'];
+    if (!validFilters.includes(filter)) {
+      return { success: false, error: new Error(`Invalid filter: ${filter}. Valid filters: ${validFilters.join(', ')}`) };
     }
 
-    return { success: true };
+    try {
+      const success = await voiceManager.setFilter(guildId, filter as any, enabled);
+      if (!success) {
+        return { success: false, error: new Error('Not connected to voice') };
+      }
+      return { success: true, data: { filter, enabled } };
+    } catch (err) {
+      return { success: false, error: err as Error };
+    }
   },
 };
 
@@ -360,25 +404,61 @@ const voiceSearchHandler: ActionHandler<VoiceSearchAction> = {
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
+    const voiceManager = getVoiceManager(context);
 
     const query = await evaluator.interpolate(String(config.query), context);
 
-    // Note: Search implementation depends on music source (YouTube, Spotify, etc.)
-    // This is a placeholder that returns mock results
-    const results = [
-      {
-        url: `search:${query}`,
-        title: query,
-        duration: 180,
-        thumbnail: null,
-      },
-    ];
-
-    if (config.as) {
-      (context as Record<string, unknown>)[config.as] = results;
+    // Determine limit
+    let limit = 5;
+    if (config.limit !== undefined) {
+      if (typeof config.limit === 'number') {
+        limit = config.limit;
+      } else {
+        limit = await evaluator.evaluate<number>(String(config.limit), context);
+      }
     }
 
-    return { success: true, data: results };
+    // Determine source if specified
+    let source: string | undefined;
+    if (config.source) {
+      source = await evaluator.interpolate(String(config.source), context);
+    }
+
+    try {
+      let results: any[];
+
+      // Use voiceManager.search if available (full implementation)
+      if (voiceManager && typeof voiceManager.search === 'function') {
+        results = await voiceManager.search(query, { limit, source });
+      } else {
+        // Fallback: Check if query is a URL
+        const isUrl = /^https?:\/\//i.test(query);
+        if (isUrl) {
+          results = [{
+            url: query,
+            title: query,
+            duration: 0,
+            thumbnail: null,
+          }];
+        } else {
+          // Return ytsearch format that can be resolved by yt-dlp or similar
+          results = [{
+            url: `ytsearch:${query}`,
+            title: query,
+            duration: 0,
+            thumbnail: null,
+          }];
+        }
+      }
+
+      if (config.as) {
+        (context as Record<string, unknown>)[config.as] = results;
+      }
+
+      return { success: true, data: results };
+    } catch (err) {
+      return { success: false, error: err as Error };
+    }
   },
 };
 

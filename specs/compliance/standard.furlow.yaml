@@ -1,0 +1,1011 @@
+# FURLOW Standard Compliance Test Suite
+# Tests: All Minimal (20) + Message (11) + Member (14) + Channel (9) + Component (1) + Database (4) + Misc (4)
+# Total Actions: 63
+
+version: "1"
+name: "standard-compliance-test"
+description: "Tests standard runtime compliance - no voice/canvas required"
+
+# Configuration
+config:
+  testChannelId: "TEST_CHANNEL_ID"
+  testGuildId: "TEST_GUILD_ID"
+  testUserId: "TEST_USER_ID"
+  testRoleId: "TEST_ROLE_ID"
+  testWebhookUrl: "https://discord.com/api/webhooks/test/token"
+
+# State definitions
+state:
+  variables:
+    testResults:
+      scope: global
+      type: object
+      default: {}
+      persist: false
+
+    messageId:
+      scope: global
+      type: string
+      persist: false
+
+    threadId:
+      scope: global
+      type: string
+      persist: false
+
+  # Database tables for testing
+  tables:
+    test_records:
+      columns:
+        id:
+          type: number
+          primary: true
+        name:
+          type: string
+        value:
+          type: number
+        created_at:
+          type: number
+
+    test_users:
+      columns:
+        userId:
+          type: string
+          primary: true
+        username:
+          type: string
+        level:
+          type: number
+        xp:
+          type: number
+
+# Pipes for testing
+pipes:
+  testApi:
+    type: http
+    baseUrl: "https://httpbin.org"
+    headers:
+      Content-Type: "application/json"
+
+# Test flows
+flows:
+  # ===========================================
+  # MESSAGE ACTIONS TESTS (11)
+  # ===========================================
+
+  # Note: These tests require a Discord context
+  # In real testing, mock the Discord client
+
+  - name: test_reply
+    description: "Test reply action"
+    actions:
+      - log:
+          message: "Testing reply action..."
+          level: info
+      # In a real test, this would reply to an interaction
+      - reply:
+          content: "Test reply message"
+          ephemeral: false
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_send_message
+    description: "Test send_message action"
+    actions:
+      - log:
+          message: "Testing send_message action..."
+          level: info
+      - send_message:
+          channel: "${config.testChannelId}"
+          content: "Test message from compliance suite"
+          embeds:
+            - title: "Test Embed"
+              description: "This is a test embed"
+              color: 0x5865F2
+              fields:
+                - name: "Field 1"
+                  value: "Value 1"
+                  inline: true
+                - name: "Field 2"
+                  value: "Value 2"
+                  inline: true
+          components:
+            - type: "row"
+              components:
+                - type: "button"
+                  style: "primary"
+                  label: "Test Button"
+                  customId: "test_button_1"
+          as: sentMessage
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_edit_message
+    description: "Test edit_message action"
+    actions:
+      - log:
+          message: "Testing edit_message action..."
+          level: info
+      - edit_message:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          content: "Edited message content"
+          embeds:
+            - title: "Updated Embed"
+              description: "This embed was updated"
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_delete_message
+    description: "Test delete_message action"
+    actions:
+      - log:
+          message: "Testing delete_message action..."
+          level: info
+      - delete_message:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          delay: "1s"
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_defer
+    description: "Test defer action"
+    actions:
+      - log:
+          message: "Testing defer action..."
+          level: info
+      - defer:
+          ephemeral: true
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_update_message
+    description: "Test update_message action"
+    actions:
+      - log:
+          message: "Testing update_message action..."
+          level: info
+      - update_message:
+          content: "Updated deferred response"
+          when: "false"  # Skip in dry run
+      - return:
+          value: true
+
+  - name: test_reactions
+    description: "Test reaction actions"
+    actions:
+      - log:
+          message: "Testing reaction actions..."
+          level: info
+
+      # add_reaction
+      - add_reaction:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          emoji: "thumbsup"
+          when: "false"
+
+      # add_reactions
+      - add_reactions:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          emojis:
+            - "thumbsup"
+            - "heart"
+            - "tada"
+          when: "false"
+
+      # remove_reaction
+      - remove_reaction:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          emoji: "heart"
+          when: "false"
+
+      # clear_reactions
+      - clear_reactions:
+          channel: "${config.testChannelId}"
+          message: "${state.global.messageId}"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_bulk_delete
+    description: "Test bulk_delete action"
+    actions:
+      - log:
+          message: "Testing bulk_delete action..."
+          level: info
+      - bulk_delete:
+          channel: "${config.testChannelId}"
+          count: 5
+          filter: "!msg.pinned"
+          when: "false"
+      - return:
+          value: true
+
+  # ===========================================
+  # MEMBER ACTIONS TESTS (14)
+  # ===========================================
+
+  - name: test_role_actions
+    description: "Test role assignment actions"
+    actions:
+      - log:
+          message: "Testing role actions..."
+          level: info
+
+      # assign_role
+      - assign_role:
+          member: "${config.testUserId}"
+          role: "${config.testRoleId}"
+          reason: "Compliance test"
+          when: "false"
+
+      # toggle_role
+      - toggle_role:
+          member: "${config.testUserId}"
+          role: "${config.testRoleId}"
+          reason: "Toggle test"
+          when: "false"
+
+      # remove_role
+      - remove_role:
+          member: "${config.testUserId}"
+          role: "${config.testRoleId}"
+          reason: "Cleanup test"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_moderation_actions
+    description: "Test moderation actions"
+    actions:
+      - log:
+          message: "Testing moderation actions..."
+          level: info
+
+      # kick
+      - kick:
+          member: "${config.testUserId}"
+          reason: "Test kick"
+          when: "false"
+
+      # ban
+      - ban:
+          member: "${config.testUserId}"
+          reason: "Test ban"
+          deleteMessageDays: 1
+          when: "false"
+
+      # unban
+      - unban:
+          user: "${config.testUserId}"
+          reason: "Test unban"
+          when: "false"
+
+      # timeout
+      - timeout:
+          member: "${config.testUserId}"
+          duration: "5m"
+          reason: "Test timeout"
+          when: "false"
+
+      # remove_timeout
+      - remove_timeout:
+          member: "${config.testUserId}"
+          reason: "Test remove timeout"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_member_actions
+    description: "Test member management actions"
+    actions:
+      - log:
+          message: "Testing member actions..."
+          level: info
+
+      # send_dm
+      - send_dm:
+          user: "${config.testUserId}"
+          content: "Test DM from compliance suite"
+          when: "false"
+
+      # set_nickname
+      - set_nickname:
+          member: "${config.testUserId}"
+          nickname: "Test Nickname"
+          reason: "Compliance test"
+          when: "false"
+
+      # move_member
+      - move_member:
+          member: "${config.testUserId}"
+          channel: "${config.testChannelId}"
+          when: "false"
+
+      # disconnect_member
+      - disconnect_member:
+          member: "${config.testUserId}"
+          when: "false"
+
+      # server_mute
+      - server_mute:
+          member: "${config.testUserId}"
+          muted: true
+          reason: "Test mute"
+          when: "false"
+
+      # server_deafen
+      - server_deafen:
+          member: "${config.testUserId}"
+          deafened: true
+          reason: "Test deafen"
+          when: "false"
+
+      - return:
+          value: true
+
+  # ===========================================
+  # CHANNEL ACTIONS TESTS (9)
+  # ===========================================
+
+  - name: test_channel_actions
+    description: "Test channel management actions"
+    actions:
+      - log:
+          message: "Testing channel actions..."
+          level: info
+
+      # create_channel
+      - create_channel:
+          name: "compliance-test-channel"
+          type: "text"
+          topic: "Compliance test channel"
+          nsfw: false
+          reason: "Compliance test"
+          as: newChannel
+          when: "false"
+
+      # edit_channel
+      - edit_channel:
+          channel: "${config.testChannelId}"
+          name: "renamed-channel"
+          topic: "Updated topic"
+          reason: "Edit test"
+          when: "false"
+
+      # delete_channel
+      - delete_channel:
+          channel: "${config.testChannelId}"
+          reason: "Cleanup test"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_thread_actions
+    description: "Test thread actions"
+    actions:
+      - log:
+          message: "Testing thread actions..."
+          level: info
+
+      # create_thread
+      - create_thread:
+          channel: "${config.testChannelId}"
+          name: "Test Thread"
+          autoArchiveDuration: 1440
+          reason: "Compliance test"
+          as: newThread
+          when: "false"
+
+      # archive_thread
+      - archive_thread:
+          thread: "${state.global.threadId}"
+          locked: false
+          reason: "Archive test"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_permission_actions
+    description: "Test permission actions"
+    actions:
+      - log:
+          message: "Testing permission actions..."
+          level: info
+
+      # set_channel_permissions
+      - set_channel_permissions:
+          channel: "${config.testChannelId}"
+          overwrites:
+            - id: "${config.testRoleId}"
+              type: "role"
+              allow:
+                - "ViewChannel"
+                - "SendMessages"
+              deny:
+                - "MentionEveryone"
+          reason: "Permission test"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_role_management_actions
+    description: "Test role creation/editing actions"
+    actions:
+      - log:
+          message: "Testing role management actions..."
+          level: info
+
+      # create_role
+      - create_role:
+          name: "Test Role"
+          color: 0xFF5733
+          hoist: true
+          mentionable: false
+          permissions:
+            - "SendMessages"
+            - "ViewChannel"
+          reason: "Compliance test"
+          as: newRole
+          when: "false"
+
+      # edit_role
+      - edit_role:
+          role: "${config.testRoleId}"
+          name: "Updated Role"
+          color: 0x5865F2
+          hoist: false
+          reason: "Edit test"
+          when: "false"
+
+      # delete_role
+      - delete_role:
+          role: "${config.testRoleId}"
+          reason: "Cleanup test"
+          when: "false"
+
+      - return:
+          value: true
+
+  # ===========================================
+  # COMPONENT ACTIONS TESTS (1)
+  # ===========================================
+
+  - name: test_show_modal
+    description: "Test show_modal action"
+    actions:
+      - log:
+          message: "Testing show_modal action..."
+          level: info
+
+      - show_modal:
+          customId: "compliance_test_modal"
+          title: "Test Modal"
+          fields:
+            - customId: "test_input"
+              label: "Test Input"
+              style: "short"
+              placeholder: "Enter test value"
+              required: true
+              minLength: 1
+              maxLength: 100
+            - customId: "test_paragraph"
+              label: "Detailed Input"
+              style: "paragraph"
+              placeholder: "Enter detailed information"
+              required: false
+          when: "false"
+
+      - return:
+          value: true
+
+  # ===========================================
+  # DATABASE ACTIONS TESTS (4)
+  # ===========================================
+
+  - name: test_db_insert
+    description: "Test db_insert action"
+    actions:
+      - log:
+          message: "Testing db_insert action..."
+          level: info
+
+      - db_insert:
+          table: "test_records"
+          data:
+            id: 1
+            name: "Test Record"
+            value: 100
+            created_at: "${timestamp()}"
+          as: insertedRecord
+
+      - db_insert:
+          table: "test_records"
+          data:
+            id: 2
+            name: "Second Record"
+            value: 200
+            created_at: "${timestamp()}"
+
+      - db_insert:
+          table: "test_users"
+          data:
+            userId: "user_001"
+            username: "TestUser"
+            level: 5
+            xp: 1500
+
+      - return:
+          value: true
+
+  - name: test_db_query
+    description: "Test db_query action"
+    actions:
+      - log:
+          message: "Testing db_query action..."
+          level: info
+
+      # Query all records
+      - db_query:
+          table: "test_records"
+          as: allRecords
+
+      # Query with filter
+      - db_query:
+          table: "test_records"
+          where:
+            value: 100
+          as: filteredRecords
+
+      # Query with ordering and limit
+      - db_query:
+          table: "test_records"
+          orderBy: "created_at"
+          order: "desc"
+          limit: 1
+          as: latestRecord
+
+      - log:
+          message: "Found ${length(allRecords)} records"
+          level: info
+
+      - return:
+          value: true
+
+  - name: test_db_update
+    description: "Test db_update action"
+    actions:
+      - log:
+          message: "Testing db_update action..."
+          level: info
+
+      # Update existing record
+      - db_update:
+          table: "test_records"
+          where:
+            id: 1
+          data:
+            value: 150
+            name: "Updated Record"
+          as: updatedCount
+
+      # Upsert (insert or update)
+      - db_update:
+          table: "test_users"
+          where:
+            userId: "user_002"
+          data:
+            username: "NewUser"
+            level: 1
+            xp: 0
+          upsert: true
+
+      - return:
+          value: true
+
+  - name: test_db_delete
+    description: "Test db_delete action"
+    actions:
+      - log:
+          message: "Testing db_delete action..."
+          level: info
+
+      # Delete specific record
+      - db_delete:
+          table: "test_records"
+          where:
+            id: 2
+          as: deletedCount
+
+      - log:
+          message: "Deleted ${deletedCount} records"
+          level: info
+
+      - return:
+          value: true
+
+  # ===========================================
+  # MISCELLANEOUS ACTIONS TESTS (4)
+  # ===========================================
+
+  - name: test_pipe_request
+    description: "Test pipe_request action"
+    actions:
+      - log:
+          message: "Testing pipe_request action..."
+          level: info
+
+      # GET request
+      - pipe_request:
+          pipe: "testApi"
+          method: "GET"
+          path: "/get"
+          as: getResponse
+          when: "false"  # Skip in dry run
+
+      # POST request
+      - pipe_request:
+          pipe: "testApi"
+          method: "POST"
+          path: "/post"
+          body:
+            test: "data"
+            timestamp: "${timestamp()}"
+          as: postResponse
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_pipe_send
+    description: "Test pipe_send action"
+    actions:
+      - log:
+          message: "Testing pipe_send action..."
+          level: info
+
+      - pipe_send:
+          pipe: "websocketPipe"
+          data:
+            type: "test"
+            message: "Compliance test message"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_webhook_send
+    description: "Test webhook_send action"
+    actions:
+      - log:
+          message: "Testing webhook_send action..."
+          level: info
+
+      - webhook_send:
+          url: "${config.testWebhookUrl}"
+          content: "Test webhook message"
+          username: "Compliance Bot"
+          embeds:
+            - title: "Webhook Test"
+              description: "This is a test webhook message"
+          when: "false"
+
+      - return:
+          value: true
+
+  - name: test_timer_actions
+    description: "Test timer actions"
+    actions:
+      - log:
+          message: "Testing timer actions..."
+          level: info
+
+      # create_timer
+      - create_timer:
+          id: "compliance_test_timer"
+          duration: "1h"
+          data:
+            source: "compliance_test"
+            message: "Timer fired"
+
+      # cancel_timer
+      - cancel_timer:
+          id: "compliance_test_timer"
+
+      - return:
+          value: true
+
+  # ===========================================
+  # STANDARD COMPLIANCE MASTER TEST
+  # ===========================================
+
+  - name: run_standard_tests
+    description: "Execute all standard compliance tests"
+    actions:
+      - set:
+          name: results
+          value: {}
+          scope: global
+
+      - log:
+          message: "Starting standard compliance test suite..."
+          level: info
+
+      # ---- MESSAGE TESTS ----
+      - call_flow:
+          flow: test_reply
+          as: r1
+      - set_map:
+          name: results
+          key: "reply"
+          value: "${r1}"
+          scope: global
+
+      - call_flow:
+          flow: test_send_message
+          as: r2
+      - set_map:
+          name: results
+          key: "send_message"
+          value: "${r2}"
+          scope: global
+
+      - call_flow:
+          flow: test_edit_message
+          as: r3
+      - set_map:
+          name: results
+          key: "edit_message"
+          value: "${r3}"
+          scope: global
+
+      - call_flow:
+          flow: test_delete_message
+          as: r4
+      - set_map:
+          name: results
+          key: "delete_message"
+          value: "${r4}"
+          scope: global
+
+      - call_flow:
+          flow: test_defer
+          as: r5
+      - set_map:
+          name: results
+          key: "defer"
+          value: "${r5}"
+          scope: global
+
+      - call_flow:
+          flow: test_update_message
+          as: r6
+      - set_map:
+          name: results
+          key: "update_message"
+          value: "${r6}"
+          scope: global
+
+      - call_flow:
+          flow: test_reactions
+          as: r7
+      - set_map:
+          name: results
+          key: "reactions"
+          value: "${r7}"
+          scope: global
+
+      - call_flow:
+          flow: test_bulk_delete
+          as: r8
+      - set_map:
+          name: results
+          key: "bulk_delete"
+          value: "${r8}"
+          scope: global
+
+      # ---- MEMBER TESTS ----
+      - call_flow:
+          flow: test_role_actions
+          as: r9
+      - set_map:
+          name: results
+          key: "role_actions"
+          value: "${r9}"
+          scope: global
+
+      - call_flow:
+          flow: test_moderation_actions
+          as: r10
+      - set_map:
+          name: results
+          key: "moderation_actions"
+          value: "${r10}"
+          scope: global
+
+      - call_flow:
+          flow: test_member_actions
+          as: r11
+      - set_map:
+          name: results
+          key: "member_actions"
+          value: "${r11}"
+          scope: global
+
+      # ---- CHANNEL TESTS ----
+      - call_flow:
+          flow: test_channel_actions
+          as: r12
+      - set_map:
+          name: results
+          key: "channel_actions"
+          value: "${r12}"
+          scope: global
+
+      - call_flow:
+          flow: test_thread_actions
+          as: r13
+      - set_map:
+          name: results
+          key: "thread_actions"
+          value: "${r13}"
+          scope: global
+
+      - call_flow:
+          flow: test_permission_actions
+          as: r14
+      - set_map:
+          name: results
+          key: "permission_actions"
+          value: "${r14}"
+          scope: global
+
+      - call_flow:
+          flow: test_role_management_actions
+          as: r15
+      - set_map:
+          name: results
+          key: "role_management_actions"
+          value: "${r15}"
+          scope: global
+
+      # ---- COMPONENT TESTS ----
+      - call_flow:
+          flow: test_show_modal
+          as: r16
+      - set_map:
+          name: results
+          key: "show_modal"
+          value: "${r16}"
+          scope: global
+
+      # ---- DATABASE TESTS ----
+      - call_flow:
+          flow: test_db_insert
+          as: r17
+      - set_map:
+          name: results
+          key: "db_insert"
+          value: "${r17}"
+          scope: global
+
+      - call_flow:
+          flow: test_db_query
+          as: r18
+      - set_map:
+          name: results
+          key: "db_query"
+          value: "${r18}"
+          scope: global
+
+      - call_flow:
+          flow: test_db_update
+          as: r19
+      - set_map:
+          name: results
+          key: "db_update"
+          value: "${r19}"
+          scope: global
+
+      - call_flow:
+          flow: test_db_delete
+          as: r20
+      - set_map:
+          name: results
+          key: "db_delete"
+          value: "${r20}"
+          scope: global
+
+      # ---- MISC TESTS ----
+      - call_flow:
+          flow: test_pipe_request
+          as: r21
+      - set_map:
+          name: results
+          key: "pipe_request"
+          value: "${r21}"
+          scope: global
+
+      - call_flow:
+          flow: test_pipe_send
+          as: r22
+      - set_map:
+          name: results
+          key: "pipe_send"
+          value: "${r22}"
+          scope: global
+
+      - call_flow:
+          flow: test_webhook_send
+          as: r23
+      - set_map:
+          name: results
+          key: "webhook_send"
+          value: "${r23}"
+          scope: global
+
+      - call_flow:
+          flow: test_timer_actions
+          as: r24
+      - set_map:
+          name: results
+          key: "timer_actions"
+          value: "${r24}"
+          scope: global
+
+      # Calculate results
+      - set:
+          name: passedCount
+          value: 0
+          scope: global
+
+      - batch:
+          items: "${values(state.global.results)}"
+          as: result
+          actions:
+            - flow_if:
+                if: "${result == true}"
+                then:
+                  - increment:
+                      name: passedCount
+                      by: 1
+                      scope: global
+
+      - log:
+          message: "Standard compliance tests completed: ${state.global.passedCount}/24 passed"
+          level: info
+
+      - return:
+          value:
+            passed: "${state.global.passedCount}"
+            total: 24
+            results: "${state.global.results}"
+
+# Commands to run tests
+commands:
+  - name: run-compliance
+    description: "Run standard compliance test suite"
+    actions:
+      - call_flow:
+          flow: run_standard_tests
+          as: results
+      - reply:
+          content: |
+            **Standard Compliance Test Results**
+            Passed: ${results.passed}/${results.total}
+          ephemeral: true

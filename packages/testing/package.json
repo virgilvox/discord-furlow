@@ -1,6 +1,6 @@
 {
   "name": "@furlow/testing",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Test utilities and mocks for FURLOW framework",
   "keywords": ["furlow", "discord", "testing", "mocks"],
   "license": "MIT",

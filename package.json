@@ -1,6 +1,6 @@
 {
   "name": "furlow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Declarative Discord Bot Framework - YAML-based specification runtime",
   "keywords": ["discord", "bot", "yaml", "declarative", "framework"],

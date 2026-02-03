@@ -1,6 +1,6 @@
 {
   "name": "@furlow/discord",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Discord.js adapter for FURLOW bot framework",
   "keywords": ["furlow", "discord", "bot", "discord.js"],
   "license": "MIT",

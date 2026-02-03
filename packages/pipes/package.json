@@ -1,6 +1,6 @@
 {
   "name": "@furlow/pipes",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "External integration pipes for FURLOW bot framework",
   "keywords": ["furlow", "discord", "pipes", "http", "websocket", "mqtt"],
   "license": "MIT",

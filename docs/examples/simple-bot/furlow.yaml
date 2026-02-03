@@ -1,0 +1,149 @@
+# Simple FURLOW Bot Example
+# This is a complete, working bot you can use as a starting point.
+
+version: "0.1"
+
+# Bot identity
+identity:
+  name: "Simple Bot"
+
+# Bot presence (status)
+presence:
+  status: online
+  activity:
+    type: playing
+    text: "with FURLOW"
+
+# Automatic intent detection
+intents:
+  auto: true
+
+# State configuration
+state:
+  storage:
+    type: memory  # Use SQLite for persistence: type: sqlite, path: ./data.db
+  variables:
+    command_count:
+      scope: global
+      type: number
+      default: 0
+
+# Slash commands
+commands:
+  # Simple ping command
+  - name: ping
+    description: Check if the bot is online and responsive
+    actions:
+      - increment:
+          name: command_count
+      - reply:
+          content: "Pong! Latency: ${client.ping}ms"
+          ephemeral: true
+
+  # Hello command with optional name
+  - name: hello
+    description: Say hello to someone
+    options:
+      - name: name
+        type: string
+        description: Who to greet
+        required: false
+    actions:
+      - increment:
+          name: command_count
+      - reply:
+          content: "Hello, ${options.name || user.username}! Nice to meet you."
+
+  # Roll dice command
+  - name: roll
+    description: Roll a dice
+    options:
+      - name: sides
+        type: integer
+        description: Number of sides on the dice
+        required: false
+        min_value: 2
+        max_value: 100
+    actions:
+      - set:
+          name: roll_result
+          value: "${random(1, options.sides || 6)}"
+      - reply:
+          content: "You rolled a **${roll_result}** (d${options.sides || 6})"
+
+  # Echo command
+  - name: echo
+    description: Repeat what you say
+    options:
+      - name: message
+        type: string
+        description: Message to repeat
+        required: true
+    actions:
+      - reply:
+          content: "${options.message}"
+
+  # User info command
+  - name: userinfo
+    description: Get information about a user
+    options:
+      - name: user
+        type: user
+        description: User to get info about
+        required: false
+    actions:
+      - set:
+          name: target
+          value: "${options.user || user}"
+      - reply:
+          embeds:
+            - title: "User Info: ${target.displayName}"
+              color: 0x5865F2
+              thumbnail:
+                url: "${target.avatar}"
+              fields:
+                - name: "Username"
+                  value: "${target.username}"
+                  inline: true
+                - name: "ID"
+                  value: "${target.id}"
+                  inline: true
+                - name: "Created"
+                  value: "${date(target.createdAt) | formatDate}"
+                  inline: true
+
+  # Stats command
+  - name: stats
+    description: Show bot statistics
+    actions:
+      - reply:
+          embeds:
+            - title: "Bot Statistics"
+              color: 0x57F287
+              fields:
+                - name: "Commands Used"
+                  value: "${command_count}"
+                  inline: true
+                - name: "Uptime"
+                  value: "${duration(client.uptime)}"
+                  inline: true
+                - name: "Guilds"
+                  value: "${client.guilds.size}"
+                  inline: true
+
+# Event handlers
+events:
+  # Log when bot is ready
+  - event: ready
+    actions:
+      - log:
+          level: info
+          message: "Bot is ready! Logged in as ${client.user.tag}"
+
+  # Welcome new members (if you want this feature)
+  # Uncomment the following:
+  # - event: guild_member_add
+  #   actions:
+  #     - send_message:
+  #         channel: "${guild.systemChannelId}"
+  #         content: "Welcome to the server, ${member.displayName}!"
