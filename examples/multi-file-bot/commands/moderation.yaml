@@ -1,0 +1,110 @@
+# Moderation Commands
+
+commands:
+  - name: warn
+    description: Warn a user
+    options:
+      - name: user
+        description: User to warn
+        type: user
+        required: true
+      - name: reason
+        description: Reason for warning
+        type: string
+        required: true
+    actions:
+      - action: db_insert
+        table: warnings
+        data:
+          guild_id: "${guild.id}"
+          user_id: "${args.user.id}"
+          moderator_id: "${user.id}"
+          reason: "${args.reason}"
+          created_at: "${now()}"
+        as: warning
+
+      - action: call_flow
+        flow: log_modaction
+        args:
+          action: "warn"
+          target_id: "${args.user.id}"
+          reason: "${args.reason}"
+
+      - action: reply
+        embed:
+          title: "User Warned"
+          description: "${args.user.mention} has been warned"
+          fields:
+            - name: "Reason"
+              value: "${args.reason}"
+            - name: "Warning ID"
+              value: "#${warning.id}"
+          color: "#ffcc00"
+
+  - name: warnings
+    description: View warnings for a user
+    options:
+      - name: user
+        description: User to check
+        type: user
+        required: false
+    actions:
+      - action: db_query
+        table: warnings
+        where:
+          guild_id: "${guild.id}"
+          user_id: "${args.user?.id ?? user.id}"
+        order_by: "created_at DESC"
+        limit: 10
+        as: warnings
+
+      - action: flow_if
+        condition: "${length(warnings) === 0}"
+        then:
+          - action: reply
+            content: "No warnings found!"
+            ephemeral: true
+        else:
+          - action: set
+            key: warningList
+            value: "${warnings.map(w => '#' + w.id + ' - ' + truncate(w.reason, 30) + ' (' + timestamp(w.created_at, 'relative') + ')').join('\\n')}"
+          - action: reply
+            embed:
+              title: "Warnings for ${args.user?.username ?? user.username}"
+              description: "${warningList}"
+              footer:
+                text: "${length(warnings)} warning(s)"
+              color: "#5865f2"
+            ephemeral: true
+
+  - name: clearwarn
+    description: Clear a warning
+    options:
+      - name: id
+        description: Warning ID to clear
+        type: integer
+        required: true
+    actions:
+      - action: db_query
+        table: warnings
+        where:
+          id: "${args.id}"
+          guild_id: "${guild.id}"
+        as: warning
+
+      - action: flow_if
+        condition: "${length(warning) === 0}"
+        then:
+          - action: reply
+            content: "Warning not found!"
+            ephemeral: true
+          - action: abort
+
+      - action: db_delete
+        table: warnings
+        where:
+          id: "${args.id}"
+
+      - action: reply
+        content: "Warning #${args.id} has been cleared."
+        ephemeral: true

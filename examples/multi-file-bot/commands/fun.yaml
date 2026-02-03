@@ -1,0 +1,97 @@
+# Fun Commands
+
+commands:
+  - name: 8ball
+    description: Ask the magic 8-ball a question
+    options:
+      - name: question
+        description: Your question
+        type: string
+        required: true
+    actions:
+      - action: set
+        key: answers
+        value: '["Yes", "No", "Maybe", "Definitely", "Absolutely not", "Ask again later", "Without a doubt", "Very doubtful", "It is certain", "Cannot predict now", "Most likely", "Outlook not so good"]'
+      - action: reply
+        embed:
+          title: "Magic 8-Ball"
+          fields:
+            - name: "Question"
+              value: "${args.question}"
+            - name: "Answer"
+              value: "${pick(answers)}"
+          color: "#9b59b6"
+
+  - name: roll
+    description: Roll dice
+    options:
+      - name: dice
+        description: Number of dice (1-10)
+        type: integer
+        required: false
+        min_value: 1
+        max_value: 10
+      - name: sides
+        description: Sides per die (2-100)
+        type: integer
+        required: false
+        min_value: 2
+        max_value: 100
+    actions:
+      - action: set
+        key: numDice
+        value: "${args.dice ?? 1}"
+      - action: set
+        key: numSides
+        value: "${args.sides ?? 6}"
+      - action: set
+        key: rolls
+        value: "${range(1, numDice + 1).map(() => random(1, numSides))}"
+      - action: set
+        key: total
+        value: "${rolls.reduce((a, b) => a + b, 0)}"
+      - action: reply
+        embed:
+          title: "Dice Roll"
+          description: "Rolling ${numDice}d${numSides}..."
+          fields:
+            - name: "Rolls"
+              value: "${rolls.join(', ')}"
+            - name: "Total"
+              value: "**${total}**"
+          color: "#e74c3c"
+
+  - name: choose
+    description: Choose between options
+    options:
+      - name: options
+        description: Options separated by commas
+        type: string
+        required: true
+    actions:
+      - action: set
+        key: choices
+        value: "${split(args.options, ',').map(c => trim(c)).filter(c => c)}"
+      - action: flow_if
+        condition: "${length(choices) < 2}"
+        then:
+          - action: reply
+            content: "Please provide at least 2 options!"
+            ephemeral: true
+        else:
+          - action: reply
+            embed:
+              title: "I choose..."
+              description: "**${pick(choices)}**"
+              footer:
+                text: "From: ${choices.join(', ')}"
+              color: "#3498db"
+
+  - name: coinflip
+    description: Flip a coin
+    actions:
+      - action: reply
+        embed:
+          title: "Coin Flip"
+          description: "${random(0, 1) === 0 ? 'Heads' : 'Tails'}"
+          color: "#f1c40f"

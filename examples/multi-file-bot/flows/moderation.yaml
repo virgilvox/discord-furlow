@@ -1,0 +1,59 @@
+# Moderation Flows
+
+flows:
+  - name: log_modaction
+    description: Log a moderation action to the mod log channel
+    parameters:
+      - name: action
+        type: string
+        required: true
+      - name: target_id
+        type: string
+        required: true
+      - name: reason
+        type: string
+        required: false
+    actions:
+      # Only log if mod log channel is configured
+      - action: flow_if
+        condition: "${guild_state.mod_log_channel}"
+        then:
+          - action: send_message
+            channel: "${guild_state.mod_log_channel}"
+            embed:
+              title: "Moderation Action"
+              fields:
+                - name: "Action"
+                  value: "${args.action|capitalize}"
+                  inline: true
+                - name: "Target"
+                  value: "<@${args.target_id}>"
+                  inline: true
+                - name: "Moderator"
+                  value: "${user.mention}"
+                  inline: true
+                - name: "Reason"
+                  value: "${args.reason ?? 'No reason provided'}"
+              timestamp: true
+              color: "#ed4245"
+
+  - name: check_warning_threshold
+    description: Check if user has exceeded warning threshold
+    parameters:
+      - name: user_id
+        type: string
+        required: true
+    actions:
+      - action: db_query
+        table: warnings
+        where:
+          guild_id: "${guild.id}"
+          user_id: "${args.user_id}"
+        as: warnings
+
+      - action: set
+        key: warningCount
+        value: "${length(warnings)}"
+
+      - action: return
+        value: "${warningCount}"

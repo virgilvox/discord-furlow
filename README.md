@@ -6,36 +6,50 @@
 
 ---
 
-## Table of Contents
-
-1. [Philosophy](#1-philosophy)
-2. [File Structure](#2-file-structure)
-3. [Identity & Presence](#3-identity--presence)
-4. [Intents & Gateway](#4-intents--gateway)
-5. [Permissions & Access Control](#5-permissions--access-control)
-6. [State & Storage](#6-state--storage)
-7. [Expression Language](#7-expression-language)
-8. [Actions](#8-actions)
-9. [Commands](#9-commands)
-10. [Events](#10-events)
-11. [Flows & Logic](#11-flows--logic)
-12. [UI Components](#12-ui-components)
-13. [Embeds & Theming](#13-embeds--theming)
-14. [Voice & Audio](#14-voice--audio)
-15. [Video & Streaming](#15-video--streaming)
-16. [Data Pipes & Integrations](#16-data-pipes--integrations)
-17. [Automod](#17-automod)
-18. [Scheduler](#18-scheduler)
-19. [Localization](#19-localization)
-20. [Error Handling](#20-error-handling)
-21. [Analytics & Metrics](#21-analytics--metrics)
-22. [Dashboard & Web UI](#22-dashboard--web-ui)
-23. [Built-in Component Library](#23-built-in-component-library)
-24. [Full Example](#24-full-example)
+> **Note:** This document serves as both **documentation** for implemented features and a **specification** for planned features.
+>
+> **Status Legend:**
+> - ✅ **Implemented** — Feature is fully working
+> - ⚠️ **Partial** — Core functionality works, some advanced features pending
+> - 🚧 **Planned** — Designed but not yet implemented
+> - ❌ **Not Started** — Specification only, no implementation
+>
+> See [docs/llm-reference.md](./docs/llm-reference.md) for a complete reference of currently implemented features.
 
 ---
 
-## 1. Philosophy
+## Table of Contents
+
+| Section | Status |
+|---------|--------|
+| 1. [Philosophy](#1-philosophy-) | ✅ |
+| 2. [File Structure](#2-file-structure-) | ✅ |
+| 3. [Identity & Presence](#3-identity--presence-) | ✅ |
+| 4. [Intents & Gateway](#4-intents--gateway-) | ✅ |
+| 5. [Permissions & Access Control](#5-permissions--access-control-) | ⚠️ |
+| 6. [State & Storage](#6-state--storage-) | ✅ |
+| 7. [Expression Language](#7-expression-language-) | ✅ |
+| 8. [Actions](#8-actions-) | ✅ |
+| 9. [Commands](#9-commands-) | ✅ |
+| 10. [Events](#10-events-) | ✅ |
+| 11. [Flows & Logic](#11-flows--logic-) | ✅ |
+| 12. [UI Components](#12-ui-components-) | ✅ |
+| 13. [Embeds & Theming](#13-embeds--theming-) | ⚠️ |
+| 14. [Voice & Audio](#14-voice--audio-) | ⚠️ |
+| 15. [Video & Streaming](#15-video--streaming-) | ❌ |
+| 16. [Data Pipes & Integrations](#16-data-pipes--integrations-) | ⚠️ |
+| 17. [Automod](#17-automod-) | 🚧 |
+| 18. [Scheduler](#18-scheduler-) | ✅ |
+| 19. [Localization](#19-localization-) | ⚠️ |
+| 20. [Error Handling](#20-error-handling-) | ✅ |
+| 21. [Analytics & Metrics](#21-analytics--metrics-) | ⚠️ |
+| 22. [Dashboard & Web UI](#22-dashboard--web-ui-) | ⚠️ |
+| 23. [Built-in Component Library](#23-built-in-component-library-) | ✅ |
+| 24. [Full Example](#24-full-example-) | ✅ |
+
+---
+
+## 1. Philosophy ✅
 
 FURLOW defines a bot as a structured document — a single source of truth that any compliant runtime can execute. The spec has three core principles:
 
@@ -47,7 +61,7 @@ A conformant FURLOW runtime reads the spec, registers with the Discord gateway, 
 
 ---
 
-## 2. File Structure
+## 2. File Structure ✅
 
 A FURLOW bot can be a single file or a directory.
 
@@ -121,7 +135,7 @@ pipes:
 
 ---
 
-## 3. Identity & Presence
+## 3. Identity & Presence ✅
 
 ```yaml
 identity:
@@ -156,7 +170,7 @@ presence:
 
 ---
 
-## 4. Intents & Gateway
+## 4. Intents & Gateway ✅
 
 Intents declare what gateway events the bot subscribes to. The runtime should auto-calculate required intents from the events/commands you define, but you can also declare them explicitly.
 
@@ -201,7 +215,7 @@ gateway:
 
 ---
 
-## 5. Permissions & Access Control
+## 5. Permissions & Access Control ⚠️
 
 ### 5.1 OAuth2 Scopes
 
@@ -335,7 +349,7 @@ access:
 
 ---
 
-## 6. State & Storage
+## 6. State & Storage ✅
 
 FURLOW bots can store persistent and ephemeral state. The runtime provides the storage backend — the spec only defines the schema.
 
@@ -509,7 +523,7 @@ For relational-style data. The runtime maps this to SQLite, Postgres, or whateve
 
 ---
 
-## 7. Expression Language
+## 7. Expression Language ✅
 
 FURLOW uses a sandboxed expression language for dynamic values within YAML. Expressions are wrapped in `${}`.
 
@@ -622,7 +636,7 @@ content: |
 
 ---
 
-## 8. Actions
+## 8. Actions ✅
 
 Actions are the atomic operations a bot performs. They are the verbs of FURLOW. Every event handler, command handler, and flow step consists of one or more actions.
 
@@ -1013,7 +1027,7 @@ actions:
 
 ---
 
-## 9. Commands
+## 9. Commands ✅
 
 ### 9.1 Slash Commands
 
@@ -1243,7 +1257,7 @@ Channel types for filtering: `text`, `voice`, `category`, `announcement`, `stage
 
 ---
 
-## 10. Events
+## 10. Events ✅
 
 Every Discord gateway event can be handled. Each handler is a list of actions (with optional conditions).
 
@@ -1682,7 +1696,7 @@ Every Discord gateway event FURLOW supports:
 
 ---
 
-## 11. Flows & Logic
+## 11. Flows & Logic ✅
 
 Flows are reusable, named action sequences with arguments and conditional logic. They are the closest thing FURLOW has to "functions."
 
@@ -1914,7 +1928,7 @@ flows:
 
 ---
 
-## 12. UI Components
+## 12. UI Components ✅
 
 Discord's message component system: buttons, select menus, modals, text inputs.
 
@@ -2090,7 +2104,7 @@ modals:
 
 ---
 
-## 13. Embeds & Theming
+## 13. Embeds & Theming ⚠️
 
 ### 13.1 Inline Embeds
 
@@ -2341,7 +2355,7 @@ theme:
 
 ---
 
-## 14. Voice & Audio
+## 14. Voice & Audio ⚠️
 
 Full voice channel support: joining, playing audio, recording, TTS, and audio processing pipelines.
 
@@ -2560,7 +2574,7 @@ For advanced use cases like live audio effects, mixing, or analysis:
 
 ---
 
-## 15. Video & Streaming
+## 15. Video & Streaming ❌
 
 Discord's video capabilities are limited compared to audio, but bots can interact with streams and screen sharing contexts.
 
@@ -2613,7 +2627,7 @@ video:
 
 ---
 
-## 16. Data Pipes & Integrations
+## 16. Data Pipes & Integrations ⚠️
 
 Pipes are bidirectional data connections to external systems. They are how FURLOW bots talk to the outside world.
 
@@ -2924,7 +2938,7 @@ pipes:
 
 ---
 
-## 17. Automod
+## 17. Automod 🚧
 
 Automated moderation with configurable rules, conditions, and escalation.
 
@@ -3143,7 +3157,7 @@ automod:
 
 ---
 
-## 18. Scheduler
+## 18. Scheduler ✅
 
 Cron-like scheduled tasks and timed operations.
 
@@ -3274,7 +3288,7 @@ actions:
 
 ---
 
-## 19. Localization
+## 19. Localization ⚠️
 
 Multi-language support with locale files.
 
@@ -3340,7 +3354,7 @@ Usage in actions:
 
 ---
 
-## 20. Error Handling
+## 20. Error Handling ✅
 
 Global and per-action error handling.
 
@@ -3402,7 +3416,7 @@ error_handling:
 
 ---
 
-## 21. Analytics & Metrics
+## 21. Analytics & Metrics ⚠️
 
 Track bot usage and expose metrics.
 
@@ -3458,7 +3472,7 @@ analytics:
 
 ---
 
-## 22. Dashboard & Web UI
+## 22. Dashboard & Web UI ⚠️
 
 FURLOW runtimes can serve a web dashboard. The spec defines what the dashboard exposes and how to customize it.
 
@@ -3639,7 +3653,7 @@ HTML widgets that can be embedded in external sites:
 
 ---
 
-## 23. Built-in Component Library
+## 23. Built-in Component Library ✅
 
 Pre-built, configurable behavior packages. Enable them with minimal config. Every built-in is equivalent to a set of commands, events, flows, and state definitions — the runtime expands them.
 
@@ -4073,7 +4087,7 @@ builtins:
 
 ---
 
-## 24. Full Example
+## 24. Full Example ✅
 
 A complete bot definition for a maker community server:
 

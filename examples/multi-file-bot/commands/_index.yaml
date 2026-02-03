@@ -1,0 +1,7 @@
+# Command Index
+# Imports all command files
+
+imports:
+  - ./moderation.yaml
+  - ./utility.yaml
+  - ./fun.yaml

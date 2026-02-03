@@ -1,0 +1,84 @@
+# Utility Commands
+
+commands:
+  - name: ping
+    description: Check bot latency
+    actions:
+      - action: reply
+        content: "Pong! Latency: ${bot.ping}ms"
+        ephemeral: true
+
+  - name: serverinfo
+    description: Get server information
+    actions:
+      - action: reply
+        embed:
+          title: "${guild.name}"
+          thumbnail:
+            url: "https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png"
+          fields:
+            - name: "Owner"
+              value: "<@${guild.ownerId}>"
+              inline: true
+            - name: "Members"
+              value: "${guild.memberCount|format}"
+              inline: true
+            - name: "Created"
+              value: "${timestamp(guild.createdAt, 'relative')}"
+              inline: true
+            - name: "Boost Level"
+              value: "Tier ${guild.boostLevel}"
+              inline: true
+            - name: "Boosts"
+              value: "${guild.boostCount}"
+              inline: true
+          color: "#5865f2"
+          footer:
+            text: "ID: ${guild.id}"
+
+  - name: userinfo
+    description: Get user information
+    options:
+      - name: user
+        description: User to look up
+        type: user
+        required: false
+    actions:
+      - action: set
+        key: target
+        value: "${args.user ?? user}"
+      - action: reply
+        embed:
+          title: "${target.username}"
+          thumbnail:
+            url: "${target.avatarURL ?? target.defaultAvatarURL}"
+          fields:
+            - name: "ID"
+              value: "`${target.id}`"
+              inline: true
+            - name: "Created"
+              value: "${timestamp(target.createdAt, 'relative')}"
+              inline: true
+            - name: "Bot"
+              value: "${target.bot ? 'Yes' : 'No'}"
+              inline: true
+          color: "#5865f2"
+          timestamp: true
+
+  - name: avatar
+    description: Get a user's avatar
+    options:
+      - name: user
+        description: User to get avatar for
+        type: user
+        required: false
+    actions:
+      - action: set
+        key: target
+        value: "${args.user ?? user}"
+      - action: reply
+        embed:
+          title: "${target.username}'s Avatar"
+          image:
+            url: "${target.avatarURL ?? target.defaultAvatarURL}?size=512"
+          color: "#5865f2"

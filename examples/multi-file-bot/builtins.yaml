@@ -1,0 +1,24 @@
+# Builtin Configurations
+# Enable and configure pre-built modules
+
+builtins:
+  # Utility commands like /serverinfo, /userinfo, /avatar
+  utilities:
+    enabled: true
+    enabledCommands:
+      - serverinfo
+      - userinfo
+      - avatar
+      - banner
+
+  # AFK tracking
+  afk:
+    enabled: true
+    maxReasonLength: 100
+    nicknamePrefix: "[AFK] "
+
+  # Reminders
+  reminders:
+    enabled: true
+    maxRemindersPerUser: 10
+    allowDM: true

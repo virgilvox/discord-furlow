@@ -1,0 +1,26 @@
+# Message Events
+
+events:
+  - event: message
+    # Skip bot messages
+    condition: "${!message.author.bot}"
+    actions:
+      # Check for custom responses
+      - action: db_query
+        table: custom_responses
+        where:
+          guild_id: "${guild.id}"
+        as: responses
+
+      - action: batch
+        items: "${responses.filter(r => message.content.toLowerCase().includes(r.trigger.toLowerCase()))}"
+        each:
+          action: send_message
+          channel: "${channel.id}"
+          content: "${item.response}"
+
+  - event: message_delete
+    actions:
+      - action: log
+        level: debug
+        message: "Message deleted in #${channel.name}: ${message.content ?? '[content unavailable]'}"

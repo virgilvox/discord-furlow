@@ -1,0 +1,77 @@
+# Utility Flows
+
+flows:
+  - name: send_error
+    description: Send a standardized error message
+    parameters:
+      - name: message
+        type: string
+        required: true
+      - name: ephemeral
+        type: boolean
+        required: false
+    actions:
+      - action: reply
+        embed:
+          title: "Error"
+          description: "${args.message}"
+          color: "#ed4245"
+        ephemeral: "${args.ephemeral ?? true}"
+
+  - name: send_success
+    description: Send a standardized success message
+    parameters:
+      - name: message
+        type: string
+        required: true
+      - name: ephemeral
+        type: boolean
+        required: false
+    actions:
+      - action: reply
+        embed:
+          title: "Success"
+          description: "${args.message}"
+          color: "#57f287"
+        ephemeral: "${args.ephemeral ?? true}"
+
+  - name: paginate
+    description: Create paginated embed (returns page data)
+    parameters:
+      - name: items
+        type: array
+        required: true
+      - name: page
+        type: number
+        required: false
+      - name: pageSize
+        type: number
+        required: false
+    actions:
+      - action: set
+        key: currentPage
+        value: "${args.page ?? 0}"
+
+      - action: set
+        key: itemsPerPage
+        value: "${args.pageSize ?? 10}"
+
+      - action: set
+        key: totalPages
+        value: "${ceil(length(args.items) / itemsPerPage)}"
+
+      - action: set
+        key: startIndex
+        value: "${currentPage * itemsPerPage}"
+
+      - action: set
+        key: pageItems
+        value: "${slice(args.items, startIndex, startIndex + itemsPerPage)}"
+
+      - action: return
+        value:
+          items: "${pageItems}"
+          page: "${currentPage}"
+          totalPages: "${totalPages}"
+          hasNext: "${currentPage < totalPages - 1}"
+          hasPrev: "${currentPage > 0}"

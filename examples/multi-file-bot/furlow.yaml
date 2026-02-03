@@ -1,0 +1,53 @@
+# Multi-File FURLOW Bot Example
+# Demonstrates splitting a bot across multiple files for better organization
+
+version: "0.1"
+
+# Import all modules
+imports:
+  - ./commands/_index.yaml
+  - ./events/_index.yaml
+  - ./flows/_index.yaml
+  - ./builtins.yaml
+
+identity:
+  name: "MultiBot"
+
+presence:
+  status: online
+  activity:
+    type: watching
+    text: "multiple files"
+
+intents:
+  auto: true
+
+# State definitions stay in main file for visibility
+state:
+  storage:
+    type: sqlite
+    path: ./data/bot.db
+
+  variables:
+    command_count:
+      type: number
+      scope: global
+      default: 0
+
+  tables:
+    warnings:
+      columns:
+        id: { type: number, primary: true }
+        guild_id: { type: string, index: true }
+        user_id: { type: string, index: true }
+        moderator_id: { type: string }
+        reason: { type: string }
+        created_at: { type: timestamp }
+
+    custom_responses:
+      columns:
+        id: { type: number, primary: true }
+        guild_id: { type: string, index: true }
+        trigger: { type: string }
+        response: { type: string }
+        created_by: { type: string }

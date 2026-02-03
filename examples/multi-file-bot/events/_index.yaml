@@ -1,0 +1,6 @@
+# Event Index
+# Imports all event handler files
+
+imports:
+  - ./member.yaml
+  - ./message.yaml
