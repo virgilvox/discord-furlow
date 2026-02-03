@@ -1,6 +1,5 @@
 # Event Index
-# Imports all event handler files
+# Uses glob pattern to import all event handler files (excluding this index)
 
 imports:
-  - ./member.yaml
-  - ./message.yaml
+  - "./[!_]*.yaml"  # Import all YAML files except those starting with _

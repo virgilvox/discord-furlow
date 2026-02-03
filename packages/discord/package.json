@@ -4,7 +4,12 @@
   "description": "Discord.js adapter for FURLOW bot framework",
   "keywords": ["furlow", "discord", "bot", "discord.js"],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "packages/discord"
+  },
+  "author": "virgilvox",
   "type": "module",
   "exports": {
     ".": {

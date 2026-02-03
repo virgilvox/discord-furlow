@@ -4,7 +4,12 @@
   "description": "Pre-built bot components for FURLOW framework",
   "keywords": ["furlow", "discord", "builtins", "moderation", "tickets", "leveling"],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "packages/builtins"
+  },
+  "author": "virgilvox",
   "type": "module",
   "exports": {
     ".": {

@@ -92,3 +92,73 @@ export interface WebSocketPipeConfig {
     actions: unknown[];
   }[];
 }
+
+/** MQTT authentication config */
+export interface MqttAuthConfig {
+  username?: string;
+  password?: string;
+  clientId?: string;
+}
+
+/** MQTT QoS level */
+export type MqttQoS = 0 | 1 | 2;
+
+/** MQTT pipe configuration */
+export interface MqttPipeConfig {
+  type: 'mqtt';
+  broker: string;
+  port?: number;
+  protocol?: 'mqtt' | 'mqtts' | 'ws' | 'wss';
+  auth?: MqttAuthConfig;
+  keepalive?: number;
+  clean?: boolean;
+  reconnect?: {
+    enabled?: boolean;
+    delay?: string;
+    max_attempts?: number;
+  };
+  will?: {
+    topic: string;
+    payload: string;
+    qos?: MqttQoS;
+    retain?: boolean;
+  };
+  handlers?: {
+    topic: string;
+    qos?: MqttQoS;
+    when?: string;
+    actions: unknown[];
+  }[];
+}
+
+/** TCP pipe configuration */
+export interface TcpPipeConfig {
+  type: 'tcp';
+  host: string;
+  port: number;
+  reconnect?: {
+    enabled?: boolean;
+    delay?: string;
+    max_attempts?: number;
+  };
+  encoding?: BufferEncoding;
+  handlers?: {
+    event: string;
+    when?: string;
+    actions: unknown[];
+  }[];
+}
+
+/** UDP pipe configuration */
+export interface UdpPipeConfig {
+  type: 'udp';
+  host?: string;
+  port: number;
+  multicast?: string;
+  broadcast?: boolean;
+  handlers?: {
+    event: string;
+    when?: string;
+    actions: unknown[];
+  }[];
+}

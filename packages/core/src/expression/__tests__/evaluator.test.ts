@@ -133,6 +133,32 @@ describe('ExpressionEvaluator', () => {
       const result = await evaluator.evaluate<Date>('dateAdd(d, 5, "days")', context);
       expect(result.getUTCDate()).toBe(6);
     });
+
+    it('addDuration() adds duration string to date', async () => {
+      const context = { d: new Date('2024-01-01T00:00:00Z') };
+      const result = await evaluator.evaluate<Date>('addDuration(d, "10m")', context);
+      expect(result.getUTCMinutes()).toBe(10);
+    });
+
+    it('addDuration() handles combined duration strings', async () => {
+      const context = { d: new Date('2024-01-01T00:00:00Z') };
+      const result = await evaluator.evaluate<Date>('addDuration(d, "1d12h")', context);
+      expect(result.getUTCDate()).toBe(2);
+      expect(result.getUTCHours()).toBe(12);
+    });
+
+    it('addDuration() handles all unit types', async () => {
+      const context = { d: new Date('2024-01-01T00:00:00Z') };
+      // Test seconds
+      let result = await evaluator.evaluate<Date>('addDuration(d, "30s")', context);
+      expect(result.getUTCSeconds()).toBe(30);
+      // Test hours
+      result = await evaluator.evaluate<Date>('addDuration(d, "2h")', context);
+      expect(result.getUTCHours()).toBe(2);
+      // Test weeks
+      result = await evaluator.evaluate<Date>('addDuration(d, "1w")', context);
+      expect(result.getUTCDate()).toBe(8);
+    });
   });
 
   // =====================================
@@ -312,6 +338,26 @@ describe('ExpressionEvaluator', () => {
     it('range() generates number sequence', async () => {
       expect(await evaluator.evaluate('range(0, 5)')).toEqual([0, 1, 2, 3, 4]);
       expect(await evaluator.evaluate('range(0, 10, 2)')).toEqual([0, 2, 4, 6, 8]);
+    });
+
+    it('chunk() splits array into chunks', async () => {
+      expect(await evaluator.evaluate('chunk([1, 2, 3, 4, 5], 2)')).toEqual([[1, 2], [3, 4], [5]]);
+    });
+
+    it('chunk() handles exact division', async () => {
+      expect(await evaluator.evaluate('chunk([1, 2, 3, 4], 2)')).toEqual([[1, 2], [3, 4]]);
+    });
+
+    it('chunk() handles size larger than array', async () => {
+      expect(await evaluator.evaluate('chunk([1, 2], 5)')).toEqual([[1, 2]]);
+    });
+
+    it('chunk() returns empty for empty array', async () => {
+      expect(await evaluator.evaluate('chunk([], 3)')).toEqual([]);
+    });
+
+    it('chunk() returns empty for invalid size', async () => {
+      expect(await evaluator.evaluate('chunk([1, 2, 3], 0)')).toEqual([]);
     });
   });
 

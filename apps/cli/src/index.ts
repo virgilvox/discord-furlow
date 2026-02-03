@@ -11,6 +11,7 @@ import { devCommand } from './commands/dev.js';
 import { validateCommand } from './commands/validate.js';
 import { addCommand } from './commands/add.js';
 import { buildCommand } from './commands/build.js';
+import { exportCommand } from './commands/export.js';
 
 const program = new Command();
 
@@ -64,5 +65,13 @@ program
   .description('Bundle the bot for deployment')
   .option('-o, --output <dir>', 'Output directory', 'dist')
   .action(buildCommand);
+
+// Export command - generate Discord command JSON
+program
+  .command('export <path>')
+  .description('Export Discord command registration JSON')
+  .option('-o, --output <file>', 'Output file (default: stdout)')
+  .option('-g, --guild <id>', 'Export commands for specific guild')
+  .action(exportCommand);
 
 program.parse();

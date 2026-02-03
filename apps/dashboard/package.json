@@ -4,7 +4,12 @@
   "description": "Web dashboard for FURLOW Discord bots",
   "keywords": ["furlow", "discord", "dashboard", "web"],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "apps/dashboard"
+  },
+  "author": "virgilvox",
   "type": "module",
   "scripts": {
     "build": "pnpm run build:server && pnpm run build:client",

@@ -1,10 +1,15 @@
 {
-  "name": "furlow",
+  "name": "@furlow/cli",
   "version": "0.1.0",
   "description": "CLI for FURLOW Discord bot framework",
   "keywords": ["furlow", "discord", "bot", "cli"],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "apps/cli"
+  },
+  "author": "virgilvox",
   "type": "module",
   "bin": {
     "furlow": "./dist/index.js"

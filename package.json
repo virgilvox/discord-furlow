@@ -6,10 +6,10 @@
   "keywords": ["discord", "bot", "yaml", "declarative", "framework"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ossuary-dev/furlow"
+    "url": "https://github.com/virgilvox/discord-furlow"
   },
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "author": "virgilvox",
   "type": "module",
   "scripts": {
     "build": "turbo run build",

@@ -9,7 +9,12 @@
     "runtime"
   ],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "packages/core"
+  },
+  "author": "virgilvox",
   "type": "module",
   "exports": {
     ".": {
@@ -90,6 +95,7 @@
   },
   "dependencies": {
     "@furlow/schema": "workspace:*",
+    "fast-glob": "^3.3.3",
     "jexl": "^2.3.0",
     "yaml": "^2.3.0"
   },

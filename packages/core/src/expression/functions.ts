@@ -59,6 +59,26 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
     }
     return d;
   });
+  jexl.addFunction('addDuration', (date: Date | number | string, duration: string) => {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return d;
+    const units: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+      w: 7 * 24 * 60 * 60 * 1000,
+    };
+    const matches = duration.match(/(\d+)([smhdw])/g) || [];
+    for (const match of matches) {
+      const parsed = match.match(/(\d+)([smhdw])/);
+      if (parsed) {
+        const [, num, unit] = parsed;
+        d.setTime(d.getTime() + parseInt(num!, 10) * units[unit!]!);
+      }
+    }
+    return d;
+  });
 
   // Math functions
   jexl.addFunction('random', (min = 0, max = 1) => {
@@ -173,6 +193,14 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
       result.push(i);
     }
     return result;
+  });
+  jexl.addFunction('chunk', <T>(arr: T[], size: number): T[][] => {
+    if (!arr || size < 1) return [];
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
   });
 
   // Object functions

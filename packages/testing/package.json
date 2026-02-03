@@ -4,7 +4,12 @@
   "description": "Test utilities and mocks for FURLOW framework",
   "keywords": ["furlow", "discord", "testing", "mocks"],
   "license": "MIT",
-  "author": "Ossuary Dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "directory": "packages/testing"
+  },
+  "author": "virgilvox",
   "type": "module",
   "exports": {
     ".": {

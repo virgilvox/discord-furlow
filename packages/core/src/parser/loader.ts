@@ -5,6 +5,7 @@
 import { parse, YAMLParseError } from 'yaml';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, dirname, extname } from 'node:path';
+import fg from 'fast-glob';
 import type { FurlowSpec } from '@furlow/schema';
 import { validateFurlowSpec, formatValidationErrors } from '@furlow/schema';
 import {
@@ -32,6 +33,27 @@ export interface LoadResult {
 }
 
 const FURLOW_EXTENSIONS = ['.furlow.yaml', '.furlow.yml', '.bolt.yaml', '.bolt.yml', '.yaml', '.yml'];
+
+/**
+ * Check if a path contains glob patterns
+ */
+function isGlobPattern(path: string): boolean {
+  return path.includes('*') || path.includes('?') || path.includes('[');
+}
+
+/**
+ * Expand glob pattern to list of files
+ */
+async function expandGlob(pattern: string, fromDir: string): Promise<string[]> {
+  const fullPattern = resolve(fromDir, pattern);
+  const files = await fg(fullPattern, {
+    absolute: true,
+    onlyFiles: true,
+    ignore: ['**/node_modules/**'],
+  });
+  // Sort for deterministic ordering
+  return files.sort();
+}
 
 async function fileExists(path: string): Promise<boolean> {
   try {
@@ -108,6 +130,29 @@ async function loadYamlFile(
   }
 }
 
+function mergeBuiltins(
+  base: FurlowSpec['builtins'],
+  imported: FurlowSpec['builtins']
+): FurlowSpec['builtins'] {
+  if (!base && !imported) return undefined;
+  if (!base) return imported;
+  if (!imported) return base;
+
+  // Both are arrays - merge them
+  if (Array.isArray(base) && Array.isArray(imported)) {
+    return [...base, ...imported];
+  }
+  // Both are objects - merge them (this handles the non-standard object format in examples)
+  if (!Array.isArray(base) && !Array.isArray(imported)) {
+    return {
+      ...(base as unknown as Record<string, unknown>),
+      ...(imported as unknown as Record<string, unknown>),
+    } as unknown as FurlowSpec['builtins'];
+  }
+  // Mixed - prefer array format
+  return Array.isArray(base) ? base : imported;
+}
+
 function mergeSpecs(base: FurlowSpec, imported: FurlowSpec): FurlowSpec {
   return {
     ...base,
@@ -116,7 +161,7 @@ function mergeSpecs(base: FurlowSpec, imported: FurlowSpec): FurlowSpec {
     context_menus: [...(base.context_menus ?? []), ...(imported.context_menus ?? [])],
     events: [...(base.events ?? []), ...(imported.events ?? [])],
     flows: [...(base.flows ?? []), ...(imported.flows ?? [])],
-    builtins: [...(base.builtins ?? []), ...(imported.builtins ?? [])],
+    builtins: mergeBuiltins(base.builtins, imported.builtins),
     // Merge objects
     pipes: { ...base.pipes, ...imported.pipes },
     components: {
@@ -178,21 +223,45 @@ async function loadWithImports(
   if (spec.imports && Array.isArray(spec.imports)) {
     for (const imp of spec.imports) {
       const importPath = typeof imp === 'string' ? imp : imp.path;
-      const resolved = await resolveImportPath(importPath, fileDir);
 
-      if (!resolved) {
-        throw new ImportNotFoundError(importPath, resolvedPath);
+      // Check if this is a glob pattern
+      if (isGlobPattern(importPath)) {
+        const expandedPaths = await expandGlob(importPath, fileDir);
+
+        if (expandedPaths.length === 0) {
+          // Glob matched no files - could be intentional, so we don't error
+          continue;
+        }
+
+        for (const expandedPath of expandedPaths) {
+          const { spec: importedSpec, files: importedFiles } = await loadWithImports(
+            expandedPath,
+            options,
+            visited,
+            importStack
+          );
+
+          spec = mergeSpecs(spec, importedSpec);
+          files.push(...importedFiles);
+        }
+      } else {
+        // Regular import path
+        const resolved = await resolveImportPath(importPath, fileDir);
+
+        if (!resolved) {
+          throw new ImportNotFoundError(importPath, resolvedPath);
+        }
+
+        const { spec: importedSpec, files: importedFiles } = await loadWithImports(
+          resolved,
+          options,
+          visited,
+          importStack
+        );
+
+        spec = mergeSpecs(spec, importedSpec);
+        files.push(...importedFiles);
       }
-
-      const { spec: importedSpec, files: importedFiles } = await loadWithImports(
-        resolved,
-        options,
-        visited,
-        importStack
-      );
-
-      spec = mergeSpecs(spec, importedSpec);
-      files.push(...importedFiles);
     }
   }
 

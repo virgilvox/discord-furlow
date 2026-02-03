@@ -1,6 +1,5 @@
 # Flow Index
-# Imports all flow files
+# Uses glob pattern to import all flow files (excluding this index)
 
 imports:
-  - ./moderation.yaml
-  - ./utility.yaml
+  - "./[!_]*.yaml"  # Import all YAML files except those starting with _

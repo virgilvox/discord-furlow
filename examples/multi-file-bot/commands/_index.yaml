@@ -1,7 +1,5 @@
 # Command Index
-# Imports all command files
+# Uses glob pattern to import all command files (excluding this index)
 
 imports:
-  - ./moderation.yaml
-  - ./utility.yaml
-  - ./fun.yaml
+  - "./[!_]*.yaml"  # Import all YAML files except those starting with _
