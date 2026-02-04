@@ -82,6 +82,33 @@ const sectionForms: Record<string, Array<{
     { key: 'host', label: 'Host', type: 'text', placeholder: 'localhost' },
     { key: 'branding.name', label: 'Dashboard Name', type: 'text', placeholder: 'Bot Dashboard' },
   ],
+  voice: [
+    { key: 'enabled', label: 'Enable Voice', type: 'boolean', hint: 'Enable voice channel support' },
+    { key: 'default_volume', label: 'Default Volume', type: 'number', placeholder: '50', hint: 'Default playback volume (0-100)' },
+    { key: 'max_queue_size', label: 'Max Queue Size', type: 'number', placeholder: '100', hint: 'Maximum songs in queue' },
+    { key: 'leave_on_empty', label: 'Leave on Empty', type: 'boolean', hint: 'Leave voice channel when empty' },
+    { key: 'leave_delay', label: 'Leave Delay', type: 'text', placeholder: '5m', hint: 'Delay before leaving (e.g., 5m, 30s)' },
+  ],
+  automod: [
+    { key: 'enabled', label: 'Enable Automod', type: 'boolean', hint: 'Enable automatic moderation' },
+    { key: 'log_channel', label: 'Log Channel', type: 'expression', placeholder: 'channel.id', hint: 'Channel ID expression for mod logs' },
+  ],
+  scheduler: [
+    { key: 'enabled', label: 'Enable Scheduler', type: 'boolean', hint: 'Enable scheduled tasks' },
+    { key: 'timezone', label: 'Timezone', type: 'text', placeholder: 'UTC', hint: 'Default timezone for schedules' },
+  ],
+  locale: [
+    { key: 'default', label: 'Default Locale', type: 'text', placeholder: 'en-US', hint: 'Default language/locale' },
+    { key: 'fallback', label: 'Fallback Locale', type: 'text', placeholder: 'en', hint: 'Fallback when translation missing' },
+  ],
+  canvas: [
+    { key: 'enabled', label: 'Enable Canvas', type: 'boolean', hint: 'Enable image generation' },
+    { key: 'fonts_dir', label: 'Fonts Directory', type: 'text', placeholder: './fonts', hint: 'Path to custom fonts' },
+  ],
+  errors: [
+    { key: 'default_handler', label: 'Default Handler', type: 'expression', placeholder: 'flow.error_handler', hint: 'Flow to call on errors' },
+    { key: 'log_errors', label: 'Log Errors', type: 'boolean', hint: 'Log errors to console' },
+  ],
 };
 
 const currentForm = computed(() => sectionForms[props.section] || []);

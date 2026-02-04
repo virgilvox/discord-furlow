@@ -1,0 +1,398 @@
+version: "0.1"
+
+identity:
+  name: "Mod Bot"
+  description: "Server moderation and management"
+
+presence:
+  status: online
+  activity:
+    type: watching
+    name: "${client.guilds.size} servers"
+
+state:
+  storage:
+    type: sqlite
+    path: ./modbot.db
+  variables:
+    warnings:
+      scope: member
+      type: array
+      default: []
+
+# Automod Configuration
+automod:
+  enabled: true
+  log_channel: "${env.MOD_LOG_CHANNEL}"
+  rules:
+    - name: spam
+      type: spam
+      threshold: 5
+      window: 10s
+      action: timeout
+      duration: 5m
+
+    - name: invites
+      type: invites
+      action: delete
+      warn: true
+      exempt_roles:
+        - "${env.STAFF_ROLE}"
+
+    - name: mass_mentions
+      type: mentions
+      threshold: 5
+      action: timeout
+      duration: 10m
+
+# Flows
+flows:
+  log_action:
+    params:
+      - name: action_type
+        type: string
+      - name: target
+        type: string
+      - name: moderator
+        type: string
+      - name: reason
+        type: string
+    actions:
+      - send_message:
+          channel: "${env.MOD_LOG_CHANNEL}"
+          embeds:
+            - title: "Moderation Action: ${action_type}"
+              color: "${theme.warning}"
+              fields:
+                - name: "Target"
+                  value: "${target}"
+                  inline: true
+                - name: "Moderator"
+                  value: "${moderator}"
+                  inline: true
+                - name: "Reason"
+                  value: "${reason || 'No reason provided'}"
+              timestamp: true
+
+  add_warning:
+    params:
+      - name: user_id
+        type: string
+      - name: reason
+        type: string
+      - name: moderator_id
+        type: string
+    actions:
+      - set:
+          var: warnings
+          scope: member
+          user: "${user_id}"
+          value: |
+            ${[...state.member.warnings, {
+              id: uuid(),
+              reason: reason,
+              moderator: moderator_id,
+              date: now()
+            }]}
+      - return:
+          value: "${state.member.warnings.length}"
+
+# Commands
+commands:
+  - name: warn
+    description: Warn a user
+    options:
+      - name: user
+        type: user
+        description: User to warn
+        required: true
+      - name: reason
+        type: string
+        description: Reason for warning
+        required: true
+    actions:
+      - call_flow:
+          name: add_warning
+          args:
+            user_id: "${options.user.id}"
+            reason: "${options.reason}"
+            moderator_id: "${user.id}"
+          as: warning_count
+      - send_dm:
+          user: "${options.user.id}"
+          content: "You have been warned in **${guild.name}**\nReason: ${options.reason}\nTotal warnings: ${warning_count}"
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Warn"
+            target: "${options.user.tag}"
+            moderator: "${user.tag}"
+            reason: "${options.reason}"
+      - reply:
+          content: "Warned **${options.user.tag}** (Warning #${warning_count})"
+          ephemeral: true
+      - flow_if:
+          condition: "${warning_count >= 3}"
+          then:
+            - timeout:
+                user: "${options.user.id}"
+                duration: 1h
+                reason: "3+ warnings"
+            - send_message:
+                channel: "${env.MOD_LOG_CHANNEL}"
+                content: "Auto-timeout: ${options.user.tag} has ${warning_count} warnings"
+
+  - name: warnings
+    description: View warnings for a user
+    options:
+      - name: user
+        type: user
+        description: User to check
+        required: true
+    actions:
+      - set:
+          var: target_warnings
+          value: "${state.member[options.user.id].warnings || []}"
+      - flow_if:
+          condition: "${target_warnings.length === 0}"
+          then:
+            - reply:
+                content: "${options.user.tag} has no warnings."
+                ephemeral: true
+          else:
+            - reply:
+                embeds:
+                  - title: "Warnings for ${options.user.tag}"
+                    color: "${theme.warning}"
+                    description: |
+                      ${target_warnings.map((w, i) =>
+                        `**${i + 1}.** ${w.reason}\n   <t:${Math.floor(w.date / 1000)}:R> by <@${w.moderator}>`
+                      ).join('\n\n')}
+                    footer:
+                      text: "Total: ${target_warnings.length} warnings"
+                ephemeral: true
+
+  - name: clearwarnings
+    description: Clear warnings for a user
+    options:
+      - name: user
+        type: user
+        description: User to clear warnings for
+        required: true
+    actions:
+      - set:
+          var: warnings
+          scope: member
+          user: "${options.user.id}"
+          value: []
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Clear Warnings"
+            target: "${options.user.tag}"
+            moderator: "${user.tag}"
+            reason: "All warnings cleared"
+      - reply:
+          content: "Cleared all warnings for **${options.user.tag}**"
+          ephemeral: true
+
+  - name: kick
+    description: Kick a user from the server
+    options:
+      - name: user
+        type: user
+        description: User to kick
+        required: true
+      - name: reason
+        type: string
+        description: Reason for kick
+    actions:
+      - send_dm:
+          user: "${options.user.id}"
+          content: "You have been kicked from **${guild.name}**\nReason: ${options.reason || 'No reason provided'}"
+      - kick:
+          user: "${options.user.id}"
+          reason: "${options.reason}"
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Kick"
+            target: "${options.user.tag}"
+            moderator: "${user.tag}"
+            reason: "${options.reason}"
+      - reply:
+          content: "Kicked **${options.user.tag}**"
+          ephemeral: true
+
+  - name: ban
+    description: Ban a user from the server
+    options:
+      - name: user
+        type: user
+        description: User to ban
+        required: true
+      - name: reason
+        type: string
+        description: Reason for ban
+      - name: delete_days
+        type: integer
+        description: Days of messages to delete
+        choices:
+          - name: None
+            value: 0
+          - name: 1 day
+            value: 1
+          - name: 7 days
+            value: 7
+    actions:
+      - send_dm:
+          user: "${options.user.id}"
+          content: "You have been banned from **${guild.name}**\nReason: ${options.reason || 'No reason provided'}"
+      - ban:
+          user: "${options.user.id}"
+          reason: "${options.reason}"
+          delete_message_days: "${options.delete_days || 0}"
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Ban"
+            target: "${options.user.tag}"
+            moderator: "${user.tag}"
+            reason: "${options.reason}"
+      - reply:
+          content: "Banned **${options.user.tag}**"
+          ephemeral: true
+
+  - name: unban
+    description: Unban a user
+    options:
+      - name: user_id
+        type: string
+        description: User ID to unban
+        required: true
+      - name: reason
+        type: string
+        description: Reason for unban
+    actions:
+      - unban:
+          user: "${options.user_id}"
+          reason: "${options.reason}"
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Unban"
+            target: "${options.user_id}"
+            moderator: "${user.tag}"
+            reason: "${options.reason}"
+      - reply:
+          content: "Unbanned user **${options.user_id}**"
+          ephemeral: true
+
+  - name: timeout
+    description: Timeout a user
+    options:
+      - name: user
+        type: user
+        description: User to timeout
+        required: true
+      - name: duration
+        type: string
+        description: Timeout duration (e.g., 1h, 30m)
+        required: true
+      - name: reason
+        type: string
+        description: Reason for timeout
+    actions:
+      - timeout:
+          user: "${options.user.id}"
+          duration: "${options.duration}"
+          reason: "${options.reason}"
+      - send_dm:
+          user: "${options.user.id}"
+          content: "You have been timed out in **${guild.name}** for ${options.duration}\nReason: ${options.reason || 'No reason provided'}"
+      - call_flow:
+          name: log_action
+          args:
+            action_type: "Timeout (${options.duration})"
+            target: "${options.user.tag}"
+            moderator: "${user.tag}"
+            reason: "${options.reason}"
+      - reply:
+          content: "Timed out **${options.user.tag}** for ${options.duration}"
+          ephemeral: true
+
+  - name: ticket
+    description: Create a support ticket
+    options:
+      - name: subject
+        type: string
+        description: Ticket subject
+        required: true
+    actions:
+      - create_channel:
+          name: "ticket-${user.username}"
+          type: text
+          parent: "${env.TICKET_CATEGORY}"
+          topic: "Ticket by ${user.tag}: ${options.subject}"
+          as: ticket_channel
+      - set_channel_permissions:
+          channel: "${ticket_channel.id}"
+          user: "${user.id}"
+          allow: ["VIEW_CHANNEL", "SEND_MESSAGES", "READ_MESSAGE_HISTORY"]
+      - send_message:
+          channel: "${ticket_channel.id}"
+          content: "${user}"
+          embeds:
+            - title: "Ticket: ${options.subject}"
+              description: "Support will be with you shortly.\nUse `/close` to close this ticket."
+              color: "${theme.primary}"
+              fields:
+                - name: "Created by"
+                  value: "${user.tag}"
+                - name: "Subject"
+                  value: "${options.subject}"
+              timestamp: true
+      - reply:
+          content: "Ticket created: ${ticket_channel}"
+          ephemeral: true
+
+  - name: close
+    description: Close a ticket
+    options:
+      - name: reason
+        type: string
+        description: Reason for closing
+    actions:
+      - flow_if:
+          condition: "${!channel.name.startsWith('ticket-')}"
+          then:
+            - reply:
+                content: "This command can only be used in ticket channels."
+                ephemeral: true
+            - abort
+      - send_message:
+          channel: "${env.TICKET_LOG_CHANNEL}"
+          embeds:
+            - title: "Ticket Closed"
+              color: "${theme.danger}"
+              fields:
+                - name: "Channel"
+                  value: "${channel.name}"
+                - name: "Closed by"
+                  value: "${user.tag}"
+                - name: "Reason"
+                  value: "${options.reason || 'No reason provided'}"
+              timestamp: true
+      - reply:
+          content: "Closing ticket in 5 seconds..."
+      - wait:
+          duration: 5s
+      - delete_channel:
+          channel: "${channel.id}"
+
+# Theme colors
+theme:
+  primary: "#5865F2"
+  success: "#57F287"
+  warning: "#FEE75C"
+  danger: "#ED4245"

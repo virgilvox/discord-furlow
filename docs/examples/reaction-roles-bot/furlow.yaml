@@ -1,0 +1,314 @@
+version: "0.1"
+
+identity:
+  name: "Reaction Roles"
+  description: "Assign roles with reactions and buttons"
+
+presence:
+  status: online
+  activity:
+    type: watching
+    name: "for reactions"
+
+state:
+  storage:
+    type: sqlite
+    path: ./roles.db
+  variables:
+    role_menus:
+      scope: guild
+      type: object
+      default: {}
+    reaction_roles:
+      scope: guild
+      type: object
+      default: {}
+
+# Flows
+flows:
+  create_role_buttons:
+    params:
+      - name: roles
+        type: array
+    actions:
+      - set:
+          var: buttons
+          value: |
+            ${roles.map(r => ({
+              type: 'button',
+              custom_id: `role_${r.role_id}`,
+              style: r.style || 'secondary',
+              label: r.label,
+              emoji: r.emoji
+            }))}
+      - return:
+          value: "${buttons}"
+
+# Commands
+commands:
+  - name: rolemenu
+    description: Create a role selection menu
+    options:
+      - name: title
+        type: string
+        description: Menu title
+        required: true
+      - name: description
+        type: string
+        description: Menu description
+      - name: channel
+        type: channel
+        description: Channel to post in
+    actions:
+      - set:
+          var: target_channel
+          value: "${options.channel?.id || channel.id}"
+      - send_message:
+          channel: "${target_channel}"
+          embeds:
+            - title: "${options.title}"
+              description: "${options.description || 'Click a button to get a role!'}"
+              color: "#5865F2"
+              footer:
+                text: "Click a button to toggle the role"
+          as: menu_message
+      - set:
+          var: role_menus
+          scope: guild
+          value: |
+            ${Object.assign({}, state.guild.role_menus, {
+              [menu_message.id]: {
+                title: options.title,
+                channel_id: target_channel,
+                roles: []
+              }
+            })}
+      - reply:
+          content: "Role menu created! Use `/addrole` to add roles.\nMenu ID: `${menu_message.id}`"
+          ephemeral: true
+
+  - name: addrole
+    description: Add a role to a menu
+    options:
+      - name: menu_id
+        type: string
+        description: Menu message ID
+        required: true
+      - name: role
+        type: role
+        description: Role to add
+        required: true
+      - name: label
+        type: string
+        description: Button label
+      - name: emoji
+        type: string
+        description: Button emoji
+      - name: style
+        type: string
+        description: Button style
+        choices:
+          - name: Primary (Blue)
+            value: primary
+          - name: Secondary (Gray)
+            value: secondary
+          - name: Success (Green)
+            value: success
+          - name: Danger (Red)
+            value: danger
+    actions:
+      - set:
+          var: menu
+          value: "${state.guild.role_menus[options.menu_id]}"
+      - flow_if:
+          condition: "${!menu}"
+          then:
+            - reply:
+                content: "Menu not found. Check the ID."
+                ephemeral: true
+            - abort
+      - set:
+          var: new_role
+          value: |
+            ${{
+              role_id: options.role.id,
+              label: options.label || options.role.name,
+              emoji: options.emoji,
+              style: options.style || 'secondary'
+            }}
+      - set:
+          var: updated_roles
+          value: "${[...menu.roles, new_role]}"
+      - set:
+          var: role_menus
+          scope: guild
+          value: |
+            ${Object.assign({}, state.guild.role_menus, {
+              [options.menu_id]: {
+                ...menu,
+                roles: updated_roles
+              }
+            })}
+      - call_flow:
+          name: create_role_buttons
+          args:
+            roles: "${updated_roles}"
+          as: buttons
+      - edit_message:
+          channel: "${menu.channel_id}"
+          message: "${options.menu_id}"
+          components:
+            - type: action_row
+              components: "${buttons.slice(0, 5)}"
+            - type: action_row
+              components: "${buttons.slice(5, 10)}"
+              when: "${buttons.length > 5}"
+            - type: action_row
+              components: "${buttons.slice(10, 15)}"
+              when: "${buttons.length > 10}"
+      - reply:
+          content: "Added **${options.role.name}** to the menu!"
+          ephemeral: true
+
+  - name: reactionrole
+    description: Create a reaction role
+    options:
+      - name: message
+        type: string
+        description: Message ID
+        required: true
+      - name: emoji
+        type: string
+        description: Emoji to react with
+        required: true
+      - name: role
+        type: role
+        description: Role to assign
+        required: true
+    actions:
+      - add_reaction:
+          message: "${options.message}"
+          emoji: "${options.emoji}"
+      - set:
+          var: reaction_roles
+          scope: guild
+          value: |
+            ${Object.assign({}, state.guild.reaction_roles, {
+              [`${options.message}_${options.emoji}`]: options.role.id
+            })}
+      - reply:
+          content: "Reaction role created! React with ${options.emoji} to get **${options.role.name}**"
+          ephemeral: true
+
+  - name: listmenus
+    description: List all role menus
+    actions:
+      - set:
+          var: menus
+          value: "${Object.entries(state.guild.role_menus || {})}"
+      - flow_if:
+          condition: "${menus.length === 0}"
+          then:
+            - reply:
+                content: "No role menus created yet."
+                ephemeral: true
+            - abort
+      - reply:
+          embeds:
+            - title: "Role Menus"
+              description: |
+                ${menus.map(([id, m]) =>
+                  `**${m.title}**\nID: \`${id}\`\nRoles: ${m.roles.length}`
+                ).join('\n\n')}
+              color: "#5865F2"
+          ephemeral: true
+
+  - name: removemenu
+    description: Delete a role menu
+    options:
+      - name: menu_id
+        type: string
+        description: Menu message ID
+        required: true
+    actions:
+      - set:
+          var: menus
+          value: "${state.guild.role_menus || {}}"
+      - flow_if:
+          condition: "${!menus[options.menu_id]}"
+          then:
+            - reply:
+                content: "Menu not found."
+                ephemeral: true
+            - abort
+      - delete_message:
+          channel: "${menus[options.menu_id].channel_id}"
+          message: "${options.menu_id}"
+      - set:
+          var: updated_menus
+          value: "${Object.fromEntries(Object.entries(menus).filter(([k]) => k !== options.menu_id))}"
+      - set:
+          var: role_menus
+          scope: guild
+          value: "${updated_menus}"
+      - reply:
+          content: "Role menu deleted."
+          ephemeral: true
+
+# Components (button handlers)
+components:
+  - custom_id: "role_*"
+    type: button
+    actions:
+      - set:
+          var: role_id
+          value: "${interaction.customId.replace('role_', '')}"
+      - flow_if:
+          condition: "${member.roles.cache.has(role_id)}"
+          then:
+            - remove_role:
+                role: "${role_id}"
+            - reply:
+                content: "Removed <@&${role_id}>"
+                ephemeral: true
+          else:
+            - assign_role:
+                role: "${role_id}"
+            - reply:
+                content: "Added <@&${role_id}>"
+                ephemeral: true
+
+# Events (reaction handlers)
+events:
+  - event: reaction_add
+    actions:
+      - set:
+          var: key
+          value: "${reaction.message.id}_${reaction.emoji.name}"
+      - set:
+          var: role_id
+          value: "${state.guild.reaction_roles?.[key]}"
+      - flow_if:
+          condition: "${role_id && !reaction.message.author.bot}"
+          then:
+            - assign_role:
+                user: "${user.id}"
+                role: "${role_id}"
+
+  - event: reaction_remove
+    actions:
+      - set:
+          var: key
+          value: "${reaction.message.id}_${reaction.emoji.name}"
+      - set:
+          var: role_id
+          value: "${state.guild.reaction_roles?.[key]}"
+      - flow_if:
+          condition: "${role_id}"
+          then:
+            - remove_role:
+                user: "${user.id}"
+                role: "${role_id}"
+
+theme:
+  primary: "#5865F2"

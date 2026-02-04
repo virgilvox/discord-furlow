@@ -2,17 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
-    "composite": false
+    "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/schema" },
-    { "path": "../../packages/core" },
-    { "path": "../../packages/discord" },
-    { "path": "../../packages/storage" },
-    { "path": "../../packages/pipes" },
-    { "path": "../../packages/builtins" }
-  ]
+  "exclude": ["node_modules", "dist"]
 }

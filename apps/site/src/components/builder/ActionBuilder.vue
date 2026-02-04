@@ -318,7 +318,7 @@ const updateAction = (actionIndex: number, updatedAction: Record<string, unknown
             @update:model-value="updateItem(editingItem!, 'description', $event)"
           />
           <CommandOptionEditor
-            :options="((sectionItems[editingItem] as Record<string, unknown>).options as Record<string, unknown>[]) || []"
+            :options="((sectionItems[editingItem] as Record<string, unknown>).options as any) || []"
             @update="updateItem(editingItem!, 'options', $event)"
           />
         </template>

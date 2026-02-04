@@ -2,6 +2,9 @@
 
 **Declarative Discord Bot Framework**
 
+[![Maintained by @virgilvox](https://img.shields.io/badge/maintained%20by-%40virgilvox-5865F2)](https://github.com/virgilvox)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Build powerful Discord bots with YAML — no code required.
 
 ```yaml

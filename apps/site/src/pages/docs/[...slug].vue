@@ -13,6 +13,7 @@ const { manifest, loadDoc, currentDoc, loading, error } = useDocs();
 
 const mobileSidebarOpen = ref(false);
 const mobileTocOpen = ref(false);
+const copied = ref(false);
 
 const toggleMobileSidebar = () => {
   mobileSidebarOpen.value = !mobileSidebarOpen.value;
@@ -44,12 +45,26 @@ const currentPage = computed(() => {
     for (const page of section.pages) {
       const pagePath = page.path.replace(/\.md$/, '').replace(/\/_index$/, '').replace(/\/README$/, '');
       if (pagePath === slug.value || page.id === slug.value) {
-        return { ...page, sectionId: section.id };
+        return { ...page, sectionId: section.id, copyable: (page as any).copyable };
       }
     }
   }
   return null;
 });
+
+const copyToClipboard = async () => {
+  if (currentDoc.value) {
+    try {
+      await navigator.clipboard.writeText(currentDoc.value);
+      copied.value = true;
+      setTimeout(() => {
+        copied.value = false;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }
+};
 
 watch(
   () => slug.value,
@@ -99,6 +114,23 @@ onMounted(async () => {
         </div>
 
         <template v-else>
+          <div v-if="currentPage?.copyable" class="copy-banner">
+            <div class="copy-banner-content">
+              <i class="fas fa-robot"></i>
+              <div class="copy-banner-text">
+                <span class="copy-banner-title">LLM Reference</span>
+                <span class="copy-banner-desc">Copy this entire page to use with AI assistants</span>
+              </div>
+            </div>
+            <button
+              class="copy-banner-btn"
+              @click="copyToClipboard"
+              :class="{ copied }"
+            >
+              <i :class="copied ? 'fas fa-check' : 'fas fa-copy'"></i>
+              {{ copied ? 'Copied!' : 'Copy to Clipboard' }}
+            </button>
+          </div>
           <MarkdownRenderer :content="currentDoc" />
         </template>
       </article>
@@ -252,6 +284,78 @@ onMounted(async () => {
 
 .docs-error p {
   color: var(--text-dim);
+}
+
+.copy-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-lg);
+  padding: var(--sp-lg);
+  margin-bottom: var(--sp-xl);
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.1) 0%, rgba(235, 69, 158, 0.1) 100%);
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+}
+
+.copy-banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+}
+
+.copy-banner-content > i {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.copy-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.copy-banner-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 1px;
+}
+
+.copy-banner-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.copy-banner-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-lg);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-bright);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.copy-banner-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.copy-banner-btn.copied {
+  background: var(--green);
+}
+
+.copy-banner-btn i {
+  font-size: 11px;
 }
 
 /* Desktop only */

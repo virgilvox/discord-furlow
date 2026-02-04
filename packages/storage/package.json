@@ -1,6 +1,6 @@
 {
   "name": "@furlow/storage",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Database adapters for FURLOW bot framework",
   "keywords": ["furlow", "discord", "storage", "database", "sqlite", "postgres"],
   "license": "MIT",

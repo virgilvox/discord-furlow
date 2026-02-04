@@ -313,9 +313,15 @@ importers:
       discord.js:
         specifier: ^14.14.0
         version: 14.25.1
+      play-dl:
+        specifier: ^1.9.0
+        version: 1.9.7
       prism-media:
         specifier: ^1.3.5
         version: 1.3.5(@discordjs/opus@0.9.0)
+      youtube-sr:
+        specifier: ^4.3.0
+        version: 4.3.12
     devDependencies:
       '@types/node':
         specifier: ^20.11.0
@@ -425,6 +431,9 @@ importers:
       '@furlow/schema':
         specifier: workspace:*
         version: link:../schema
+      '@furlow/storage':
+        specifier: workspace:*
+        version: link:../storage
     devDependencies:
       '@types/node':
         specifier: ^20.11.0
@@ -4595,6 +4604,17 @@ packages:
       pathe: 2.0.3
     dev: true
 
+  /play-audio@0.5.2:
+    resolution: {integrity: sha512-ZAqHUKkQLix2Iga7pPbsf1LpUoBjcpwU93F1l3qBIfxYddQLhxS6GKmS0d3jV8kSVaUbr6NnOEcEMFvuX93SWQ==}
+    dev: false
+
+  /play-dl@1.9.7:
+    resolution: {integrity: sha512-KpgerWxUCY4s9Mhze2qdqPhiqd8Ve6HufpH9mBH3FN+vux55qSh6WJKDabfie8IBHN7lnrAlYcT/UdGax58c2A==}
+    engines: {node: '>=16.0.0'}
+    dependencies:
+      play-audio: 0.5.2
+    dev: false
+
   /postcss-load-config@6.0.1(yaml@2.8.2):
     resolution: {integrity: sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g==}
     engines: {node: '>= 18'}
@@ -6018,6 +6038,10 @@ packages:
   /yoctocolors-cjs@2.1.3:
     resolution: {integrity: sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw==}
     engines: {node: '>=18'}
+    dev: false
+
+  /youtube-sr@4.3.12:
+    resolution: {integrity: sha512-pAuh5FjCJ6q062lMw6ajr6j9IHKMXk/AZsEo/5xLhJcoO1gN/M2kxwfAwi3d9QLHMPg2DMdBL1DsuWbAsfc5HA==}
     dev: false
 
   /zwitch@2.0.4:

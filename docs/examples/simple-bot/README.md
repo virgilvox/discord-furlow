@@ -70,5 +70,6 @@ state:
 ## Next Steps
 
 - Add more commands
-- Try the [Moderation Bot](../moderation-bot) example
+- Try the [Moderation Bot](../moderation-bot/README.md) example
 - Read the [YAML Specification](../../reference/yaml-spec.md)
+- See the [Actions Reference](../../reference/actions/_index.md) for all available actions

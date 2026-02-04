@@ -26,9 +26,12 @@
       "title": "Reference",
       "icon": "fas fa-code",
       "pages": [
+        { "id": "yaml-spec", "title": "YAML Specification", "path": "reference/yaml-spec.md" },
         { "id": "actions", "title": "Actions", "path": "reference/actions/_index.md", "badge": "84" },
         { "id": "expressions", "title": "Expressions", "path": "reference/expressions/_index.md", "badge": "71 + 50" },
         { "id": "events", "title": "Events", "path": "reference/events.md", "badge": "76" },
+        { "id": "canvas", "title": "Canvas", "path": "reference/canvas.md" },
+        { "id": "voice", "title": "Voice", "path": "reference/voice.md" },
         { "id": "cli", "title": "CLI", "path": "reference/cli.md" }
       ]
     },
@@ -70,11 +73,36 @@
       ]
     },
     {
+      "id": "advanced",
+      "title": "Advanced",
+      "icon": "fas fa-graduation-cap",
+      "pages": [
+        { "id": "custom-actions", "title": "Custom Actions", "path": "advanced/custom-actions.md" },
+        { "id": "custom-expressions", "title": "Custom Expressions", "path": "advanced/custom-expressions.md" },
+        { "id": "performance", "title": "Performance", "path": "advanced/performance.md" },
+        { "id": "scaling", "title": "Scaling", "path": "advanced/scaling.md" },
+        { "id": "debugging", "title": "Debugging", "path": "advanced/debugging.md" }
+      ]
+    },
+    {
       "id": "examples",
       "title": "Examples",
       "icon": "fas fa-lightbulb",
       "pages": [
-        { "id": "simple-bot", "title": "Simple Bot", "path": "examples/simple-bot/README.md" }
+        { "id": "simple-bot", "title": "Simple Bot", "path": "examples/simple-bot/README.md" },
+        { "id": "moderation-bot", "title": "Moderation Bot", "path": "examples/moderation-bot/README.md" },
+        { "id": "music-bot", "title": "Music Bot", "path": "examples/music-bot/README.md" },
+        { "id": "welcome-bot", "title": "Welcome Bot", "path": "examples/welcome-bot/README.md" },
+        { "id": "reaction-roles-bot", "title": "Reaction Roles", "path": "examples/reaction-roles-bot/README.md" },
+        { "id": "utility-bot", "title": "Utility Bot", "path": "examples/utility-bot/README.md" }
+      ]
+    },
+    {
+      "id": "resources",
+      "title": "Resources",
+      "icon": "fas fa-robot",
+      "pages": [
+        { "id": "llm-reference", "title": "LLM Reference", "path": "llm-reference.md", "copyable": true }
       ]
     }
   ]

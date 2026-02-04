@@ -11,6 +11,9 @@ import {
   createMockMessage,
 } from '../mocks/index.js';
 
+// Re-export database helpers
+export * from './database.js';
+
 /**
  * Create a mock action context for testing
  */

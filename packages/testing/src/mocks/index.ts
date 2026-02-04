@@ -29,6 +29,77 @@ export interface MockChannel {
   name: string;
   type: string;
   guildId: string;
+  parentId?: string | null;
+  nsfw?: boolean;
+  topic?: string | null;
+  position?: number;
+}
+
+export interface MockRole {
+  id: string;
+  name: string;
+  color: number;
+  hoist: boolean;
+  position: number;
+  permissions: string;
+  mentionable: boolean;
+  guildId: string;
+}
+
+export interface MockVoiceChannel extends MockChannel {
+  type: 'voice';
+  bitrate: number;
+  userLimit: number;
+  rtcRegion: string | null;
+}
+
+export interface MockThread extends MockChannel {
+  type: 'thread';
+  ownerId: string;
+  parentId: string;
+  archived: boolean;
+  locked: boolean;
+  messageCount: number;
+  memberCount: number;
+}
+
+export interface MockInteraction {
+  id: string;
+  type: number;
+  guildId: string;
+  channelId: string;
+  userId: string;
+  token: string;
+  commandName?: string;
+  customId?: string;
+  values?: string[];
+  replied: boolean;
+  deferred: boolean;
+}
+
+export interface MockButton {
+  customId: string;
+  label: string;
+  style: number;
+  disabled: boolean;
+  emoji?: { name: string; id?: string };
+}
+
+export interface MockSelectMenu {
+  customId: string;
+  placeholder?: string;
+  minValues: number;
+  maxValues: number;
+  disabled: boolean;
+  options: MockSelectOption[];
+}
+
+export interface MockSelectOption {
+  label: string;
+  value: string;
+  description?: string;
+  emoji?: { name: string; id?: string };
+  default?: boolean;
 }
 
 export interface MockMessage {
@@ -105,6 +176,127 @@ export function createMockMessage(overrides: Partial<MockMessage> = {}): MockMes
     channelId: '111222333444555666',
     guildId: '987654321098765432',
     createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock role
+ */
+export function createMockRole(overrides: Partial<MockRole> = {}): MockRole {
+  return {
+    id: '444555666777888999',
+    name: 'Test Role',
+    color: 0x5865f2, // Discord blurple
+    hoist: false,
+    position: 1,
+    permissions: '0',
+    mentionable: false,
+    guildId: '987654321098765432',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock voice channel
+ */
+export function createMockVoiceChannel(
+  overrides: Partial<MockVoiceChannel> = {}
+): MockVoiceChannel {
+  return {
+    id: '222333444555666777',
+    name: 'General Voice',
+    type: 'voice',
+    guildId: '987654321098765432',
+    parentId: null,
+    bitrate: 64000,
+    userLimit: 0,
+    rtcRegion: null,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock thread
+ */
+export function createMockThread(overrides: Partial<MockThread> = {}): MockThread {
+  return {
+    id: '333444555666777888',
+    name: 'Test Thread',
+    type: 'thread',
+    guildId: '987654321098765432',
+    parentId: '111222333444555666',
+    ownerId: '123456789012345678',
+    archived: false,
+    locked: false,
+    messageCount: 10,
+    memberCount: 3,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock interaction
+ */
+export function createMockInteraction(
+  overrides: Partial<MockInteraction> = {}
+): MockInteraction {
+  return {
+    id: '555666777888999000',
+    type: 2, // APPLICATION_COMMAND
+    guildId: '987654321098765432',
+    channelId: '111222333444555666',
+    userId: '123456789012345678',
+    token: 'mock-interaction-token',
+    commandName: 'test',
+    replied: false,
+    deferred: false,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock button
+ */
+export function createMockButton(overrides: Partial<MockButton> = {}): MockButton {
+  return {
+    customId: 'test-button',
+    label: 'Click Me',
+    style: 1, // PRIMARY
+    disabled: false,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock select menu
+ */
+export function createMockSelectMenu(
+  overrides: Partial<MockSelectMenu> = {}
+): MockSelectMenu {
+  return {
+    customId: 'test-select',
+    placeholder: 'Select an option',
+    minValues: 1,
+    maxValues: 1,
+    disabled: false,
+    options: [
+      { label: 'Option 1', value: 'option1' },
+      { label: 'Option 2', value: 'option2' },
+    ],
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock select option
+ */
+export function createMockSelectOption(
+  overrides: Partial<MockSelectOption> = {}
+): MockSelectOption {
+  return {
+    label: 'Option',
+    value: 'option',
     ...overrides,
   };
 }

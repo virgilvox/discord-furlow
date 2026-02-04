@@ -1,6 +1,6 @@
 {
   "name": "@furlow/builtins",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pre-built bot components for FURLOW framework",
   "keywords": ["furlow", "discord", "builtins", "moderation", "tickets", "leveling"],
   "license": "MIT",

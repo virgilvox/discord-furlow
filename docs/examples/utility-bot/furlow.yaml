@@ -1,0 +1,405 @@
+version: "0.1"
+
+identity:
+  name: "Utility Bot"
+  description: "Helpful utilities for your server"
+
+presence:
+  status: online
+  activity:
+    type: playing
+    name: "/help"
+
+state:
+  storage:
+    type: sqlite
+    path: ./utility.db
+  variables:
+    reminders:
+      scope: user
+      type: array
+      default: []
+    starred_messages:
+      scope: guild
+      type: object
+      default: {}
+
+# Commands
+commands:
+  # Reminders
+  - name: remind
+    description: Set a reminder
+    options:
+      - name: time
+        type: string
+        description: When to remind (e.g., 1h, 30m, 2d)
+        required: true
+      - name: message
+        type: string
+        description: Reminder message
+        required: true
+    actions:
+      - set:
+          var: reminder_id
+          value: "${uuid()}"
+      - set:
+          var: reminder_time
+          value: "${now() + parseDuration(options.time)}"
+      - set:
+          var: reminders
+          scope: user
+          value: |
+            ${[...state.user.reminders, {
+              id: reminder_id,
+              message: options.message,
+              time: reminder_time,
+              channel_id: channel.id
+            }]}
+      - create_timer:
+          id: "reminder_${reminder_id}"
+          duration: "${options.time}"
+          event: reminder_fire
+          data:
+            user_id: "${user.id}"
+            reminder_id: "${reminder_id}"
+      - reply:
+          embeds:
+            - title: "Reminder Set"
+              description: "I'll remind you <t:${Math.floor(reminder_time / 1000)}:R>"
+              color: "#5865F2"
+              fields:
+                - name: "Message"
+                  value: "${options.message}"
+              footer:
+                text: "ID: ${reminder_id}"
+          ephemeral: true
+
+  - name: reminders
+    description: List your reminders
+    actions:
+      - set:
+          var: user_reminders
+          value: "${state.user.reminders || []}"
+      - flow_if:
+          condition: "${user_reminders.length === 0}"
+          then:
+            - reply:
+                content: "You have no active reminders."
+                ephemeral: true
+            - abort
+      - reply:
+          embeds:
+            - title: "Your Reminders"
+              description: |
+                ${user_reminders.map((r, i) =>
+                  `**${i + 1}.** ${r.message}\n   <t:${Math.floor(r.time / 1000)}:R> | ID: \`${r.id.slice(0, 8)}\``
+                ).join('\n\n')}
+              color: "#5865F2"
+          ephemeral: true
+
+  - name: cancelreminder
+    description: Cancel a reminder
+    options:
+      - name: id
+        type: string
+        description: Reminder ID (first 8 characters)
+        required: true
+    actions:
+      - set:
+          var: reminder
+          value: "${state.user.reminders.find(r => r.id.startsWith(options.id))}"
+      - flow_if:
+          condition: "${!reminder}"
+          then:
+            - reply:
+                content: "Reminder not found."
+                ephemeral: true
+            - abort
+      - cancel_timer:
+          id: "reminder_${reminder.id}"
+      - set:
+          var: reminders
+          scope: user
+          value: "${state.user.reminders.filter(r => r.id !== reminder.id)}"
+      - reply:
+          content: "Reminder cancelled."
+          ephemeral: true
+
+  # Polls
+  - name: poll
+    description: Create a poll
+    options:
+      - name: question
+        type: string
+        description: Poll question
+        required: true
+      - name: options
+        type: string
+        description: Comma-separated options (2-10)
+        required: true
+      - name: duration
+        type: string
+        description: Poll duration (e.g., 1h, 30m)
+    actions:
+      - set:
+          var: poll_options
+          value: "${options.options.split(',').map(o => o.trim()).slice(0, 10)}"
+      - set:
+          var: emojis
+          value: "${['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']}"
+      - send_message:
+          channel: "${channel.id}"
+          embeds:
+            - title: "Poll: ${options.question}"
+              description: |
+                ${poll_options.map((opt, i) => `${emojis[i]} ${opt}`).join('\n')}
+              color: "#5865F2"
+              footer:
+                text: "React to vote! ${options.duration ? `Ends in ${options.duration}` : ''}"
+          as: poll_message
+      - batch:
+          items: "${poll_options.map((_, i) => emojis[i])}"
+          as: emoji
+          actions:
+            - add_reaction:
+                message: "${poll_message.id}"
+                emoji: "${emoji}"
+      - reply:
+          content: "Poll created!"
+          ephemeral: true
+
+  # Server/User Info
+  - name: serverinfo
+    description: Show server information
+    actions:
+      - reply:
+          embeds:
+            - title: "${guild.name}"
+              thumbnail:
+                url: "${guild.iconURL({ size: 256 })}"
+              color: "#5865F2"
+              fields:
+                - name: "Owner"
+                  value: "<@${guild.ownerId}>"
+                  inline: true
+                - name: "Members"
+                  value: "${guild.memberCount}"
+                  inline: true
+                - name: "Channels"
+                  value: "${guild.channels.cache.size}"
+                  inline: true
+                - name: "Roles"
+                  value: "${guild.roles.cache.size}"
+                  inline: true
+                - name: "Emojis"
+                  value: "${guild.emojis.cache.size}"
+                  inline: true
+                - name: "Boosts"
+                  value: "${guild.premiumSubscriptionCount || 0}"
+                  inline: true
+                - name: "Created"
+                  value: "<t:${Math.floor(guild.createdTimestamp / 1000)}:R>"
+              footer:
+                text: "ID: ${guild.id}"
+
+  - name: userinfo
+    description: Show user information
+    options:
+      - name: user
+        type: user
+        description: User to look up
+    actions:
+      - set:
+          var: target
+          value: "${options.user || user}"
+      - set:
+          var: target_member
+          value: "${guild.members.cache.get(target.id)}"
+      - reply:
+          embeds:
+            - title: "${target.tag}"
+              thumbnail:
+                url: "${target.displayAvatarURL({ size: 256 })}"
+              color: "#5865F2"
+              fields:
+                - name: "ID"
+                  value: "${target.id}"
+                  inline: true
+                - name: "Nickname"
+                  value: "${target_member?.nickname || 'None'}"
+                  inline: true
+                - name: "Created"
+                  value: "<t:${Math.floor(target.createdTimestamp / 1000)}:R>"
+                  inline: true
+                - name: "Joined"
+                  value: "${target_member ? `<t:${Math.floor(target_member.joinedTimestamp / 1000)}:R>` : 'Not in server'}"
+                  inline: true
+                - name: "Roles"
+                  value: "${target_member?.roles.cache.filter(r => r.id !== guild.id).map(r => r.toString()).join(' ') || 'None'}"
+
+  - name: avatar
+    description: Get a user's avatar
+    options:
+      - name: user
+        type: user
+        description: User to get avatar of
+    actions:
+      - set:
+          var: target
+          value: "${options.user || user}"
+      - reply:
+          embeds:
+            - title: "${target.tag}'s Avatar"
+              image:
+                url: "${target.displayAvatarURL({ size: 1024 })}"
+              color: "#5865F2"
+
+  # Fun Commands
+  - name: coinflip
+    description: Flip a coin
+    actions:
+      - set:
+          var: result
+          value: "${Math.random() < 0.5 ? 'Heads' : 'Tails'}"
+      - reply:
+          content: "The coin landed on **${result}**!"
+
+  - name: roll
+    description: Roll a die
+    options:
+      - name: sides
+        type: integer
+        description: Number of sides (default 6)
+        min_value: 2
+        max_value: 100
+    actions:
+      - set:
+          var: sides
+          value: "${options.sides || 6}"
+      - set:
+          var: result
+          value: "${Math.floor(Math.random() * sides) + 1}"
+      - reply:
+          content: "You rolled a **${result}** (d${sides})"
+
+  - name: 8ball
+    description: Ask the magic 8-ball
+    options:
+      - name: question
+        type: string
+        description: Your question
+        required: true
+    actions:
+      - set:
+          var: responses
+          value: |
+            ${[
+              'It is certain.',
+              'It is decidedly so.',
+              'Without a doubt.',
+              'Yes definitely.',
+              'You may rely on it.',
+              'As I see it, yes.',
+              'Most likely.',
+              'Outlook good.',
+              'Yes.',
+              'Signs point to yes.',
+              'Reply hazy, try again.',
+              'Ask again later.',
+              'Better not tell you now.',
+              'Cannot predict now.',
+              'Concentrate and ask again.',
+              "Don't count on it.",
+              'My reply is no.',
+              'My sources say no.',
+              'Outlook not so good.',
+              'Very doubtful.'
+            ]}
+      - reply:
+          embeds:
+            - title: "Magic 8-Ball"
+              fields:
+                - name: "Question"
+                  value: "${options.question}"
+                - name: "Answer"
+                  value: "${responses[Math.floor(Math.random() * responses.length)]}"
+              color: "#5865F2"
+
+  - name: calc
+    description: Calculate a math expression
+    options:
+      - name: expression
+        type: string
+        description: Math expression (e.g., 2+2, sqrt(16))
+        required: true
+    actions:
+      - set:
+          var: result
+          value: "${eval(options.expression.replace(/[^0-9+\-*/().sqrt]/g, ''))}"
+      - reply:
+          content: "**${options.expression}** = **${result}**"
+
+# Events
+events:
+  # Reminder fire
+  - event: reminder_fire
+    actions:
+      - set:
+          var: reminder
+          value: "${state.user[event.data.user_id].reminders.find(r => r.id === event.data.reminder_id)}"
+      - flow_if:
+          condition: "${reminder}"
+          then:
+            - send_message:
+                channel: "${reminder.channel_id}"
+                content: "<@${event.data.user_id}>"
+                embeds:
+                  - title: "Reminder"
+                    description: "${reminder.message}"
+                    color: "#5865F2"
+                    footer:
+                      text: "Set ${duration(now() - (reminder.time - parseDuration(reminder.time)))} ago"
+            - set:
+                var: reminders
+                scope: user
+                user: "${event.data.user_id}"
+                value: "${state.user[event.data.user_id].reminders.filter(r => r.id !== event.data.reminder_id)}"
+
+  # Starboard
+  - event: reaction_add
+    when: "${reaction.emoji.name === '⭐' && reaction.count >= (env.STAR_THRESHOLD || 3)}"
+    actions:
+      - set:
+          var: message_id
+          value: "${reaction.message.id}"
+      - flow_if:
+          condition: "${state.guild.starred_messages[message_id]}"
+          then:
+            - abort
+      - send_message:
+          channel: "${env.STARBOARD_CHANNEL}"
+          embeds:
+            - description: "${reaction.message.content}"
+              color: "#ffd700"
+              author:
+                name: "${reaction.message.author.tag}"
+                icon_url: "${reaction.message.author.displayAvatarURL()}"
+              fields:
+                - name: "Source"
+                  value: "[Jump to message](${reaction.message.url})"
+              footer:
+                text: "⭐ ${reaction.count}"
+              timestamp: "${reaction.message.createdAt}"
+              image:
+                url: "${reaction.message.attachments.first()?.url}"
+          as: starboard_message
+      - set:
+          var: starred_messages
+          scope: guild
+          value: |
+            ${Object.assign({}, state.guild.starred_messages, {
+              [message_id]: starboard_message.id
+            })}
+
+theme:
+  primary: "#5865F2"

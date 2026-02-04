@@ -1,6 +1,6 @@
 {
   "name": "@furlow/schema",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "JSON Schema definitions and TypeScript types for FURLOW",
   "keywords": ["furlow", "discord", "schema", "types"],
   "license": "MIT",

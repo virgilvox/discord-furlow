@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import HeroSection from '@/components/landing/HeroSection.vue';
 import FeatureGrid from '@/components/landing/FeatureGrid.vue';
-import CodeExample from '@/components/landing/CodeExample.vue';
 import StatsDisplay from '@/components/landing/StatsDisplay.vue';
+import CodeExample from '@/components/landing/CodeExample.vue';
+import CliSection from '@/components/landing/CliSection.vue';
 import QuickLinks from '@/components/landing/QuickLinks.vue';
 </script>
 
@@ -10,8 +11,9 @@ import QuickLinks from '@/components/landing/QuickLinks.vue';
   <div class="landing-page">
     <HeroSection />
     <FeatureGrid />
-    <CodeExample />
     <StatsDisplay />
+    <CodeExample />
+    <CliSection />
     <QuickLinks />
   </div>
 </template>

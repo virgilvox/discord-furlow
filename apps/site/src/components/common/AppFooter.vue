@@ -25,6 +25,9 @@ const currentYear = new Date().getFullYear();
       </nav>
 
       <div class="footer-right">
+        <span class="footer-maintainer">
+          Maintained by <a href="https://github.com/virgilvox" target="_blank" rel="noopener">@virgilvox</a>
+        </span>
         <span class="footer-copyright">
           &copy; {{ currentYear }} FURLOW
         </span>
@@ -111,6 +114,21 @@ const currentYear = new Date().getFullYear();
   display: flex;
   align-items: center;
   gap: var(--sp-md);
+}
+
+.footer-maintainer {
+  font-size: 11px;
+  color: var(--text-ghost);
+}
+
+.footer-maintainer a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-maintainer a:hover {
+  color: var(--text-bright);
 }
 
 .footer-copyright {

@@ -1,0 +1,366 @@
+version: "0.1"
+
+identity:
+  name: "Music Bot"
+  description: "Play music in voice channels"
+
+presence:
+  status: online
+  activity:
+    type: listening
+    name: "/play"
+
+voice:
+  enabled: true
+  default_volume: 50
+  max_queue_size: 100
+  leave_on_empty: true
+  leave_delay: 5m
+
+state:
+  storage:
+    type: memory
+  variables:
+    loop_mode:
+      scope: guild
+      type: string
+      default: "off"
+
+# Embeds
+embeds:
+  now_playing:
+    title: "Now Playing"
+    description: "${track.title}"
+    color: "#5865F2"
+    thumbnail:
+      url: "${track.thumbnail}"
+    fields:
+      - name: "Duration"
+        value: "${duration(track.duration)}"
+        inline: true
+      - name: "Requested by"
+        value: "${track.requester.tag}"
+        inline: true
+      - name: "Progress"
+        value: "${progressBar(player.position, track.duration, 20)}"
+    footer:
+      text: "Volume: ${player.volume}%"
+
+# Flows
+flows:
+  check_voice:
+    actions:
+      - flow_if:
+          condition: "${!member.voice.channelId}"
+          then:
+            - reply:
+                content: "You need to be in a voice channel!"
+                ephemeral: true
+            - abort
+
+  check_dj:
+    actions:
+      - flow_if:
+          condition: "${!member.roles.cache.has(env.DJ_ROLE) && queue.length > 0}"
+          then:
+            - reply:
+                content: "Only DJs can use this command when music is playing."
+                ephemeral: true
+            - abort
+
+# Commands
+commands:
+  - name: play
+    description: Play a song or add to queue
+    options:
+      - name: query
+        type: string
+        description: Song name or URL
+        required: true
+    actions:
+      - call_flow:
+          name: check_voice
+      - voice_join:
+          channel: "${member.voice.channelId}"
+      - voice_search:
+          query: "${options.query}"
+          limit: 1
+          as: results
+      - flow_if:
+          condition: "${results.length === 0}"
+          then:
+            - reply:
+                content: "No results found for: ${options.query}"
+                ephemeral: true
+            - abort
+      - queue_add:
+          track: "${results[0]}"
+      - flow_if:
+          condition: "${!player.playing}"
+          then:
+            - voice_play:
+                source: "${results[0]}"
+            - reply:
+                embeds:
+                  - title: "Now Playing"
+                    description: "[${results[0].title}](${results[0].url})"
+                    color: "#57F287"
+                    thumbnail:
+                      url: "${results[0].thumbnail}"
+                    fields:
+                      - name: "Duration"
+                        value: "${duration(results[0].duration)}"
+                        inline: true
+                      - name: "Requested by"
+                        value: "${user.tag}"
+                        inline: true
+          else:
+            - reply:
+                embeds:
+                  - title: "Added to Queue"
+                    description: "[${results[0].title}](${results[0].url})"
+                    color: "#5865F2"
+                    thumbnail:
+                      url: "${results[0].thumbnail}"
+                    fields:
+                      - name: "Position"
+                        value: "#${queue.length}"
+                        inline: true
+                      - name: "Duration"
+                        value: "${duration(results[0].duration)}"
+                        inline: true
+
+  - name: pause
+    description: Pause playback
+    actions:
+      - call_flow:
+          name: check_voice
+      - voice_pause
+      - reply:
+          content: "Paused playback"
+          ephemeral: true
+
+  - name: resume
+    description: Resume playback
+    actions:
+      - call_flow:
+          name: check_voice
+      - voice_resume
+      - reply:
+          content: "Resumed playback"
+          ephemeral: true
+
+  - name: stop
+    description: Stop playback and leave
+    actions:
+      - call_flow:
+          name: check_voice
+      - call_flow:
+          name: check_dj
+      - voice_stop
+      - queue_clear
+      - voice_leave
+      - reply:
+          content: "Stopped playback and left the channel"
+          ephemeral: true
+
+  - name: skip
+    description: Skip current track
+    actions:
+      - call_flow:
+          name: check_voice
+      - flow_if:
+          condition: "${!player.playing}"
+          then:
+            - reply:
+                content: "Nothing is playing"
+                ephemeral: true
+            - abort
+      - set:
+          var: skipped_track
+          value: "${player.current}"
+      - voice_skip
+      - reply:
+          content: "Skipped: **${skipped_track.title}**"
+
+  - name: queue
+    description: View the queue
+    actions:
+      - queue_get:
+          as: current_queue
+      - flow_if:
+          condition: "${current_queue.length === 0}"
+          then:
+            - reply:
+                content: "Queue is empty. Use `/play` to add songs!"
+                ephemeral: true
+            - abort
+      - reply:
+          embeds:
+            - title: "Music Queue"
+              color: "#5865F2"
+              description: |
+                **Now Playing:**
+                ${player.current ? `[${player.current.title}](${player.current.url})` : 'Nothing'}
+
+                **Up Next:**
+                ${current_queue.slice(0, 10).map((t, i) =>
+                  `\`${i + 1}.\` [${t.title}](${t.url}) - ${duration(t.duration)}`
+                ).join('\n') || 'Empty'}
+              footer:
+                text: "${current_queue.length} tracks | Total: ${duration(current_queue.reduce((a, t) => a + t.duration, 0))}"
+
+  - name: nowplaying
+    description: Show current track
+    actions:
+      - flow_if:
+          condition: "${!player.current}"
+          then:
+            - reply:
+                content: "Nothing is playing"
+                ephemeral: true
+            - abort
+      - reply:
+          embeds:
+            - $ref: embeds.now_playing
+
+  - name: volume
+    description: Set playback volume
+    options:
+      - name: level
+        type: integer
+        description: Volume level (0-100)
+        required: true
+        min_value: 0
+        max_value: 100
+    actions:
+      - call_flow:
+          name: check_voice
+      - call_flow:
+          name: check_dj
+      - voice_volume:
+          volume: "${options.level}"
+      - reply:
+          content: "Volume set to **${options.level}%**"
+          ephemeral: true
+
+  - name: shuffle
+    description: Shuffle the queue
+    actions:
+      - call_flow:
+          name: check_voice
+      - call_flow:
+          name: check_dj
+      - queue_shuffle
+      - reply:
+          content: "Shuffled the queue"
+
+  - name: loop
+    description: Set loop mode
+    options:
+      - name: mode
+        type: string
+        description: Loop mode
+        required: true
+        choices:
+          - name: Off
+            value: "off"
+          - name: Track
+            value: "track"
+          - name: Queue
+            value: "queue"
+    actions:
+      - call_flow:
+          name: check_voice
+      - queue_loop:
+          mode: "${options.mode}"
+      - set:
+          var: loop_mode
+          scope: guild
+          value: "${options.mode}"
+      - reply:
+          content: "Loop mode: **${options.mode}**"
+
+  - name: remove
+    description: Remove a track from queue
+    options:
+      - name: position
+        type: integer
+        description: Position in queue
+        required: true
+        min_value: 1
+    actions:
+      - call_flow:
+          name: check_voice
+      - queue_get:
+          as: current_queue
+      - flow_if:
+          condition: "${options.position > current_queue.length}"
+          then:
+            - reply:
+                content: "Invalid position. Queue has ${current_queue.length} tracks."
+                ephemeral: true
+            - abort
+      - set:
+          var: removed_track
+          value: "${current_queue[options.position - 1]}"
+      - queue_remove:
+          position: "${options.position - 1}"
+      - reply:
+          content: "Removed: **${removed_track.title}**"
+
+  - name: clear
+    description: Clear the queue
+    actions:
+      - call_flow:
+          name: check_voice
+      - call_flow:
+          name: check_dj
+      - queue_clear
+      - reply:
+          content: "Cleared the queue"
+
+  - name: seek
+    description: Seek to position in track
+    options:
+      - name: position
+        type: string
+        description: Position (e.g., 1:30, 90)
+        required: true
+    actions:
+      - call_flow:
+          name: check_voice
+      - voice_seek:
+          position: "${options.position}"
+      - reply:
+          content: "Seeked to **${options.position}**"
+          ephemeral: true
+
+# Events
+events:
+  - event: voice_track_end
+    actions:
+      - flow_if:
+          condition: "${state.guild.loop_mode === 'track'}"
+          then:
+            - voice_play:
+                source: "${track}"
+          else:
+            - flow_if:
+                condition: "${queue.length > 0}"
+                then:
+                  - voice_play:
+                      source: "${queue[0]}"
+                  - queue_remove:
+                      position: 0
+
+  - event: voice_queue_empty
+    when: "${state.guild.loop_mode !== 'queue'}"
+    actions:
+      - send_message:
+          channel: "${player.textChannelId}"
+          content: "Queue finished! Add more songs with `/play`"
+
+theme:
+  primary: "#5865F2"
+  success: "#57F287"

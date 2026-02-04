@@ -1,6 +1,6 @@
 {
   "name": "@furlow/testing",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Test utilities and mocks for FURLOW framework",
   "keywords": ["furlow", "discord", "testing", "mocks"],
   "license": "MIT",
@@ -44,7 +44,8 @@
   "dependencies": {
     "@furlow/core": "workspace:*",
     "@furlow/discord": "workspace:*",
-    "@furlow/schema": "workspace:*"
+    "@furlow/schema": "workspace:*",
+    "@furlow/storage": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

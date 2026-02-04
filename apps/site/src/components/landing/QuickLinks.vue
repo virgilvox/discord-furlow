@@ -35,7 +35,7 @@ const links = [
   <section class="quick-links">
     <div class="quick-links-inner">
       <h2 class="section-title">
-        <span class="section-num">03</span>
+        <span class="section-num">04</span>
         QUICK LINKS
       </h2>
 
@@ -66,7 +66,7 @@ const links = [
 
 <style scoped>
 .quick-links {
-  padding: var(--sp-4xl) var(--sp-lg);
+  padding: var(--sp-3xl) var(--sp-lg);
   background: var(--bg);
 }
 
@@ -79,14 +79,14 @@ const links = [
   display: flex;
   align-items: baseline;
   gap: var(--sp-md);
-  margin-bottom: var(--sp-2xl);
+  margin-bottom: var(--sp-xl);
   padding-bottom: var(--sp-md);
   border-bottom: 2px solid var(--accent);
 }
 
 .section-num {
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 2px;

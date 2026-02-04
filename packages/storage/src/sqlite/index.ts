@@ -19,10 +19,15 @@ export class SQLiteAdapter implements StorageAdapter {
   constructor(options: SQLiteOptions = {}) {
     const dbPath = options.memory ? ':memory:' : (options.path ?? 'furlow.db');
 
-    this.db = new Database(dbPath, {
-      readonly: options.readonly,
-      verbose: options.verbose ? console.log : undefined,
-    });
+    const dbOptions: { readonly?: boolean; verbose?: (...args: unknown[]) => void } = {};
+    if (options.readonly !== undefined) {
+      dbOptions.readonly = options.readonly;
+    }
+    if (options.verbose) {
+      dbOptions.verbose = console.log;
+    }
+
+    this.db = new Database(dbPath, dbOptions);
 
     // Enable WAL mode for better performance
     this.db.pragma('journal_mode = WAL');

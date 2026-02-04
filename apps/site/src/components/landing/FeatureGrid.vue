@@ -75,7 +75,7 @@ const colorClasses: Record<string, string> = {
 
 <style scoped>
 .features {
-  padding: var(--sp-4xl) var(--sp-lg);
+  padding: var(--sp-3xl) var(--sp-lg);
   background: var(--bg-raised);
 }
 
@@ -88,14 +88,14 @@ const colorClasses: Record<string, string> = {
   display: flex;
   align-items: baseline;
   gap: var(--sp-md);
-  margin-bottom: var(--sp-2xl);
+  margin-bottom: var(--sp-xl);
   padding-bottom: var(--sp-md);
   border-bottom: 2px solid var(--accent);
 }
 
 .section-num {
   font-family: var(--font-display);
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--accent);
   letter-spacing: 2px;

@@ -1,0 +1,221 @@
+version: "0.1"
+
+identity:
+  name: "Welcome Bot"
+  description: "Welcomes new members to the server"
+
+presence:
+  status: online
+  activity:
+    type: watching
+    name: "new members"
+
+# Canvas configuration for welcome cards
+canvas:
+  enabled: true
+  fonts_dir: ./fonts
+  generators:
+    welcome_card:
+      width: 800
+      height: 300
+      layers:
+        # Background
+        - type: rect
+          x: 0
+          y: 0
+          width: 800
+          height: 300
+          color: "#2f3136"
+
+        # Gradient overlay
+        - type: rect
+          x: 0
+          y: 0
+          width: 800
+          height: 300
+          gradient:
+            type: linear
+            colors:
+              - "rgba(88, 101, 242, 0.3)"
+              - "rgba(87, 242, 135, 0.3)"
+            start: [0, 0]
+            end: [800, 300]
+
+        # Avatar circle background
+        - type: circle
+          x: 150
+          y: 150
+          radius: 70
+          color: "#ffffff"
+
+        # Avatar
+        - type: image
+          src: "${member.displayAvatarURL({ size: 128 })}"
+          x: 85
+          y: 85
+          width: 130
+          height: 130
+          circular: true
+
+        # Welcome text
+        - type: text
+          text: "WELCOME"
+          x: 280
+          y: 100
+          font: "bold 24px sans-serif"
+          color: "#5865F2"
+
+        # Username
+        - type: text
+          text: "${member.displayName}"
+          x: 280
+          y: 150
+          font: "bold 36px sans-serif"
+          color: "#ffffff"
+          maxWidth: 480
+
+        # Server name
+        - type: text
+          text: "to ${guild.name}"
+          x: 280
+          y: 190
+          font: "20px sans-serif"
+          color: "#b9bbbe"
+
+        # Member count
+        - type: text
+          text: "Member #${guild.memberCount}"
+          x: 280
+          y: 240
+          font: "16px sans-serif"
+          color: "#72767d"
+
+# Embeds
+embeds:
+  welcome:
+    title: "Welcome to ${guild.name}!"
+    description: |
+      Hey ${member}, thanks for joining us!
+
+      Make sure to read the rules and have fun!
+    color: "#5865F2"
+    thumbnail:
+      url: "${member.displayAvatarURL({ size: 256 })}"
+    fields:
+      - name: "Member Count"
+        value: "${guild.memberCount}"
+        inline: true
+      - name: "Account Created"
+        value: "<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>"
+        inline: true
+    footer:
+      text: "Welcome!"
+      icon_url: "${guild.iconURL}"
+    timestamp: true
+
+  goodbye:
+    title: "Goodbye!"
+    description: "${member.displayName} has left the server."
+    color: "#ed4245"
+    thumbnail:
+      url: "${member.displayAvatarURL({ size: 256 })}"
+    fields:
+      - name: "Joined"
+        value: "<t:${Math.floor(member.joinedTimestamp / 1000)}:R>"
+        inline: true
+      - name: "Members Now"
+        value: "${guild.memberCount}"
+        inline: true
+    timestamp: true
+
+# Events
+events:
+  # Welcome new members
+  - event: guild_member_add
+    actions:
+      # Generate welcome card
+      - canvas_render:
+          generator: welcome_card
+          as: welcome_image
+
+      # Send welcome message with card
+      - send_message:
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome to the server, ${member}!"
+          files:
+            - attachment: "${welcome_image}"
+              name: "welcome.png"
+          embeds:
+            - $ref: embeds.welcome
+
+      # Auto-assign role if configured
+      - flow_if:
+          condition: "${env.AUTO_ROLE}"
+          then:
+            - assign_role:
+                role: "${env.AUTO_ROLE}"
+                reason: "Auto-role on join"
+
+      # Send welcome DM
+      - send_dm:
+          user: "${member.id}"
+          embeds:
+            - title: "Welcome to ${guild.name}!"
+              description: |
+                Thanks for joining! Here are some things to get you started:
+
+                - Read the rules in #rules
+                - Introduce yourself in #introductions
+                - Get roles in #roles
+
+                If you have any questions, feel free to ask!
+              color: "#5865F2"
+              thumbnail:
+                url: "${guild.iconURL({ size: 256 })}"
+
+  # Goodbye messages
+  - event: guild_member_remove
+    when: "${env.GOODBYE_CHANNEL}"
+    actions:
+      - send_message:
+          channel: "${env.GOODBYE_CHANNEL}"
+          embeds:
+            - $ref: embeds.goodbye
+
+# Commands
+commands:
+  - name: setwelcome
+    description: Set the welcome channel
+    options:
+      - name: channel
+        type: channel
+        description: Welcome channel
+        required: true
+    actions:
+      - set:
+          var: welcome_channel
+          scope: guild
+          value: "${options.channel.id}"
+      - reply:
+          content: "Welcome channel set to ${options.channel}"
+          ephemeral: true
+
+  - name: testwelcome
+    description: Test the welcome message
+    actions:
+      - canvas_render:
+          generator: welcome_card
+          as: test_image
+      - reply:
+          content: "Here's what the welcome message looks like:"
+          files:
+            - attachment: "${test_image}"
+              name: "welcome.png"
+          embeds:
+            - $ref: embeds.welcome
+          ephemeral: true
+
+theme:
+  primary: "#5865F2"
+  success: "#57F287"
+  danger: "#ED4245"

@@ -4,6 +4,9 @@ import BuilderLayout from '@/components/builder/BuilderLayout.vue';
 import SectionNav from '@/components/builder/SectionNav.vue';
 import SchemaForm from '@/components/builder/SchemaForm.vue';
 import ActionBuilder from '@/components/builder/ActionBuilder.vue';
+import ContextMenuBuilder from '@/components/builder/ContextMenuBuilder.vue';
+import ComponentsBuilder from '@/components/builder/ComponentsBuilder.vue';
+import PipesBuilder from '@/components/builder/PipesBuilder.vue';
 import YamlPreview from '@/components/builder/YamlPreview.vue';
 import ValidationPanel from '@/components/builder/ValidationPanel.vue';
 import BotPreview from '@/components/builder/BotPreview.vue';
@@ -175,11 +178,20 @@ provide('schemaStore', schemaStore);
             </div>
 
             <div class="form-body">
-              <SchemaForm
-                v-if="!['commands', 'events', 'flows'].includes(activeSection)"
+              <ActionBuilder
+                v-if="['commands', 'events', 'flows'].includes(activeSection)"
                 :section="activeSection"
               />
-              <ActionBuilder
+              <ContextMenuBuilder
+                v-else-if="activeSection === 'context_menus'"
+              />
+              <ComponentsBuilder
+                v-else-if="activeSection === 'components'"
+              />
+              <PipesBuilder
+                v-else-if="activeSection === 'pipes'"
+              />
+              <SchemaForm
                 v-else
                 :section="activeSection"
               />

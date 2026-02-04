@@ -3,15 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": ".",
-    "jsx": "react-jsx",
-    "composite": false
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*", "server/**/*", "types/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../../packages/schema" },
-    { "path": "../../packages/core" },
-    { "path": "../../packages/discord" },
-    { "path": "../../packages/storage" }
-  ]
+  "exclude": ["node_modules", "dist"]
 }

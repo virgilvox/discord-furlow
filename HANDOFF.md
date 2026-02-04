@@ -4,23 +4,55 @@
 
 FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is a declarative Discord bot framework that allows building bots using YAML specifications. The project is a TypeScript monorepo using pnpm workspaces and Turborepo.
 
-## Current State: v1.0.0 PUBLISHED - FEATURE COMPLETE
+## Current State: v1.0.1 - FEATURE COMPLETE
 
 As of 2026-02-03, all 9 packages are published to npm with comprehensive test coverage. **All code features are 100% implemented.**
 
 | Package | Version | Status | Tests | Notes |
 |---------|---------|--------|-------|-------|
-| `@furlow/schema` | 1.0.0 | ✅ Published | - | Type definitions and JSON schemas |
-| `@furlow/storage` | 1.0.0 | ✅ Published | 41 | SQLite, PostgreSQL, Memory adapters |
-| `@furlow/core` | 1.0.0 | ✅ Published | 283 | Parser, expression, **85 action handlers**, flows, normalization |
-| `@furlow/discord` | 1.0.0 | ✅ Published | 53 | Discord.js wrapper, voice, video, interactions |
-| `@furlow/pipes` | 1.0.0 | ✅ Published | 234 | HTTP, WebSocket, Webhook, MQTT, TCP, UDP, File, Database |
-| `@furlow/testing` | 1.0.0 | ✅ Published | 142 | Mocks, fixtures, E2E tests, bot lifecycle |
-| `@furlow/builtins` | 1.0.0 | ✅ Published | - | 14 builtin modules |
-| `@furlow/dashboard` | 1.0.0 | ✅ Published | - | Express server + React client + 18 API endpoints |
-| `@furlow/cli` | 1.0.0 | ✅ Published | - | Command-line interface (init, start, validate, add, export) |
+| `@furlow/schema` | 1.0.1 | ✅ Published | - | Type definitions and JSON schemas |
+| `@furlow/storage` | 1.0.1 | ✅ Published | 197 | Memory, SQLite, PostgreSQL + contract tests |
+| `@furlow/core` | 1.0.1 | ✅ Published | 856 | Full handler coverage, scheduler, events, automod |
+| `@furlow/discord` | 1.0.1 | ✅ Published | 79 | Discord.js wrapper, voice, video, interactions |
+| `@furlow/pipes` | 1.0.1 | ✅ Published | 234 | HTTP, WebSocket, Webhook, MQTT, TCP, UDP, File, Database |
+| `@furlow/testing` | 1.0.1 | ✅ Published | 192 | Mocks, fixtures, E2E tests, bot lifecycle, database helpers |
+| `@furlow/builtins` | 1.0.1 | ✅ Published | 398 | 14 builtin modules with comprehensive tests |
+| `@furlow/dashboard` | 1.0.1 | ✅ Published | - | Express server + React client + 18 API endpoints |
+| `@furlow/cli` | 1.0.1 | ✅ Published | - | Command-line interface (init, start, validate, add, export) |
 
-**Total Tests: 753 (All Passing)**
+**Total Tests: 1,956+ (All Passing)**
+
+### Test Coverage Initiative (All Phases Complete)
+
+Comprehensive test coverage expansion following a structured plan:
+
+| Phase | Status | Tests Added | Description |
+|-------|--------|-------------|-------------|
+| Phase 1: Action Handlers | ✅ Complete | ~311 | 9 handler test files covering all 85 actions |
+| Phase 2: Scheduler/Events/Automod | ✅ Complete | ~173 | Timer, cron, event router, automod engine |
+| Phase 3: Storage Adapters | ✅ Complete | ~156 | SQLite, PostgreSQL, contract tests |
+| Phase 4: Builtins Modules | ✅ Complete | 398 | 14 builtin module tests |
+| Phase 5: Testing Enhancements | ✅ Complete | 50 | Additional mocks (role, voice, thread, interaction, button, select menu) and database helpers |
+
+**Phase 4 Builtin Tests Summary:**
+- moderation (21 tests): Commands, tables, config validation
+- welcome (29 tests): Event handlers, commands, canvas generators
+- logging (36 tests): 15 event handlers, commands
+- tickets (38 tests): Tables, components, event handlers, commands
+- leveling (47 tests): Tables, event handlers, commands, canvas generators
+- reaction-roles (36 tests): Tables, event handlers, commands
+- starboard (38 tests): Tables, event handlers, commands
+- music (18 tests): Tables, commands, event handlers
+- polls (22 tests): Tables, event handlers, commands
+- giveaways (22 tests): Tables, event handlers, commands
+- auto-responder (22 tests): Tables, event handlers, commands
+- afk (22 tests): Tables, event handlers, commands
+- reminders (26 tests): Tables, event handlers, commands
+- utilities (21 tests): Commands (11 utility commands)
+
+**Phase 5 Testing Enhancements Summary:**
+- **New Mocks (30 tests)**: createMockRole, createMockVoiceChannel, createMockThread, createMockInteraction, createMockButton, createMockSelectMenu, createMockSelectOption
+- **Database Helpers (20 tests)**: seedDatabase, cleanupDatabase, snapshotDatabase, compareSnapshots, DatabaseTracker, trackDatabaseState
 
 ## Implementation Status: 100% Feature Complete
 
@@ -326,7 +358,7 @@ pnpm install
 # Build all packages
 pnpm run build
 
-# Run all tests (753 tests)
+# Run all tests (1,956+ tests)
 pnpm run test
 
 # Development mode (watch)
@@ -341,17 +373,13 @@ pnpm -r publish --access public --no-git-checks
 
 ## Known Issues
 
-### 1. TypeScript Project References (Non-blocking)
-- `composite: true` not set in tsconfig files
-- Affects `pnpm typecheck` but NOT builds or tests
-- Build and all 753 tests pass successfully
+### 1. TypeScript Typecheck Errors in Tests (Non-blocking)
+- Some test files have TypeScript strict mode errors (missing properties, type mismatches)
+- Tests pass at runtime because JavaScript is dynamic
+- `pnpm typecheck` may fail on @furlow/core due to test file type errors
+- Builds and all 1,956+ tests pass successfully
 
-### 2. Optional Dependencies for Voice Search
-- Full music search requires optional packages: `play-dl` or `youtube-sr`
-- Without them, `voice_search` returns ytsearch URLs for yt-dlp resolution
-- This is by design for flexibility and reduced dependencies
-
-### 3. Duplicate Key Warnings in Builtins
+### 2. Duplicate Key Warnings in Builtins
 - Several builtin modules have duplicate `action` keys in object literals
 - Non-blocking, just warnings during development
 
