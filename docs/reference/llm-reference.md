@@ -20,6 +20,168 @@ commands:
 
 ---
 
+## YAML Syntax Rules (Critical)
+
+**IMPORTANT: Follow these rules exactly to generate valid YAML.**
+
+### Rule 1: Always Quote Strings Containing Special Characters
+
+Strings with these characters MUST be wrapped in double quotes `"`:
+- Colons `:`
+- Square brackets `[` `]`
+- Curly braces `{` `}`
+- Hash/pound `#`
+- Pipe `|` (when not at line start)
+- Greater than `>`
+- Asterisk `*`
+- Ampersand `&`
+- Exclamation `!`
+- Percent `%`
+- At sign `@`
+- Backtick `` ` ``
+
+```yaml
+# WRONG - will cause parse errors
+content: ${shuffle(['🍒','🍋','🔔'])}
+content: Check this: important
+
+# CORRECT - quoted strings
+content: "${shuffle(['🍒','🍋','🔔'])}"
+content: "Check this: important"
+```
+
+### Rule 2: ALL Expressions Must Be Quoted
+
+Every `${}` expression MUST be in double quotes, no exceptions:
+
+```yaml
+# WRONG
+content: Hello ${user.username}!
+value: ${random(1, 100)}
+when: ${member.roles.includes('admin')}
+
+# CORRECT
+content: "Hello ${user.username}!"
+value: "${random(1, 100)}"
+when: "${member.roles.includes('admin')}"
+```
+
+### Rule 3: Escape Quotes Inside Strings
+
+When your string contains double quotes, escape them with backslash:
+
+```yaml
+# WRONG - breaks YAML parsing
+content: "She said "hello" to me"
+
+# CORRECT - escaped quotes
+content: "She said \"hello\" to me"
+```
+
+### Rule 4: Use Block Scalars for Long/Multi-line Strings
+
+For long strings or strings with many special characters, use YAML block scalars:
+
+```yaml
+# Literal block (|) - preserves newlines
+content: |
+  Line 1
+  Line 2
+  Line 3
+
+# Folded block (>) - joins lines with spaces
+content: >
+  This is a very long message that
+  spans multiple lines but will be
+  joined into a single line.
+
+# Block scalar with expressions - still needs quotes inside
+content: |
+  Welcome to the server!
+  Your ID is: ${user.id}
+  Enjoy your stay!
+```
+
+### Rule 5: Arrays Inside Expressions
+
+When expressions contain arrays, always double-quote the entire expression:
+
+```yaml
+# WRONG - YAML interprets [] as array syntax
+content: ${nth(shuffle(['a','b','c']), 0)}
+
+# CORRECT
+content: "${nth(shuffle(['a','b','c']), 0)}"
+```
+
+### Rule 6: Strings Starting with Special Values
+
+Quote strings that could be interpreted as other YAML types:
+
+```yaml
+# WRONG - interpreted as boolean/null
+status: yes
+status: no
+status: true
+status: null
+value: 1.0
+
+# CORRECT
+status: "yes"
+status: "no"
+status: "true"
+status: "null"
+value: "1.0"  # if you want a string, not number
+```
+
+### Rule 7: Emoji in Strings
+
+Emoji usually work fine, but always quote strings containing them to be safe:
+
+```yaml
+# Safe
+content: "🎉 Congratulations! 🎉"
+emoji: "🍒"
+```
+
+### Complete Example with All Rules Applied
+
+```yaml
+commands:
+  - name: slots
+    description: "Play the slot machine"
+    actions:
+      - reply:
+          content: "${nth(shuffle(['🍒','🍋','🔔','⭐','💎','7️⃣']), 0)} | ${nth(shuffle(['🍒','🍋','🔔','⭐','💎','7️⃣']), 1)} | ${nth(shuffle(['🍒','🍋','🔔','⭐','💎','7️⃣']), 2)}"
+
+  - name: eightball
+    description: "Ask the magic 8-ball"
+    options:
+      - name: question
+        type: string
+        required: true
+        description: "Your question"
+    actions:
+      - reply:
+          content: "${nth(shuffle(['It is certain.','Without a doubt.','Yes, definitely.','Most likely.','Outlook good.','Signs point to yes.','Reply hazy, try again.','Ask again later.','Cannot predict now.','Don\\'t count on it.','My reply is no.','Very doubtful.']), 0)}"
+
+  - name: say
+    description: "Make the bot say something"
+    options:
+      - name: message
+        type: string
+        required: true
+    actions:
+      - send_message:
+          channel: "${channel.id}"
+          content: "${options.message}"
+      - reply:
+          content: "Message sent!"
+          ephemeral: true
+```
+
+---
+
 ## YAML Specification
 
 ### Top-Level Keys
