@@ -67,9 +67,6 @@ onMounted(() => {
           <span class="wm-char orange">W</span>
           <div class="cursor"></div>
         </div>
-
-        <!-- Subtitle -->
-        <div class="subtitle">Flexible User Rules for Live Online Workers</div>
       </div>
     </div>
   </Teleport>
@@ -308,32 +305,6 @@ onMounted(() => {
   }
 }
 
-/* ---- SUBTITLE ---- */
-.subtitle {
-  position: absolute;
-  bottom: -28px;
-  left: 0;
-  right: 0;
-  font-family: 'Space Mono', 'Courier New', monospace;
-  font-size: 10px;
-  color: #444;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  opacity: 0;
-  animation: fadeUp 0.4s ease-out 1.65s both;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* ---- CURSOR BLINK at end ---- */
 .cursor {
   width: 3px;
@@ -400,14 +371,6 @@ onMounted(() => {
     height: 32px;
     width: 2px;
   }
-
-  .subtitle {
-    font-size: 8px;
-    letter-spacing: 1px;
-    bottom: -24px;
-    text-align: center;
-    padding: 0 16px;
-  }
 }
 
 @media (max-width: 380px) {
@@ -422,10 +385,6 @@ onMounted(() => {
 
   .cursor {
     height: 28px;
-  }
-
-  .subtitle {
-    font-size: 7px;
   }
 }
 </style>
