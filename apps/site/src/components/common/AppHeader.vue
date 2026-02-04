@@ -8,6 +8,7 @@ const mobileMenuOpen = ref(false);
 const navItems = [
   { label: 'DOCS', path: '/docs' },
   { label: 'BUILDER', path: '/builder' },
+  { label: 'LLM REF', path: '/docs/reference/llm-reference' },
 ];
 
 const isActive = (path: string) => {

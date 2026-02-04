@@ -6,6 +6,7 @@ export interface DocPage {
   title: string;
   path: string;
   badge?: string;
+  copyable?: boolean;
 }
 
 export interface DocSection {
@@ -13,6 +14,7 @@ export interface DocSection {
   title: string;
   icon: string;
   pages: DocPage[];
+  highlight?: boolean;
 }
 
 export interface DocsManifest {

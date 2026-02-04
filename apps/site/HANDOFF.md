@@ -49,6 +49,7 @@ The builder generates valid FURLOW YAML in real-time:
 | yaml | YAML parsing for two-way sync |
 | Dexie | IndexedDB wrapper for persistence |
 | marked | Markdown parsing |
+| sharp | OG image generation (SVG to PNG) |
 | @furlow/schema | Types and validation |
 
 ## Project Structure
@@ -225,6 +226,36 @@ The site deploys to GitHub Pages via `.github/workflows/deploy-site.yml`:
   - Updated `docs/manifest.json` with new structure
 - **Made Pipes top-level nav section** - Pipes now has its own section with `fas fa-plug` icon, not nested under Packages
 
+### Session 5 - LLM Reference & SEO
+- **LLM Reference Documentation** - Created comprehensive AI-friendly reference:
+  - New `docs/reference/llm-reference.md` (1,473 lines, ~31KB)
+  - Covers: full YAML spec, all 84 actions with examples, 76 events, 121 expressions/transforms
+  - Common patterns and quick start templates
+  - Designed for copy-paste into AI assistants
+- **Highlighted AI Reference Section** - Updated `DocNav.vue`:
+  - New "AI / LLM Reference" section at top of docs nav with `highlight: true` flag
+  - Gradient background and accent border styling for highlighted sections
+  - AI badge with special accent styling
+  - Auto-expands on page load
+- **Type System Updates** - Extended `useDocs.ts` interfaces:
+  - Added `highlight?: boolean` to `DocSection`
+  - Added `copyable?: boolean` to `DocPage`
+- **Comprehensive SEO** - Enhanced `index.html`:
+  - Primary meta tags (title, description, keywords, robots, author)
+  - Open Graph tags (og:title, og:description, og:image, og:site_name, og:locale)
+  - Twitter Card tags (summary_large_image)
+  - Theme color and canonical URL
+  - Apple touch icon reference
+- **Social Media Preview Image** - Created OG image:
+  - `public/og-image.svg` - Source SVG with FURLOW branding, stats boxes, code snippet
+  - `public/og-image.png` - 1200x630 PNG for social media sharing
+  - `scripts/generate-og-image.mjs` - Sharp-based build script
+  - Added `prebuild` and `generate:og` npm scripts
+- **Navigation Updates**:
+  - Added "LLM REF" link to main header navigation (AppHeader.vue)
+  - Restructured docs manifest with AI Reference as first section
+- **Bug Fix**: Fixed trailing comma in `docs/manifest.json` causing JSON parse error
+
 ### Session 4 - Mobile & Polish
 - **Comprehensive mobile responsive styles** - New `responsive.css` with:
   - Touch-friendly targets (min 44px for coarse pointers)
@@ -280,6 +311,7 @@ The site deploys to GitHub Pages via `.github/workflows/deploy-site.yml`:
 
 - Loading/error states improvements
 - Shiki bundle optimization (currently loads specific languages only, but still ~1.6MB gzipped)
+- Apple touch icon (`public/apple-touch-icon.png`) - referenced in HTML but not yet created
 
 ## Design Decisions
 
@@ -341,6 +373,12 @@ The design system requires very specific styling that would fight against Tailwi
 | Splash animation | `src/components/common/SplashScreen.vue` |
 | Docs manifest | `../../docs/manifest.json` |
 | Pipes docs | `../../docs/packages/pipes/` (9 files including examples.md) |
+| LLM Reference | `../../docs/reference/llm-reference.md` |
+| SEO meta tags | `index.html` |
+| OG Image source | `public/og-image.svg` |
+| OG Image PNG | `public/og-image.png` |
+| OG Image generator | `scripts/generate-og-image.mjs` |
+| Doc section highlight | `src/components/docs/DocNav.vue` (highlight class) |
 
 ## Contact / Questions
 

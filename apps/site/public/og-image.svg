@@ -1,0 +1,95 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#12121a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#5865F2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7289DA;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg-gradient)"/>
+
+  <!-- Grid pattern -->
+  <g opacity="0.05">
+    <defs>
+      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#5865F2" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="1200" height="630" fill="url(#grid)"/>
+  </g>
+
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent-gradient)"/>
+
+  <!-- FURLOW Logo/Text -->
+  <text x="100" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="700" fill="#ffffff" letter-spacing="8">FURLOW</text>
+
+  <!-- Tagline -->
+  <text x="100" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="400" fill="#8b8b9a" letter-spacing="2">DECLARATIVE DISCORD BOT FRAMEWORK</text>
+
+  <!-- Description -->
+  <text x="100" y="360" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#6b6b7a">Build powerful Discord bots with YAML. No code required.</text>
+
+  <!-- Stats boxes -->
+  <g transform="translate(100, 420)">
+    <!-- Box 1: Actions -->
+    <rect x="0" y="0" width="180" height="80" rx="4" fill="#1a1a24" stroke="#2a2a3a" stroke-width="1"/>
+    <text x="90" y="35" font-family="monospace" font-size="32" font-weight="700" fill="#5865F2" text-anchor="middle">84</text>
+    <text x="90" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6b6b7a" text-anchor="middle" letter-spacing="1">ACTIONS</text>
+
+    <!-- Box 2: Events -->
+    <rect x="200" y="0" width="180" height="80" rx="4" fill="#1a1a24" stroke="#2a2a3a" stroke-width="1"/>
+    <text x="290" y="35" font-family="monospace" font-size="32" font-weight="700" fill="#5865F2" text-anchor="middle">76</text>
+    <text x="290" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6b6b7a" text-anchor="middle" letter-spacing="1">EVENTS</text>
+
+    <!-- Box 3: Expressions -->
+    <rect x="400" y="0" width="180" height="80" rx="4" fill="#1a1a24" stroke="#2a2a3a" stroke-width="1"/>
+    <text x="490" y="35" font-family="monospace" font-size="32" font-weight="700" fill="#5865F2" text-anchor="middle">121</text>
+    <text x="490" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6b6b7a" text-anchor="middle" letter-spacing="1">EXPRESSIONS</text>
+
+    <!-- Box 4: Builtins -->
+    <rect x="600" y="0" width="180" height="80" rx="4" fill="#1a1a24" stroke="#2a2a3a" stroke-width="1"/>
+    <text x="690" y="35" font-family="monospace" font-size="32" font-weight="700" fill="#5865F2" text-anchor="middle">14</text>
+    <text x="690" y="60" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6b6b7a" text-anchor="middle" letter-spacing="1">BUILTINS</text>
+  </g>
+
+  <!-- Code snippet decoration -->
+  <g transform="translate(850, 140)">
+    <rect x="0" y="0" width="280" height="200" rx="6" fill="#12121a" stroke="#2a2a3a" stroke-width="1"/>
+    <!-- Window controls -->
+    <circle cx="20" cy="20" r="5" fill="#ff5f56"/>
+    <circle cx="38" cy="20" r="5" fill="#ffbd2e"/>
+    <circle cx="56" cy="20" r="5" fill="#27ca40"/>
+
+    <!-- Code lines -->
+    <text x="20" y="60" font-family="monospace" font-size="12" fill="#5865F2">version:</text>
+    <text x="85" y="60" font-family="monospace" font-size="12" fill="#98c379">"0.1"</text>
+
+    <text x="20" y="85" font-family="monospace" font-size="12" fill="#5865F2">commands:</text>
+
+    <text x="30" y="110" font-family="monospace" font-size="12" fill="#c678dd">- name:</text>
+    <text x="95" y="110" font-family="monospace" font-size="12" fill="#98c379">ping</text>
+
+    <text x="40" y="135" font-family="monospace" font-size="12" fill="#c678dd">actions:</text>
+
+    <text x="50" y="160" font-family="monospace" font-size="12" fill="#61afef">- reply:</text>
+
+    <text x="70" y="185" font-family="monospace" font-size="12" fill="#e5c07b">content:</text>
+    <text x="140" y="185" font-family="monospace" font-size="12" fill="#98c379">"Pong!"</text>
+  </g>
+
+  <!-- Bottom border -->
+  <rect x="0" y="626" width="1200" height="4" fill="url(#accent-gradient)"/>
+</svg>

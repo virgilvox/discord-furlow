@@ -585,4 +585,80 @@ const setValue = (key: string, newValue: string | number | boolean) => {
   text-transform: uppercase;
   margin-bottom: var(--sp-xs);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .schema-form {
+    gap: var(--sp-md);
+  }
+
+  .form-fields {
+    gap: var(--sp-md);
+  }
+
+  .embeds-header {
+    flex-wrap: wrap;
+    gap: var(--sp-sm);
+  }
+
+  .embed-card-header {
+    padding: var(--sp-sm);
+  }
+
+  .embed-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .embed-name {
+    font-size: 11px;
+    word-break: break-all;
+  }
+
+  .embed-title-preview {
+    display: none;
+  }
+
+  .embed-card-body {
+    padding: var(--sp-sm);
+  }
+
+  .empty-form,
+  .empty-embeds {
+    padding: var(--sp-lg);
+  }
+
+  .empty-form i,
+  .empty-embeds i {
+    font-size: 24px;
+  }
+
+  .empty-form p {
+    max-width: 100%;
+  }
+
+  .textarea {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .input-label,
+  .field-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .checkbox span {
+    font-size: 12px;
+  }
+
+  .embeds-count {
+    font-size: 11px;
+  }
+
+  .embed-name {
+    font-size: 10px;
+  }
+}
 </style>

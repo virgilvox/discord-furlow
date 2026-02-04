@@ -618,4 +618,88 @@ const truncate = (str: string, len: number): string => {
 .quick-action-cancel:hover {
   color: var(--red);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .action-card-main {
+    padding: var(--sp-xs) var(--sp-sm);
+  }
+
+  .action-type {
+    font-size: 11px;
+  }
+
+  .action-preview {
+    font-size: 10px;
+  }
+
+  .action-fields {
+    padding: var(--sp-sm);
+  }
+
+  .fields-grid {
+    gap: var(--sp-sm);
+  }
+
+  .input-label {
+    font-size: 9px;
+  }
+
+  .input {
+    font-size: 11px;
+    padding: var(--sp-xs);
+  }
+
+  .checkbox-label {
+    font-size: 10px;
+  }
+
+  .nested-actions {
+    padding-left: var(--sp-sm);
+  }
+
+  .depth-1 .action-card-main {
+    margin-left: var(--sp-sm);
+  }
+
+  .depth-1 .action-fields {
+    margin-left: var(--sp-sm);
+  }
+
+  .depth-2 .action-card-main {
+    margin-left: var(--sp-md);
+  }
+
+  .depth-2 .action-fields {
+    margin-left: var(--sp-md);
+  }
+
+  .quick-action-picker {
+    padding: var(--sp-2xs);
+    gap: 2px;
+  }
+
+  .quick-action-btn {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-drag-handle {
+    display: none;
+  }
+
+  .action-content {
+    min-width: 0;
+  }
+
+  .action-name {
+    word-break: break-all;
+  }
+
+  .action-preview {
+    word-break: break-word;
+  }
+}
 </style>

@@ -321,3 +321,148 @@
   text-decoration: underline dotted var(--text-ghost);
   cursor: help;
 }
+
+/* ========================================
+   Responsive Styles
+   ======================================== */
+
+@media (max-width: 768px) {
+  .markdown-content {
+    line-height: 1.6;
+  }
+
+  .markdown-content h1 {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+
+  .markdown-content h2 {
+    font-size: 18px;
+    letter-spacing: 2px;
+    margin-top: var(--sp-xl);
+    margin-bottom: var(--sp-md);
+  }
+
+  .markdown-content h3 {
+    font-size: 14px;
+    letter-spacing: 1.5px;
+  }
+
+  .markdown-content h4 {
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .markdown-content pre,
+  .markdown-content .shiki {
+    padding: var(--sp-md);
+    font-size: 12px;
+    margin-left: calc(-1 * var(--sp-md));
+    margin-right: calc(-1 * var(--sp-md));
+    border-left: none;
+    border-right: none;
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: var(--accent-dim);
+  }
+
+  .markdown-content pre code,
+  .markdown-content .shiki code {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .markdown-content code {
+    font-size: 12px;
+    word-break: break-word;
+  }
+
+  /* Table wrapper for horizontal scroll */
+  .markdown-content table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 12px;
+  }
+
+  .markdown-content th,
+  .markdown-content td {
+    padding: var(--sp-xs) var(--sp-sm);
+    white-space: nowrap;
+  }
+
+  .markdown-content th {
+    font-size: 10px;
+  }
+
+  .markdown-content ul,
+  .markdown-content ol {
+    padding-left: var(--sp-lg);
+  }
+
+  .markdown-content blockquote {
+    padding-left: var(--sp-md);
+  }
+
+  .markdown-content img {
+    margin-left: calc(-1 * var(--sp-md));
+    margin-right: calc(-1 * var(--sp-md));
+    max-width: calc(100% + var(--sp-md) * 2);
+    border-left: none;
+    border-right: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-content h1 {
+    font-size: 20px;
+    letter-spacing: 1.5px;
+  }
+
+  .markdown-content h2 {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+  }
+
+  .markdown-content h3 {
+    font-size: 13px;
+  }
+
+  .markdown-content h4 {
+    font-size: 11px;
+  }
+
+  .markdown-content pre,
+  .markdown-content .shiki {
+    padding: var(--sp-sm);
+  }
+
+  .markdown-content pre code,
+  .markdown-content .shiki code {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .markdown-content code {
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+
+  .markdown-content table {
+    font-size: 11px;
+  }
+
+  .markdown-content th {
+    font-size: 9px;
+    padding: var(--sp-2xs) var(--sp-xs);
+  }
+
+  .markdown-content td {
+    padding: var(--sp-2xs) var(--sp-xs);
+  }
+
+  .markdown-content li {
+    font-size: 14px;
+  }
+}

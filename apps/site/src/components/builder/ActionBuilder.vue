@@ -834,4 +834,93 @@ const updateAction = (actionIndex: number, updatedAction: Record<string, unknown
   font-size: 10px;
   color: var(--text-ghost);
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .action-builder {
+    gap: var(--sp-lg);
+  }
+
+  .items-header {
+    flex-wrap: wrap;
+    gap: var(--sp-sm);
+  }
+
+  .item-editor {
+    padding: var(--sp-md);
+  }
+
+  .editor-fields {
+    gap: var(--sp-sm);
+  }
+
+  .actions-header {
+    flex-wrap: wrap;
+    gap: var(--sp-sm);
+  }
+
+  /* Action picker modal - full screen on mobile */
+  .action-picker {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .picker-header {
+    padding: var(--sp-sm) var(--sp-md);
+  }
+
+  .picker-body {
+    padding: var(--sp-md);
+  }
+
+  .category-actions {
+    gap: var(--sp-2xs);
+  }
+
+  .action-option {
+    font-size: 10px;
+    padding: var(--sp-xs) var(--sp-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .items-count {
+    font-size: 11px;
+  }
+
+  .item-card {
+    padding: var(--sp-sm);
+  }
+
+  .item-name {
+    font-size: 12px;
+  }
+
+  .editor-title {
+    font-size: 12px;
+  }
+
+  .actions-title {
+    font-size: 10px;
+  }
+
+  .action-option {
+    font-size: 9px;
+    padding: var(--sp-2xs) var(--sp-xs);
+  }
+
+  .category-header {
+    font-size: 10px;
+  }
+
+  .empty-list {
+    padding: var(--sp-lg);
+  }
+
+  .empty-list i {
+    font-size: 24px;
+  }
+}
 </style>

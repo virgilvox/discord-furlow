@@ -551,4 +551,56 @@ onMounted(async () => {
     padding: var(--sp-md);
   }
 }
+
+/* Copy banner responsive */
+@media (max-width: 768px) {
+  .copy-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-md);
+    padding: var(--sp-md);
+  }
+
+  .copy-banner-content > i {
+    font-size: 20px;
+  }
+
+  .copy-banner-title {
+    font-size: 13px;
+  }
+
+  .copy-banner-desc {
+    font-size: 11px;
+  }
+
+  .copy-banner-btn {
+    justify-content: center;
+    padding: var(--sp-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .copy-banner {
+    margin-left: calc(-1 * var(--sp-md));
+    margin-right: calc(-1 * var(--sp-md));
+    border-left: none;
+    border-right: none;
+  }
+
+  .copy-banner-content {
+    gap: var(--sp-sm);
+  }
+
+  .copy-banner-title {
+    font-size: 12px;
+  }
+
+  .copy-banner-desc {
+    font-size: 10px;
+  }
+
+  .copy-banner-btn {
+    font-size: 11px;
+  }
+}
 </style>

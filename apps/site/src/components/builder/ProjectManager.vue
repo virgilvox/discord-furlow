@@ -351,4 +351,80 @@ const handleDeleteProject = (projectId: string, event: Event) => {
 .delete-btn i {
   font-size: 11px;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .project-manager {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+  }
+
+  .modal-header {
+    padding: var(--sp-md);
+  }
+
+  .modal-title {
+    font-size: 14px;
+  }
+
+  .modal-body {
+    padding: var(--sp-md);
+  }
+
+  .new-project-form {
+    padding: var(--sp-md);
+  }
+
+  .storage-warning {
+    font-size: 10px;
+    padding: var(--sp-xs) var(--sp-sm);
+  }
+
+  .project-card {
+    padding: var(--sp-sm);
+  }
+
+  .project-name {
+    font-size: 12px;
+  }
+
+  .empty-projects {
+    padding: var(--sp-lg);
+  }
+
+  .empty-projects i {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section-title {
+    font-size: 10px;
+  }
+
+  .project-info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .project-name {
+    word-break: break-word;
+  }
+
+  .delete-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
 </style>

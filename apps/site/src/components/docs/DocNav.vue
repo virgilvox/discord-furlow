@@ -9,7 +9,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const expandedSections = ref<Set<string>>(new Set(['getting-started']));
+const expandedSections = ref<Set<string>>(new Set(['ai-reference', 'getting-started']));
 
 const toggleSection = (sectionId: string) => {
   if (expandedSections.value.has(sectionId)) {
@@ -35,9 +35,9 @@ const isActive = (pageId: string) => props.activeId === pageId;
       <span class="nav-title">DOCUMENTATION</span>
     </div>
 
-    <div v-for="section in manifest.sections" :key="section.id" class="nav-section">
+    <div v-for="section in manifest.sections" :key="section.id" :class="['nav-section', { highlight: section.highlight }]">
       <button
-        :class="['section-header', { expanded: isExpanded(section.id) }]"
+        :class="['section-header', { expanded: isExpanded(section.id), highlight: section.highlight }]"
         @click="toggleSection(section.id)"
       >
         <i :class="['section-icon', section.icon]"></i>
@@ -53,7 +53,7 @@ const isActive = (pageId: string) => props.activeId === pageId;
           :class="['page-link', { active: isActive(page.id) }]"
         >
           <span class="page-title">{{ page.title }}</span>
-          <span v-if="page.badge" class="page-badge">{{ page.badge }}</span>
+          <span v-if="page.badge" :class="['page-badge', { 'badge-ai': page.badge === 'AI' }]">{{ page.badge }}</span>
         </RouterLink>
       </div>
     </div>
@@ -174,5 +174,36 @@ const isActive = (pageId: string) => props.activeId === pageId;
   background: var(--bg-panel);
   padding: 1px 4px;
   border: 1px dashed var(--border-mid);
+}
+
+.page-badge.badge-ai {
+  color: var(--accent);
+  background: var(--accent-faint);
+  border: 1px solid var(--accent);
+  font-weight: 600;
+}
+
+/* Highlighted section (AI Reference) */
+.nav-section.highlight {
+  background: linear-gradient(135deg, var(--accent-faint) 0%, transparent 100%);
+  border-left: 2px solid var(--accent);
+  margin: 0 var(--sp-sm) var(--sp-md);
+  padding: var(--sp-xs) 0;
+}
+
+.section-header.highlight {
+  color: var(--accent);
+}
+
+.section-header.highlight .section-icon {
+  color: var(--accent);
+}
+
+.section-header.highlight:hover {
+  background: var(--accent-faint);
+}
+
+.nav-section.highlight .page-link {
+  padding-left: calc(var(--sp-lg) + var(--sp-md));
 }
 </style>
