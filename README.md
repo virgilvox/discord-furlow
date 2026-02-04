@@ -18,7 +18,7 @@ commands:
 
 ## Features
 
-- **84 Actions** — Messages, moderation, voice, channels, and more
+- **85 Actions** — Messages, moderation, voice, channels, and more
 - **71 Expression Functions** — Date, math, string, array manipulation
 - **50 Transforms** — Pipe-based data transformations
 - **76 Events** — Discord gateway + high-level FURLOW events
@@ -108,7 +108,7 @@ events:
 | [Installation](docs/guides/installation.md) | Setup and requirements |
 | [Quick Start](docs/guides/quickstart.md) | Your first bot |
 | [Configuration](docs/guides/configuration.md) | YAML specification |
-| [Actions Reference](docs/reference/actions/) | All 84 actions |
+| [Actions Reference](docs/reference/actions/) | All 85 actions |
 | [Expressions Reference](docs/reference/expressions/) | Functions and transforms |
 | [Events Reference](docs/reference/events.md) | Event types |
 | [CLI Reference](docs/reference/cli.md) | Command-line interface |

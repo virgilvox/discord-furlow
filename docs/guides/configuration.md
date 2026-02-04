@@ -273,6 +273,6 @@ Never put secrets directly in YAML files.
 
 ## Full Reference
 
-- [Actions Reference](../reference/actions/) - All 84 actions
+- [Actions Reference](../reference/actions/) - All 85 actions
 - [Expressions Reference](../reference/expressions/) - Functions and transforms
 - [Events Reference](../reference/events.md) - Event types

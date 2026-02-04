@@ -1136,6 +1136,7 @@ Records a metric value.
 ```yaml
 - record_metric:
     name: "command_latency"
+    type: histogram              # counter | gauge | histogram (required)
     value: "${latency}"
     labels:
       command: "${command.name}"

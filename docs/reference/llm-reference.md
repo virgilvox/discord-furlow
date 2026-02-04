@@ -171,6 +171,7 @@ commands:
       - name: message
         type: string
         required: true
+        description: "The message to send"
     actions:
       - send_message:
           channel: "${channel.id}"
@@ -288,7 +289,11 @@ commands:
         type: user  # string | integer | number | boolean | user | channel | role | mentionable | attachment
         description: User to greet
         required: false
-    cooldown: 5s
+    cooldown:
+      rate: 1           # max uses
+      per: user         # user | channel | guild
+      duration: 5s      # time window
+      message: "Please wait before using this again."  # optional
     permissions: SEND_MESSAGES
     level: 0
     when: "${guild.id == '123'}"
@@ -393,7 +398,7 @@ components:
         - batch:
             items: "${interaction.values}"
             as: role
-            actions:
+            each:
               - toggle_role:
                   role: "${state.guild.roles[role]}"
 
@@ -1175,6 +1180,7 @@ imports:
 # record_metric
 - record_metric:
     name: "response_time"
+    type: histogram  # counter | gauge | histogram
     value: 150
     labels:
       endpoint: "api"
@@ -1589,8 +1595,10 @@ commands:
       - name: user
         type: user
         required: true
+        description: "The user to ban"
       - name: reason
         type: string
+        description: "Reason for the ban"
     permissions: BAN_MEMBERS
     actions:
       - ban:
@@ -1610,6 +1618,11 @@ commands:
 ### Slow Command with Defer
 
 ```yaml
+pipes:
+  slow_api:
+    type: http
+    base_url: "https://slow-api.com"
+
 commands:
   - name: generate
     description: Generate something slow
@@ -1617,7 +1630,8 @@ commands:
       - defer:
           ephemeral: true
       - pipe_request:
-          url: "https://slow-api.com/generate"
+          pipe: "slow_api"
+          path: "/generate"
           method: POST
           as: "result"
       - reply:

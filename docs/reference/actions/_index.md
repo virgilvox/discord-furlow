@@ -1,6 +1,6 @@
 # Actions Reference
 
-FURLOW provides 84 actions across 9 categories.
+FURLOW provides 85 actions across 9 categories.
 
 ## Message Actions (11)
 
@@ -303,7 +303,7 @@ Add a role to a member.
 
 ```yaml
 - assign_role:
-    member: "${user.id}"
+    user: "${user.id}"
     role: "123456789"
     reason: "Role assigned via bot"
 ```
@@ -314,7 +314,7 @@ Remove a role from a member.
 
 ```yaml
 - remove_role:
-    member: "${user.id}"
+    user: "${user.id}"
     role: "123456789"
 ```
 
@@ -324,7 +324,7 @@ Toggle a role on or off.
 
 ```yaml
 - toggle_role:
-    member: "${user.id}"
+    user: "${user.id}"
     role: "123456789"
 ```
 
@@ -334,7 +334,7 @@ Kick a member from the server.
 
 ```yaml
 - kick:
-    member: "${user.id}"
+    user: "${user.id}"
     reason: "Violation of rules"
 ```
 
@@ -365,7 +365,7 @@ Timeout a member.
 
 ```yaml
 - timeout:
-    member: "${user.id}"
+    user: "${user.id}"
     duration: "1h"
     reason: "Cool down"
 ```
@@ -376,7 +376,7 @@ Remove a timeout.
 
 ```yaml
 - remove_timeout:
-    member: "${user.id}"
+    user: "${user.id}"
 ```
 
 ### send_dm
@@ -396,7 +396,7 @@ Change a member's nickname.
 
 ```yaml
 - set_nickname:
-    member: "${user.id}"
+    user: "${user.id}"
     nickname: "New Nickname"
 ```
 
@@ -406,7 +406,7 @@ Move a member to a voice channel.
 
 ```yaml
 - move_member:
-    member: "${user.id}"
+    user: "${user.id}"
     channel: "${voiceChannel.id}"
 ```
 
@@ -416,7 +416,7 @@ Disconnect a member from voice.
 
 ```yaml
 - disconnect_member:
-    member: "${user.id}"
+    user: "${user.id}"
 ```
 
 ### server_mute
@@ -425,8 +425,8 @@ Server mute a member.
 
 ```yaml
 - server_mute:
-    member: "${user.id}"
-    mute: true
+    user: "${user.id}"
+    muted: true
 ```
 
 ### server_deafen
@@ -435,8 +435,8 @@ Server deafen a member.
 
 ```yaml
 - server_deafen:
-    member: "${user.id}"
-    deafen: true
+    user: "${user.id}"
+    deafened: true
 ```
 
 ### set
@@ -445,7 +445,7 @@ Set a variable value.
 
 ```yaml
 - set:
-    name: "counter"
+    var: "counter"
     value: 42
     scope: guild
 ```
@@ -456,7 +456,7 @@ Increment a numeric variable.
 
 ```yaml
 - increment:
-    name: "counter"
+    var: "counter"
     by: 1
     scope: global
 ```
@@ -467,7 +467,7 @@ Decrement a numeric variable.
 
 ```yaml
 - decrement:
-    name: "counter"
+    var: "counter"
     by: 1
 ```
 
@@ -477,7 +477,7 @@ Add an item to a list.
 
 ```yaml
 - list_push:
-    name: "warnings"
+    var: "warnings"
     value: "${user.id}"
     scope: guild
 ```
@@ -488,7 +488,7 @@ Remove an item from a list.
 
 ```yaml
 - list_remove:
-    name: "warnings"
+    var: "warnings"
     value: "${user.id}"
 ```
 
@@ -498,8 +498,8 @@ Set a key in a map.
 
 ```yaml
 - set_map:
-    name: "user_data"
-    key: "${user.id}"
+    var: "user_data"
+    map_key: "${user.id}"
     value:
       level: 5
       xp: 1000
@@ -511,8 +511,8 @@ Delete a key from a map.
 
 ```yaml
 - delete_map:
-    name: "user_data"
-    key: "${user.id}"
+    var: "user_data"
+    map_key: "${user.id}"
 ```
 
 ### call_flow
@@ -521,7 +521,7 @@ Call a named flow.
 
 ```yaml
 - call_flow:
-    name: "send_log"
+    flow: "send_log"
     args:
       message: "Hello"
       level: "info"
@@ -585,10 +585,10 @@ Loop while condition is true.
 
 ```yaml
 - flow_while:
-    condition: "${i < 10}"
-    actions:
+    while: "${i < 10}"
+    do:
       - increment:
-          name: "i"
+          var: "i"
 ```
 
 ### repeat
@@ -599,7 +599,7 @@ Repeat actions N times.
 - repeat:
     times: 5
     as: "i"
-    actions:
+    do:
       - log:
           message: "Iteration ${i}"
 ```
@@ -621,18 +621,17 @@ Run actions in parallel.
 
 ### batch
 
-Run actions with delay between each.
+Iterate over items and execute actions for each.
 
 ```yaml
 - batch:
-    actions:
-      - send_message:
-          channel: "${channel.id}"
-          content: "Message 1"
-      - send_message:
-          channel: "${channel.id}"
-          content: "Message 2"
-    delay: "1s"
+    items: "${users}"
+    as: "u"
+    each:
+      - send_dm:
+          user: "${u.id}"
+          content: "Hello!"
+    concurrency: 5
 ```
 
 ### try
@@ -641,7 +640,7 @@ Try/catch error handling.
 
 ```yaml
 - try:
-    actions:
+    do:
       - send_dm:
           user: "${user.id}"
           content: "Hello"
@@ -744,8 +743,8 @@ Set channel permissions.
 ```yaml
 - set_channel_permissions:
     channel: "${channel.id}"
-    target: "${role.id}"
-    type: role  # role | member
+    role: "${role.id}"      # Use 'role' for role permissions
+    # user: "${user.id}"    # Use 'user' for member permissions
     allow:
       - view_channel
       - send_messages
@@ -1028,11 +1027,12 @@ Query records.
 
 ### pipe_request
 
-HTTP request to external API.
+HTTP request via a configured pipe.
 
 ```yaml
 - pipe_request:
-    url: "https://api.example.com/data"
+    pipe: "api"              # Name of pipe from pipes config
+    path: "/data"            # Path to append to base_url
     method: GET
     headers:
       Authorization: "Bearer ${token}"
@@ -1071,8 +1071,9 @@ Create a timer.
 
 ```yaml
 - create_timer:
-    name: "reminder"
+    id: "reminder"
     duration: "1h"
+    event: "timer_fire"
     data:
       user_id: "${user.id}"
       message: "Reminder!"
@@ -1084,7 +1085,7 @@ Cancel a timer.
 
 ```yaml
 - cancel_timer:
-    name: "reminder"
+    id: "reminder"
 ```
 
 ### counter_increment
@@ -1105,6 +1106,7 @@ Record a metric value.
 ```yaml
 - record_metric:
     name: "response_time"
+    type: histogram  # counter | gauge | histogram
     value: 150
     labels:
       endpoint: "api"

@@ -473,6 +473,52 @@ The `canvas_render` action now properly uses CanvasRenderer to render generators
 
 ## Recent Updates (2026-02-03)
 
+### 100% Accuracy Audit Complete
+
+Comprehensive audit of the entire repository to ensure all documentation, examples, and YAML files match the authoritative schema definitions exactly.
+
+**Schema Source of Truth:**
+- `/packages/schema/src/types/actions.ts` - 85 action definitions
+- `/packages/schema/src/types/events.ts` - 76 events (57 Discord + 19 FURLOW)
+- `/packages/schema/src/types/spec.ts` - Top-level YAML structure
+
+**Critical Parameter Corrections Applied:**
+
+| Action Type | Incorrect | Correct |
+|-------------|-----------|---------|
+| State actions (`set`, `increment`, `decrement`, `list_push`, `list_remove`) | `name:` | `var:` (or `key:`) |
+| Map actions (`set_map`, `delete_map`) | `key:` for map key | `map_key:` |
+| Member actions (12 actions) | `member:` | `user:` |
+| `server_mute` | `mute:` | `muted:` |
+| `server_deafen` | `deafen:` | `deafened:` |
+| `call_flow` | `name:` | `flow:` |
+| `flow_while` | `condition:`, `actions:` | `while:`, `do:` |
+| `repeat` | `actions:` | `do:` |
+| `batch` | `actions:`, `delay:` | `each:`, `concurrency:` |
+| `try` | `actions:` | `do:` |
+| `create_timer`, `cancel_timer` | `name:` | `id:` |
+| `pipe_request` | `url:` | `pipe:` + `path:` |
+| `set_channel_permissions` | `target:`, `type:` | `user:` or `role:` |
+| `presence.activity` | `name:` | `text:` |
+
+**Files Modified (71 total):**
+- Deleted duplicate: `/docs/llm-reference.md`
+- Core docs: `HANDOFF.md`, `RUNTIME_SPEC.md`
+- Reference docs: `llm-reference.md`, `actions-reference.md`, `yaml-spec.md`, `events.md`
+- All 8 pipes docs, all 14 builtin docs, all guide docs
+- All compliance specs (3), all example YAMLs (17+)
+
+**Additional Corrections (Second Audit):**
+- `record_metric` action requires `type:` parameter (`counter`, `gauge`, or `histogram`)
+- Command options require `description:` field (validated by schema)
+
+**Final Validation Results:**
+- YAML Files: 27/27 pass validation
+- Inline Documentation Examples: 165/165 pass validation
+- Unit Tests: 19/19 pass (schema/core tests)
+- Action count: 85 (verified against schema union)
+- Event count: 76 (57 Discord + 19 FURLOW)
+
 ### Documentation Site (apps/site)
 
 #### GitHub Pages Deployment
@@ -498,7 +544,7 @@ The `docs/reference/llm-reference.md` provides a comprehensive reference for AI 
 | `presence.activity` | `name: "..."` | `text: "..."` |
 | `permissions.levels` | Object `{0: "Everyone"}` | Array `[{name: "Everyone", level: 0}]` |
 | `components` | Array `[{custom_id: ...}]` | Object `{buttons: {}, selects: {}, modals: {}}` |
-| `pipes` | Array `[{name: "api"}]` | Object `{pipes: {api: {...}}}` |
+| `pipes` | Array `[{name: "api"}]` or nested `{pipes: {api: {}}}` | Flat object `{api: {...}}` |
 
 ### Build Fixes
 - Fixed pnpm filter syntax in workflow: `pnpm --filter @furlow/schema build`

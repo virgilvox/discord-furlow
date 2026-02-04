@@ -259,7 +259,7 @@ builtins:
   leveling:
     enabled: true
     xp_per_message: 15
-    cooldown: 60
+    xp_cooldown: 60
 ```
 
 Available builtins:

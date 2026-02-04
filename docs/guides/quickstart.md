@@ -218,5 +218,5 @@ See [docs/examples/simple-bot](../examples/simple-bot/) for a complete working b
 ## Next Steps
 
 - [Configuration Guide](configuration.md) - Full YAML specification
-- [Actions Reference](../reference/actions/) - All 84 actions
+- [Actions Reference](../reference/actions/) - All 85 actions
 - [Expressions Reference](../reference/expressions/) - Functions and transforms

@@ -23,7 +23,7 @@ docs/
 │
 ├── reference/                  # API reference (GitHub Wiki: Reference)
 │   ├── yaml-spec.md           # Complete YAML specification
-│   ├── actions/               # All 84 actions
+│   ├── actions/               # All 85 actions
 │   │   ├── _index.md          # Actions overview
 │   │   ├── message.md         # Message actions (11)
 │   │   ├── member.md          # Member actions (14)

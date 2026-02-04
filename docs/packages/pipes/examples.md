@@ -280,7 +280,7 @@ flows:
       - batch:
           items: "${alerts}"
           as: alert
-          actions:
+          each:
             - flow_if:
                 condition: |
                   (alert.direction == 'above' && data.price >= alert.target) ||
@@ -417,7 +417,7 @@ flows:
             - batch:
                 items: "${errors}"
                 as: error_line
-                actions:
+                each:
                   - db_insert:
                       table: errors
                       data:

@@ -212,7 +212,7 @@ commands:
 | `options` | array | No | Command options/arguments |
 | `actions` | array | Yes | Actions to execute |
 | `when` | expression | No | Condition to enable command |
-| `cooldown` | duration | No | Per-user cooldown |
+| `cooldown` | object | No | Rate limiting: `{rate, per, duration, message?}` |
 | `permissions` | string | No | Required Discord permissions |
 | `level` | number | No | Required permission level |
 
@@ -565,6 +565,7 @@ scheduler:
       actions:
         - record_metric:
             name: active_users
+            type: gauge
             value: "${client.guilds.reduce((a, g) => a + g.memberCount, 0)}"
 ```
 
