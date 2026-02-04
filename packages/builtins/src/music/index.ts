@@ -50,7 +50,7 @@ export const musicCommands: CommandDefinition[] = [
       // Check if user is in voice channel
       {
         action: 'flow_if',
-        condition: '${!member.voice.channel}',
+        condition: '!member.voice.channel',
         then: [
           { action: 'reply', content: 'You must be in a voice channel!', ephemeral: true },
           { action: 'abort' },
@@ -69,7 +69,7 @@ export const musicCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!track}',
+        condition: '!track',
         then: [
           { action: 'reply', content: 'No results found for: ${args.query}', ephemeral: true },
           { action: 'abort' },
@@ -168,7 +168,7 @@ export const musicCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${queue.tracks.length === 0}',
+        condition: 'queue.tracks.length === 0',
         then: [
           { action: 'reply', content: 'The queue is empty!', ephemeral: true },
           { action: 'abort' },
@@ -217,7 +217,7 @@ export const musicCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!queue.current}',
+        condition: '!queue.current',
         then: [
           { action: 'reply', content: 'Nothing is playing!', ephemeral: true },
           { action: 'abort' },
@@ -258,7 +258,7 @@ export const musicCommands: CommandDefinition[] = [
     actions: [
       {
         action: 'flow_if',
-        condition: '${args.level < 0 || args.level > 100}',
+        condition: 'args.level < 0 || args.level > 100',
         then: [
           { action: 'reply', content: 'Volume must be between 0 and 100!', ephemeral: true },
           { action: 'abort' },
@@ -320,7 +320,7 @@ export const musicCommands: CommandDefinition[] = [
     actions: [
       {
         action: 'flow_if',
-        condition: '${!config.music?.allowSeeking}',
+        condition: '!config.music?.allowSeeking',
         then: [
           { action: 'reply', content: 'Seeking is disabled!', ephemeral: true },
           { action: 'abort' },
@@ -354,7 +354,7 @@ export const musicCommands: CommandDefinition[] = [
     actions: [
       {
         action: 'flow_if',
-        condition: '${!config.music?.allowFilters}',
+        condition: '!config.music?.allowFilters',
         then: [
           { action: 'reply', content: 'Filters are disabled!', ephemeral: true },
           { action: 'abort' },
@@ -391,7 +391,7 @@ export const musicEventHandlers: EventHandler[] = [
   // Announce now playing
   {
     event: 'voice_track_start',
-    condition: '${config.music?.announceNowPlaying}',
+    condition: 'config.music?.announceNowPlaying',
     actions: [
       {
         action: 'send_message',
@@ -412,12 +412,12 @@ export const musicEventHandlers: EventHandler[] = [
   // Auto-leave when alone
   {
     event: 'voice_leave',
-    condition: '${voiceChannel.members.filter(m => !m.user.bot).size === 0 && !config.music?.stayInChannel}',
+    condition: 'voiceChannel.members.filter(m => !m.user.bot).size === 0 && !config.music?.stayInChannel',
     actions: [
       { action: 'wait', duration: 30000 },
       {
         action: 'flow_if',
-        condition: '${voiceChannel.members.filter(m => !m.user.bot).size === 0}',
+        condition: 'voiceChannel.members.filter(m => !m.user.bot).size === 0',
         then: [
           { action: 'voice_leave' },
         ],

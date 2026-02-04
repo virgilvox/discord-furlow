@@ -72,7 +72,7 @@ export const remindersEventHandlers: EventHandler[] = [
       // Send reminder
       {
         action: 'flow_if',
-        condition: '${reminder.dm}',
+        condition: 'reminder.dm',
         then: [
           {
             action: 'send_dm',
@@ -116,7 +116,7 @@ export const remindersCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${userReminders.length >= (config.reminders?.maxRemindersPerUser || 25)}',
+        condition: 'userReminders.length >= (config.reminders?.maxRemindersPerUser || 25)',
         then: [
           { action: 'reply', content: 'You have too many reminders! Delete some first.', ephemeral: true },
           { action: 'abort' },
@@ -168,7 +168,7 @@ export const remindersCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${reminders.length === 0}',
+        condition: 'reminders.length === 0',
         then: [
           { action: 'reply', content: 'You have no reminders!', ephemeral: true },
           { action: 'abort' },
@@ -206,7 +206,7 @@ export const remindersCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${reminder.length === 0}',
+        condition: 'reminder.length === 0',
         then: [
           { action: 'reply', content: 'Reminder not found or not yours!', ephemeral: true },
           { action: 'abort' },

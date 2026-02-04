@@ -245,14 +245,14 @@ builtins:
 
           # Avatar
           - type: circle_image
-            src: "${user.avatarURL}"
+            src: "${user.avatar}"
             x: 50
             y: 50
             radius: 90
 
           # Username
           - type: text
-            content: "${user.displayName}"
+            content: "${member.display_name}"
             x: 260
             y: 100
             font: "bold 40px Sans"
@@ -455,7 +455,7 @@ events:
   level_up:
     actions:
       - flow_if:
-          condition: "${level % 10 == 0}"
+          condition: "level % 10 == 0"
           then:
             - send_message:
                 channel: "milestones"

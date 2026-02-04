@@ -74,7 +74,7 @@ commands:
         required: false
     actions:
       - reply:
-          content: "${options.message || 'Hello'}, ${options.user.displayName || user.username}!"
+          content: "${options.message || 'Hello'}, ${options.member.display_name || user.username}!"
 ```
 
 ### Option Types
@@ -125,8 +125,8 @@ events:
   - event: guild_member_add
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome to the server, ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome to the server, ${member.display_name}!"
 
   # Log when bot is ready
   - event: ready
@@ -184,7 +184,7 @@ flows:
         type: string
     actions:
       - send_message:
-          channel: "${guild.logChannelId}"
+          channel: "${env.LOG_CHANNEL}"
           embeds:
             - title: "Action: ${action_name}"
               description: "Target: ${target}"
@@ -218,5 +218,5 @@ See [docs/examples/simple-bot](../examples/simple-bot/) for a complete working b
 ## Next Steps
 
 - [Configuration Guide](configuration.md) - Full YAML specification
-- [Actions Reference](../reference/actions/) - All 85 actions
+- [Actions Reference](../reference/actions/) - All 84 actions
 - [Expressions Reference](../reference/expressions/) - Functions and transforms

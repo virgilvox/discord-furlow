@@ -66,6 +66,14 @@ export interface ChannelContext {
   parent_id?: string | null;
 }
 
+export interface MessageAuthorContext {
+  id: string;
+  username: string;
+  tag: string;
+  bot: boolean;
+  avatar: string | null;
+}
+
 export interface MessageContext {
   id: string;
   content: string;
@@ -80,6 +88,7 @@ export interface MessageContext {
   attachments: number;
   embeds: number;
   url: string;
+  author: MessageAuthorContext;
 }
 
 export interface InteractionContext {
@@ -205,6 +214,13 @@ export function buildMessageContext(message: Message): MessageContext {
     attachments: message.attachments.size,
     embeds: message.embeds.length,
     url: message.url,
+    author: {
+      id: message.author.id,
+      username: message.author.username,
+      tag: message.author.tag,
+      bot: message.author.bot,
+      avatar: message.author.avatarURL(),
+    },
   };
 }
 

@@ -221,14 +221,14 @@ commands:
         description: Who to greet
     actions:
       - reply:
-          content: "Hello, ${options.user.displayName}!"
+          content: "Hello, ${options.member.display_name}!"
 
 events:
   - event: member_join
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome ${member.display_name}!"
 ```
 
 Run it:

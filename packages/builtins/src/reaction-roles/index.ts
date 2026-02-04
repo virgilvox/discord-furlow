@@ -42,7 +42,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
   // Handle button clicks
   {
     event: 'button_click',
-    condition: '${interaction.customId.startsWith("rr_")}',
+    condition: 'interaction.customId.startsWith("rr_")',
     actions: [
       {
         action: 'set',
@@ -57,7 +57,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!panel[0]}',
+        condition: '!panel[0]',
         then: [
           { action: 'reply', content: 'This role panel is no longer valid.', ephemeral: true },
           { action: 'abort' },
@@ -76,7 +76,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
           toggle: [
             {
               action: 'flow_if',
-              condition: '${hasRole}',
+              condition: 'hasRole',
               then: [
                 { action: 'remove_role', user: '${member.id}', role: '${roleId}' },
                 { action: 'reply', content: 'Removed <@&${roleId}>', ephemeral: true },
@@ -90,7 +90,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
           give: [
             {
               action: 'flow_if',
-              condition: '${hasRole}',
+              condition: 'hasRole',
               then: [
                 { action: 'reply', content: 'You already have <@&${roleId}>', ephemeral: true },
               ],
@@ -103,7 +103,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
           take: [
             {
               action: 'flow_if',
-              condition: '${!hasRole}',
+              condition: '!hasRole',
               then: [
                 { action: 'reply', content: 'You don\'t have <@&${roleId}>', ephemeral: true },
               ],
@@ -134,7 +134,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
       // Log if configured
       {
         action: 'flow_if',
-        condition: '${config.reactionRoles?.logChannel}',
+        condition: 'config.reactionRoles?.logChannel',
         then: [
           {
             action: 'send_message',
@@ -152,7 +152,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
   // Handle select menu
   {
     event: 'select_menu',
-    condition: '${interaction.customId.startsWith("rr_select_")}',
+    condition: 'interaction.customId.startsWith("rr_select_")',
     actions: [
       {
         action: 'set',
@@ -208,7 +208,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${panel[0]}',
+        condition: 'panel[0]',
         then: [
           {
             action: 'db_query',
@@ -218,7 +218,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
           },
           {
             action: 'flow_if',
-            condition: '${entry[0]}',
+            condition: 'entry[0]',
             then: [
               { action: 'assign_role', user: '${user.id}', role: '${entry[0].role_id}' },
             ],
@@ -239,7 +239,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${panel[0] && panel[0].mode !== "give"}',
+        condition: 'panel[0] && panel[0].mode !== "give"',
         then: [
           {
             action: 'db_query',
@@ -249,7 +249,7 @@ export const reactionRolesEventHandlers: EventHandler[] = [
           },
           {
             action: 'flow_if',
-            condition: '${entry[0]}',
+            condition: 'entry[0]',
             then: [
               { action: 'remove_role', user: '${user.id}', role: '${entry[0].role_id}' },
             ],
@@ -333,7 +333,7 @@ export const reactionRolesCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!panel[0]}',
+            condition: '!panel[0]',
             then: [
               { action: 'reply', content: 'Panel not found!', ephemeral: true },
               { action: 'abort' },
@@ -441,7 +441,7 @@ export const reactionRolesCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!panel[0]}',
+            condition: '!panel[0]',
             then: [
               { action: 'reply', content: 'Select menu panel not found!', ephemeral: true },
               { action: 'abort' },
@@ -514,7 +514,7 @@ export const reactionRolesCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!panel[0]}',
+            condition: '!panel[0]',
             then: [
               { action: 'reply', content: 'Panel not found!', ephemeral: true },
               { action: 'abort' },

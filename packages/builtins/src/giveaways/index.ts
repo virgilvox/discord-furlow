@@ -48,7 +48,7 @@ export const giveawaysEventHandlers: EventHandler[] = [
   // Handle giveaway button click
   {
     event: 'button_click',
-    condition: '${interaction.customId.startsWith("giveaway_enter_")}',
+    condition: 'interaction.customId.startsWith("giveaway_enter_")',
     actions: [
       {
         action: 'set',
@@ -63,7 +63,7 @@ export const giveawaysEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!giveaway[0] || giveaway[0].ended}',
+        condition: '!giveaway[0] || giveaway[0].ended',
         then: [
           { action: 'reply', content: 'This giveaway has ended!', ephemeral: true },
           { action: 'abort' },
@@ -72,7 +72,7 @@ export const giveawaysEventHandlers: EventHandler[] = [
       // Check role requirement
       {
         action: 'flow_if',
-        condition: '${giveaway[0].require_role && !member.roles.cache.has(giveaway[0].require_role)}',
+        condition: 'giveaway[0].require_role && !member.roles.cache.has(giveaway[0].require_role)',
         then: [
           { action: 'reply', content: 'You need the <@&${giveaway[0].require_role}> role to enter!', ephemeral: true },
           { action: 'abort' },
@@ -87,7 +87,7 @@ export const giveawaysEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${existing.length > 0}',
+        condition: 'existing.length > 0',
         then: [
           // Remove entry
           {
@@ -185,7 +185,7 @@ export const giveawaysEventHandlers: EventHandler[] = [
       // Update message
       {
         action: 'flow_if',
-        condition: '${winners.length === 0}',
+        condition: 'winners.length === 0',
         then: [
           {
             action: 'edit_message',
@@ -335,7 +335,7 @@ export const giveawaysCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!giveaway[0]}',
+            condition: '!giveaway[0]',
             then: [
               { action: 'reply', content: 'Giveaway not found!', ephemeral: true },
               { action: 'abort' },
@@ -369,7 +369,7 @@ export const giveawaysCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!giveaway[0] || !giveaway[0].ended}',
+            condition: '!giveaway[0] || !giveaway[0].ended',
             then: [
               { action: 'reply', content: 'Giveaway not found or not ended!', ephemeral: true },
               { action: 'abort' },
@@ -393,7 +393,7 @@ export const giveawaysCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${winners.length === 0}',
+            condition: 'winners.length === 0',
             then: [
               { action: 'reply', content: 'No valid entries to reroll!', ephemeral: true },
               { action: 'abort' },

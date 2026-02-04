@@ -60,7 +60,7 @@ canvas:
           x: 320
           y: 40
           radius: 80
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
           border:
             width: 4
             color: "#5865F2"
@@ -69,7 +69,7 @@ canvas:
         - type: text
           x: 400
           y: 215
-          text: "Welcome, ${user.displayName}!"
+          text: "Welcome, ${member.display_name}!"
           font: sans-serif
           size: 32
           color: "#FFFFFF"
@@ -109,7 +109,7 @@ canvas:
           x: 30
           y: 51
           radius: 90
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
           border:
             width: 5
             color: "#5865F2"
@@ -118,7 +118,7 @@ canvas:
         - type: text
           x: 250
           y: 60
-          text: "${user.displayName}"
+          text: "${member.display_name}"
           font: sans-serif
           size: 36
           color: "#FFFFFF"
@@ -225,7 +225,7 @@ canvas:
           x: 225
           y: 50
           radius: 75
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
           border:
             width: 4
             color: "#FFFFFF"
@@ -234,7 +234,7 @@ canvas:
         - type: text
           x: 300
           y: 220
-          text: "${user.displayName}"
+          text: "${member.display_name}"
           font: sans-serif
           size: 28
           color: "#FFFFFF"
@@ -252,7 +252,7 @@ canvas:
           align: center
           baseline: top
           max_width: 400
-          when: "${bio}"
+          when: "bio"
 
         # Stats row
         - type: text
@@ -298,7 +298,7 @@ canvas:
           x: 30
           y: 30
           radius: 70
-          src: "${guild.iconURL}"
+          src: "${guild.icon}"
           border:
             width: 3
             color: "#5865F2"
@@ -477,7 +477,7 @@ commands:
             bio: "${state.member.bio || ''}"
             level: "${state.member.level || 1}"
             messageCount: "${state.member.message_count || 0}"
-            joinDate: "${format(member.joinedAt, 'MMM yyyy')}"
+            joinDate: "${format(member.joined_at, 'MMM yyyy')}"
           as: profile_image
 
       - reply:
@@ -513,7 +513,7 @@ commands:
           generator: server_stats
           context:
             guild: "${guild}"
-            memberCount: "${guild.memberCount}"
+            memberCount: "${guild.member_count}"
             onlineCount: "${guild.presences.cache.filter(p => p.status !== 'offline').size}"
             channelCount: "${guild.channels.cache.size}"
             roleCount: "${guild.roles.cache.size}"
@@ -540,7 +540,7 @@ events:
           as: welcome_image
 
       - send_message:
-          channel: "${guild.systemChannelId}"
+          channel: "${env.WELCOME_CHANNEL}"
           content: "Welcome to the server, ${member}!"
           files:
             - attachment: "${welcome_image}"
@@ -577,7 +577,7 @@ events:
           value: "${currentLevel * 100}"
 
       - flow_if:
-          condition: "${currentXp >= xpNeeded}"
+          condition: "currentXp >= xpNeeded"
           then:
             # Level up!
             - increment:
@@ -589,5 +589,5 @@ events:
                 scope: member
                 value: "${currentXp - xpNeeded}"
             - send_message:
-                channel: "${message.channelId}"
+                channel: "${message.channel_id}"
                 content: "Congratulations ${message.author}! You reached level ${currentLevel + 1}!"

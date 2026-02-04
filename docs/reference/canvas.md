@@ -110,7 +110,7 @@ Draw text on the canvas.
 ```yaml
 - action: canvas_draw_text
   canvas: "${canvas}"
-  text: "Welcome, ${member.displayName}!"
+  text: "Welcome, ${member.display_name}!"
   x: 200
   y: 180
   font: "bold 32px Inter"
@@ -133,7 +133,7 @@ Draw an image on the canvas.
 ```yaml
 - action: canvas_draw_image
   canvas: "${canvas}"
-  url: "${member.displayAvatarURL}"
+  url: "${member.avatar}"
   x: 40
   y: 140
   width: 120
@@ -350,7 +350,7 @@ commands:
       # Draw user avatar
       - action: canvas_draw_image
         canvas: "${canvas}"
-        url: "${target.displayAvatarURL({ size: 256, extension: 'png' })}"
+        url: "${target.avatar}"
         x: 56
         y: 86
         width: 128
@@ -370,7 +370,7 @@ commands:
       # Draw username
       - action: canvas_draw_text
         canvas: "${canvas}"
-        text: "${target.displayName}"
+        text: "${target.display_name}"
         x: 220
         y: 140
         font: "bold 36px Inter"
@@ -380,7 +380,7 @@ commands:
       # Draw member count
       - action: canvas_draw_text
         canvas: "${canvas}"
-        text: "You are member #${guild.memberCount|format}"
+        text: "You are member #${guild.member_count|format}"
         x: 220
         y: 180
         font: "18px Inter"
@@ -410,7 +410,7 @@ events:
     actions:
       # ... same canvas code as above ...
       - action: send_message
-        channel: "${guild.systemChannelId}"
+        channel: "${env.WELCOME_CHANNEL}"
         content: "Welcome to the server, ${member.mention}!"
         files:
           - "${welcomeImage}"
@@ -466,7 +466,7 @@ commands:
       # Draw avatar
       - action: canvas_draw_image
         canvas: "${canvas}"
-        url: "${target.displayAvatarURL({ size: 256, extension: 'png' })}"
+        url: "${target.avatar}"
         x: 50
         y: 50
         width: 180
@@ -478,7 +478,7 @@ commands:
       # Draw username
       - action: canvas_draw_text
         canvas: "${canvas}"
-        text: "${target.displayName}"
+        text: "${target.display_name}"
         x: 270
         y: 100
         font: "bold 40px Inter"
@@ -489,7 +489,7 @@ commands:
       - action: canvas_draw_text
         canvas: "${canvas}"
         text: "#${target.discriminator || '0000'}"
-        x: "${270 + measureText(target.displayName, 'bold 40px Inter').width + 10}"
+        x: "${270 + measureText(target.display_name, 'bold 40px Inter').width + 10}"
         y: 100
         font: "28px Inter"
         color: "#72767d"

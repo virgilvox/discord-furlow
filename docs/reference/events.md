@@ -7,7 +7,7 @@ FURLOW supports 76 event types: 57 Discord gateway events and 19 FURLOW high-lev
 ```yaml
 events:
   - event: message_create
-    condition: "${message.content.startsWith('!')}"
+    condition: "message.content.startsWith('!')"
     actions:
       - reply:
           content: "Commands use / now"
@@ -247,7 +247,7 @@ Filter events with an expression:
 ```yaml
 events:
   - event: message_create
-    condition: "${!message.author.bot && message.content.length > 100}"
+    condition: "!message.author.bot && message.content.length > 100"
     actions:
       - log:
           message: "Long message received"
@@ -276,7 +276,7 @@ events:
     throttle: 1m  # Max once per minute
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
+          channel: "${env.WELCOME_CHANNEL}"
           content: "Welcome!"
 ```
 
@@ -319,8 +319,8 @@ events:
   - event: guild_member_add
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome ${member.display_name}!"
           embeds:
             - title: "Welcome to ${guild.name}!"
               description: "Be sure to read the rules."
@@ -332,7 +332,7 @@ events:
 ```yaml
 events:
   - event: message_reaction_add
-    condition: "${message.id == '123456789' && reaction.emoji.name == '✅'}"
+    condition: "message.id == '123456789' && reaction.emoji.name == '✅'"
     actions:
       - assign_role:
           user: "${user.id}"
@@ -344,10 +344,10 @@ events:
 ```yaml
 events:
   - event: message_delete
-    condition: "${!message.author.bot}"
+    condition: "!message.author.bot"
     actions:
       - send_message:
-          channel: "${guild.logChannelId}"
+          channel: "${env.LOG_CHANNEL}"
           embeds:
             - title: "Message Deleted"
               description: "${message.content | truncate(1000)}"
@@ -366,12 +366,12 @@ events:
   - event: voice_join
     actions:
       - send_message:
-          channel: "${guild.logChannelId}"
-          content: "${member.displayName} joined ${channel.name}"
+          channel: "${env.LOG_CHANNEL}"
+          content: "${member.display_name} joined ${channel.name}"
 
   - event: voice_leave
     actions:
       - send_message:
-          channel: "${guild.logChannelId}"
-          content: "${member.displayName} left ${channel.name}"
+          channel: "${env.LOG_CHANNEL}"
+          content: "${member.display_name} left ${channel.name}"
 ```

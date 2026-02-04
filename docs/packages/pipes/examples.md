@@ -577,7 +577,7 @@ events:
                   user:
                     id: "${message.author.id}"
                     name: "${message.author.username}"
-                    avatar: "${message.author.displayAvatarURL()}"
+                    avatar: "${message.author.avatar}"
                   content: "${message.content}"
 
 commands:

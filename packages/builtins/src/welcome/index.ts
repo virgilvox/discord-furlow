@@ -48,7 +48,7 @@ export const welcomeEventHandlers: EventHandler[] = [
       // Auto-role assignment
       {
         action: 'flow_if',
-        condition: '${config.welcome.autoRoles && config.welcome.autoRoles.length > 0}',
+        condition: 'config.welcome.autoRoles && config.welcome.autoRoles.length > 0',
         then: [
           {
             action: 'assign_role',
@@ -60,7 +60,7 @@ export const welcomeEventHandlers: EventHandler[] = [
       // DM new member
       {
         action: 'flow_if',
-        condition: '${config.welcome.dmNewMembers}',
+        condition: 'config.welcome.dmNewMembers',
         then: [
           {
             action: 'send_dm',
@@ -72,7 +72,7 @@ export const welcomeEventHandlers: EventHandler[] = [
       // Welcome message with image
       {
         action: 'flow_if',
-        condition: '${config.welcome.useImage}',
+        condition: 'config.welcome.useImage',
         then: [
           {
             action: 'canvas_render',
@@ -80,14 +80,14 @@ export const welcomeEventHandlers: EventHandler[] = [
             context: {
               member: '${member}',
               guild: '${guild}',
-              memberCount: '${guild.memberCount}',
+              memberCount: '${guild.member_count}',
             },
             as: 'welcomeImage',
           },
           {
             action: 'send_message',
             channel: '${config.welcome.channel}',
-            content: '${config.welcome.message || "Welcome to the server, " + member.displayName + "!"}',
+            content: '${config.welcome.message || "Welcome to the server, " + member.display_name + "!"}',
             files: [
               {
                 attachment: '${welcomeImage}',
@@ -100,7 +100,7 @@ export const welcomeEventHandlers: EventHandler[] = [
           // Welcome message without image
           {
             action: 'flow_if',
-            condition: '${config.welcome.embed}',
+            condition: 'config.welcome.embed',
             then: [
               {
                 action: 'send_message',
@@ -108,11 +108,11 @@ export const welcomeEventHandlers: EventHandler[] = [
                 content: '${config.welcome.message}',
                 embed: {
                   title: '${config.welcome.embed.title || "Welcome!"}',
-                  description: '${config.welcome.embed.description || "Welcome to " + guild.name + ", " + member.displayName + "!"}',
+                  description: '${config.welcome.embed.description || "Welcome to " + guild.name + ", " + member.display_name + "!"}',
                   color: '${config.welcome.embed.color || "#5865f2"}',
-                  thumbnail: '${config.welcome.embed.thumbnail || member.avatarURL}',
+                  thumbnail: '${config.welcome.embed.thumbnail || member.avatar}',
                   footer: {
-                    text: '${config.welcome.embed.footer || "Member #" + guild.memberCount}',
+                    text: '${config.welcome.embed.footer || "Member #" + guild.member_count}',
                   },
                 },
               },
@@ -121,7 +121,7 @@ export const welcomeEventHandlers: EventHandler[] = [
               {
                 action: 'send_message',
                 channel: '${config.welcome.channel}',
-                content: '${config.welcome.message || "Welcome to the server, " + member.displayName + "!"}',
+                content: '${config.welcome.message || "Welcome to the server, " + member.display_name + "!"}',
               },
             ],
           },
@@ -134,18 +134,18 @@ export const welcomeEventHandlers: EventHandler[] = [
     actions: [
       {
         action: 'flow_if',
-        condition: '${config.welcome.leaveChannel || config.welcome.channel}',
+        condition: 'config.welcome.leaveChannel || config.welcome.channel',
         then: [
           {
             action: 'flow_if',
-            condition: '${config.welcome.leaveEmbed}',
+            condition: 'config.welcome.leaveEmbed',
             then: [
               {
                 action: 'send_message',
                 channel: '${config.welcome.leaveChannel || config.welcome.channel}',
                 embed: {
                   title: '${config.welcome.leaveEmbed.title || "Goodbye!"}',
-                  description: '${config.welcome.leaveEmbed.description || member.displayName + " has left the server."}',
+                  description: '${config.welcome.leaveEmbed.description || member.display_name + " has left the server."}',
                   color: '${config.welcome.leaveEmbed.color || "#ed4245"}',
                 },
               },
@@ -154,7 +154,7 @@ export const welcomeEventHandlers: EventHandler[] = [
               {
                 action: 'send_message',
                 channel: '${config.welcome.leaveChannel || config.welcome.channel}',
-                content: '${config.welcome.leaveMessage || member.displayName + " has left the server."}',
+                content: '${config.welcome.leaveMessage || member.display_name + " has left the server."}',
               },
             ],
           },
@@ -289,7 +289,7 @@ export const welcomeCanvasGenerators: Record<string, CanvasGenerator> = {
       },
       {
         type: 'circle_image',
-        url: '${member.avatarURL || member.defaultAvatarURL}',
+        url: '${member.avatar}',
         x: 400,
         y: 100,
         radius: 64,
@@ -309,7 +309,7 @@ export const welcomeCanvasGenerators: Record<string, CanvasGenerator> = {
       },
       {
         type: 'text',
-        text: '${member.displayName}',
+        text: '${member.display_name}',
         x: 400,
         y: 240,
         font: 'bold 28px "Poppins", sans-serif',
@@ -318,7 +318,7 @@ export const welcomeCanvasGenerators: Record<string, CanvasGenerator> = {
       },
       {
         type: 'text',
-        text: 'Member #${guild.memberCount}',
+        text: 'Member #${guild.member_count}',
         x: 400,
         y: 275,
         font: '16px "Poppins", sans-serif',

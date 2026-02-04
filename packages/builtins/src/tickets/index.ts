@@ -109,7 +109,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle ticket creation button
   {
     event: 'button_click',
-    condition: '${interaction.customId === "ticket_create"}',
+    condition: 'interaction.customId === "ticket_create"',
     actions: [
       // Check max tickets
       {
@@ -124,7 +124,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${userTickets.length >= (config.tickets.maxTicketsPerUser || 1)}',
+        condition: 'userTickets.length >= (config.tickets.maxTicketsPerUser || 1)',
         then: [
           {
             action: 'reply',
@@ -137,7 +137,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       // Show category selector if configured
       {
         action: 'flow_if',
-        condition: '${config.tickets.categories && config.tickets.categories.length > 0}',
+        condition: 'config.tickets.categories && config.tickets.categories.length > 0',
         then: [
           {
             action: 'reply',
@@ -167,7 +167,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle category selection
   {
     event: 'select_menu',
-    condition: '${interaction.customId === "ticket_category_select"}',
+    condition: 'interaction.customId === "ticket_category_select"',
     actions: [
       {
         action: 'emit',
@@ -271,7 +271,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle claim button
   {
     event: 'button_click',
-    condition: '${interaction.customId === "ticket_claim"}',
+    condition: 'interaction.customId === "ticket_claim"',
     actions: [
       {
         action: 'db_query',
@@ -281,7 +281,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!ticket[0]}',
+        condition: '!ticket[0]',
         then: [
           { action: 'reply', content: 'This is not a ticket channel!', ephemeral: true },
           { action: 'abort' },
@@ -289,7 +289,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${ticket[0].claimed_by}',
+        condition: 'ticket[0].claimed_by',
         then: [
           { action: 'reply', content: 'This ticket is already claimed by <@${ticket[0].claimed_by}>!', ephemeral: true },
           { action: 'abort' },
@@ -315,7 +315,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle close button
   {
     event: 'button_click',
-    condition: '${interaction.customId === "ticket_close"}',
+    condition: 'interaction.customId === "ticket_close"',
     actions: [
       {
         action: 'db_query',
@@ -325,7 +325,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!ticket[0]}',
+        condition: '!ticket[0]',
         then: [
           { action: 'reply', content: 'This is not a ticket channel!', ephemeral: true },
           { action: 'abort' },
@@ -351,7 +351,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle close confirmation
   {
     event: 'button_click',
-    condition: '${interaction.customId === "ticket_close_confirm"}',
+    condition: 'interaction.customId === "ticket_close_confirm"',
     actions: [
       {
         action: 'db_query',
@@ -362,7 +362,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       // Generate transcript if configured
       {
         action: 'flow_if',
-        condition: '${config.tickets.includeTranscript && config.tickets.logChannel}',
+        condition: 'config.tickets.includeTranscript && config.tickets.logChannel',
         then: [
           {
             action: 'db_query',
@@ -409,7 +409,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       // DM user if configured
       {
         action: 'flow_if',
-        condition: '${config.tickets.dmOnClose}',
+        condition: 'config.tickets.dmOnClose',
         then: [
           {
             action: 'send_dm',
@@ -435,7 +435,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Handle transcript button
   {
     event: 'button_click',
-    condition: '${interaction.customId === "ticket_transcript"}',
+    condition: 'interaction.customId === "ticket_transcript"',
     actions: [
       {
         action: 'db_query',
@@ -471,7 +471,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   // Log ticket messages
   {
     event: 'message',
-    condition: '${channel.parentId === config.tickets.category}',
+    condition: 'channel.parentId === config.tickets.category',
     actions: [
       {
         action: 'db_query',
@@ -481,7 +481,7 @@ export const ticketsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${ticket[0]}',
+        condition: 'ticket[0]',
         then: [
           {
             action: 'db_insert',
@@ -546,7 +546,7 @@ export const ticketsCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!ticket[0]}',
+            condition: '!ticket[0]',
             then: [
               { action: 'reply', content: 'This is not a ticket channel!', ephemeral: true },
               { action: 'abort' },
@@ -581,7 +581,7 @@ export const ticketsCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!ticket[0]}',
+            condition: '!ticket[0]',
             then: [
               { action: 'reply', content: 'This is not a ticket channel!', ephemeral: true },
               { action: 'abort' },
@@ -616,7 +616,7 @@ export const ticketsCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${!ticket[0]}',
+            condition: '!ticket[0]',
             then: [
               { action: 'reply', content: 'This is not a ticket channel!', ephemeral: true },
               { action: 'abort' },

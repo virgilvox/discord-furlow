@@ -179,7 +179,7 @@ flows:
           scope: global
 
       - flow_if:
-          if: "${args.value > 50}"
+          if: "args.value > 50"
           then:
             - set:
                 var: result
@@ -256,7 +256,7 @@ flows:
           scope: global
 
       - flow_while:
-          while: "${state.global.counter < 5}"
+          while: "state.global.counter < 5"
           do:
             - increment:
                 var: counter
@@ -367,7 +367,7 @@ flows:
       - try:
           do:
             - flow_if:
-                if: "${args.shouldFail}"
+                if: "args.shouldFail"
                 then:
                   - abort:
                       reason: "Intentional failure"
@@ -400,7 +400,7 @@ flows:
     description: "Recursive factorial calculation"
     actions:
       - flow_if:
-          if: "${args.n <= 1}"
+          if: "args.n <= 1"
           then:
             - return:
                 value: 1
@@ -502,7 +502,7 @@ flows:
     description: "Test flow abortion"
     actions:
       - flow_if:
-          if: "${args.shouldAbort}"
+          if: "args.shouldAbort"
           then:
             - abort:
                 reason: "Test abort"
@@ -911,7 +911,7 @@ flows:
           as: result
           each:
             - flow_if:
-                if: "${result == true}"
+                if: "result == true"
                 then:
                   - increment:
                       var: passedCount

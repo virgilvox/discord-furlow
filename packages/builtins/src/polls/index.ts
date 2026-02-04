@@ -46,7 +46,7 @@ export const pollsEventHandlers: EventHandler[] = [
   // Handle vote button
   {
     event: 'button_click',
-    condition: '${interaction.customId.startsWith("poll_vote_")}',
+    condition: 'interaction.customId.startsWith("poll_vote_")',
     actions: [
       {
         action: 'set',
@@ -71,7 +71,7 @@ export const pollsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!poll[0] || poll[0].ended}',
+        condition: '!poll[0] || poll[0].ended',
         then: [
           { action: 'reply', content: 'This poll has ended!', ephemeral: true },
           { action: 'abort' },
@@ -86,7 +86,7 @@ export const pollsEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!poll[0].multiple_choice && existingVotes.length > 0}',
+        condition: '!poll[0].multiple_choice && existingVotes.length > 0',
         then: [
           // Change vote
           {
@@ -255,7 +255,7 @@ export const pollsCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${optionTexts.length < 2}',
+        condition: 'optionTexts.length < 2',
         then: [
           { action: 'reply', content: 'You need at least 2 options!', ephemeral: true },
           { action: 'abort' },
@@ -263,7 +263,7 @@ export const pollsCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${optionTexts.length > (config.polls?.maxOptions || 10)}',
+        condition: 'optionTexts.length > (config.polls?.maxOptions || 10)',
         then: [
           { action: 'reply', content: 'Maximum ${config.polls?.maxOptions || 10} options allowed!', ephemeral: true },
           { action: 'abort' },
@@ -367,7 +367,7 @@ export const pollsCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!poll[0]}',
+        condition: '!poll[0]',
         then: [
           { action: 'reply', content: 'Poll not found!', ephemeral: true },
           { action: 'abort' },
@@ -375,7 +375,7 @@ export const pollsCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${poll[0].creator_id !== user.id && !member.permissions.has("MANAGE_MESSAGES")}',
+        condition: 'poll[0].creator_id !== user.id && !member.permissions.has("MANAGE_MESSAGES")',
         then: [
           { action: 'reply', content: 'You can only end your own polls!', ephemeral: true },
           { action: 'abort' },

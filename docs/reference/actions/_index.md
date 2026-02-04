@@ -1,6 +1,6 @@
 # Actions Reference
 
-FURLOW provides 85 actions across 9 categories.
+FURLOW provides 84 actions across 9 categories.
 
 ## Message Actions (11)
 
@@ -551,7 +551,7 @@ Conditional execution.
 
 ```yaml
 - flow_if:
-    condition: "${count > 10}"
+    condition: "count > 10"
     then:
       - reply:
           content: "Count is high"
@@ -719,10 +719,10 @@ Create a thread.
 
 ```yaml
 - create_thread:
-    channel: "${channel.id}"
-    message: "${message.id}"  # Optional: create from message
     name: "Thread Name"
-    auto_archive_duration: 1440  # minutes
+    message: "${message.id}"  # Optional: create from message
+    auto_archive_duration: 1440  # 60 | 1440 | 4320 | 10080 minutes
+    type: public  # public | private
     as: "created_thread"
 ```
 
@@ -793,15 +793,19 @@ Show a modal dialog.
 
 ```yaml
 - show_modal:
-    title: "Feedback Form"
-    custom_id: "feedback_modal"
-    components:
-      - type: text_input
-        custom_id: "feedback"
-        label: "Your feedback"
-        style: paragraph
-        required: true
-        placeholder: "Enter your feedback..."
+    modal: "feedback_modal"  # Reference to defined modal
+# Or inline definition:
+- show_modal:
+    modal:
+      custom_id: "feedback_modal"
+      title: "Feedback Form"
+      components:
+        - type: text_input
+          custom_id: "feedback"
+          label: "Your feedback"
+          style: paragraph
+          required: true
+          placeholder: "Enter your feedback..."
 ```
 
 ### voice_join
@@ -930,9 +934,13 @@ Add to queue.
 
 ```yaml
 - queue_add:
-    guild: "${guild.id}"
-    url: "https://..."
-    position: 0  # Optional: insert position
+    source: "https://youtube.com/watch?v=..."  # URL or search query
+    requester: "${user.id}"
+    position: next  # number | 'next' | 'last'
+# Or use track from voice_search:
+- queue_add:
+    track: "${searchResult}"
+    requester: "${user.id}"
 ```
 
 ### queue_remove
@@ -941,8 +949,7 @@ Remove from queue.
 
 ```yaml
 - queue_remove:
-    guild: "${guild.id}"
-    index: 0
+    position: 0  # Index of track to remove
 ```
 
 ### queue_clear
@@ -950,8 +957,7 @@ Remove from queue.
 Clear queue.
 
 ```yaml
-- queue_clear:
-    guild: "${guild.id}"
+- queue_clear
 ```
 
 ### queue_shuffle
@@ -959,8 +965,7 @@ Clear queue.
 Shuffle queue.
 
 ```yaml
-- queue_shuffle:
-    guild: "${guild.id}"
+- queue_shuffle
 ```
 
 ### queue_loop
@@ -969,7 +974,6 @@ Set loop mode.
 
 ```yaml
 - queue_loop:
-    guild: "${guild.id}"
     mode: queue  # off | track | queue
 ```
 
@@ -1019,8 +1023,7 @@ Query records.
     table: "users"
     where:
       guild_id: "${guild.id}"
-    order_by: "xp"
-    order: desc
+    order_by: "xp DESC"
     limit: 10
     as: "top_users"
 ```
@@ -1129,11 +1132,11 @@ canvas:
           x: 320
           y: 40
           radius: 80
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
         - type: text
           x: 400
           y: 215
-          text: "Welcome, ${user.displayName}!"
+          text: "Welcome, ${member.display_name}!"
           font: sans-serif
           size: 32
           color: "#FFFFFF"
@@ -1173,11 +1176,11 @@ Render canvas layers inline without requiring a pre-defined generator. Useful fo
         x: 320
         y: 40
         radius: 80
-        src: "${user.displayAvatarURL}"
+        src: "${user.avatar}"
       - type: text
         x: 400
         y: 200
-        text: "Hello, ${user.displayName}!"
+        text: "Hello, ${member.display_name}!"
         font: sans-serif
         size: 32
         color: "#FFFFFF"

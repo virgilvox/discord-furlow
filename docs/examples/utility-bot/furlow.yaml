@@ -81,7 +81,7 @@ commands:
           var: user_reminders
           value: "${state.user.reminders || []}"
       - flow_if:
-          condition: "${user_reminders.length === 0}"
+          condition: "user_reminders.length === 0"
           then:
             - reply:
                 content: "You have no active reminders."
@@ -109,7 +109,7 @@ commands:
           var: reminder
           value: "${state.user.reminders.find(r => r.id.startsWith(options.id))}"
       - flow_if:
-          condition: "${!reminder}"
+          condition: "!reminder"
           then:
             - reply:
                 content: "Reminder not found."
@@ -176,29 +176,23 @@ commands:
           embeds:
             - title: "${guild.name}"
               thumbnail:
-                url: "${guild.iconURL({ size: 256 })}"
+                url: "${guild.icon}"
               color: "#5865F2"
               fields:
                 - name: "Owner"
-                  value: "<@${guild.ownerId}>"
+                  value: "<@${guild.owner_id}>"
                   inline: true
                 - name: "Members"
-                  value: "${guild.memberCount}"
+                  value: "${guild.member_count}"
                   inline: true
-                - name: "Channels"
-                  value: "${guild.channels.cache.size}"
-                  inline: true
-                - name: "Roles"
-                  value: "${guild.roles.cache.size}"
-                  inline: true
-                - name: "Emojis"
-                  value: "${guild.emojis.cache.size}"
+                - name: "Boost Tier"
+                  value: "${guild.premium_tier}"
                   inline: true
                 - name: "Boosts"
-                  value: "${guild.premiumSubscriptionCount || 0}"
+                  value: "${guild.boost_count}"
                   inline: true
                 - name: "Created"
-                  value: "<t:${Math.floor(guild.createdTimestamp / 1000)}:R>"
+                  value: "${timestamp(guild.created_at, 'R')}"
               footer:
                 text: "ID: ${guild.id}"
 
@@ -212,30 +206,22 @@ commands:
       - set:
           var: target
           value: "${options.user || user}"
-      - set:
-          var: target_member
-          value: "${guild.members.cache.get(target.id)}"
       - reply:
           embeds:
             - title: "${target.tag}"
               thumbnail:
-                url: "${target.displayAvatarURL({ size: 256 })}"
+                url: "${target.avatar}"
               color: "#5865F2"
               fields:
                 - name: "ID"
                   value: "${target.id}"
                   inline: true
-                - name: "Nickname"
-                  value: "${target_member?.nickname || 'None'}"
+                - name: "Bot"
+                  value: "${target.bot ? 'Yes' : 'No'}"
                   inline: true
                 - name: "Created"
-                  value: "<t:${Math.floor(target.createdTimestamp / 1000)}:R>"
+                  value: "${timestamp(target.created_at, 'R')}"
                   inline: true
-                - name: "Joined"
-                  value: "${target_member ? `<t:${Math.floor(target_member.joinedTimestamp / 1000)}:R>` : 'Not in server'}"
-                  inline: true
-                - name: "Roles"
-                  value: "${target_member?.roles.cache.filter(r => r.id !== guild.id).map(r => r.toString()).join(' ') || 'None'}"
 
   - name: avatar
     description: Get a user's avatar
@@ -251,7 +237,7 @@ commands:
           embeds:
             - title: "${target.tag}'s Avatar"
               image:
-                url: "${target.displayAvatarURL({ size: 1024 })}"
+                url: "${target.avatar}"
               color: "#5865F2"
 
   # Fun Commands
@@ -260,7 +246,7 @@ commands:
     actions:
       - set:
           var: result
-          value: "${Math.random() < 0.5 ? 'Heads' : 'Tails'}"
+          value: "${random < 0.5 ? 'Heads' : 'Tails'}"
       - reply:
           content: "The coin landed on **${result}**!"
 
@@ -348,7 +334,7 @@ events:
           var: reminder
           value: "${state.user[event.data.user_id].reminders.find(r => r.id === event.data.reminder_id)}"
       - flow_if:
-          condition: "${reminder}"
+          condition: "reminder"
           then:
             - send_message:
                 channel: "${reminder.channel_id}"
@@ -367,13 +353,13 @@ events:
 
   # Starboard
   - event: reaction_add
-    when: "${reaction.emoji.name === '⭐' && reaction.count >= (env.STAR_THRESHOLD || 3)}"
+    when: "reaction.emoji.name === '⭐' && reaction.count >= (env.STAR_THRESHOLD || 3)"
     actions:
       - set:
           var: message_id
           value: "${reaction.message.id}"
       - flow_if:
-          condition: "${state.guild.starred_messages[message_id]}"
+          condition: "state.guild.starred_messages[message_id]"
           then:
             - abort
       - send_message:
@@ -383,13 +369,13 @@ events:
               color: "#ffd700"
               author:
                 name: "${reaction.message.author.tag}"
-                icon_url: "${reaction.message.author.displayAvatarURL()}"
+                icon_url: "${reaction.message.author.avatar}"
               fields:
                 - name: "Source"
                   value: "[Jump to message](${reaction.message.url})"
               footer:
                 text: "⭐ ${reaction.count}"
-              timestamp: "${reaction.message.createdAt}"
+              timestamp: "${reaction.message.created_at}"
               image:
                 url: "${reaction.message.attachments.first()?.url}"
           as: starboard_message

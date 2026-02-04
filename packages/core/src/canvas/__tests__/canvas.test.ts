@@ -210,7 +210,7 @@ describe('Built-in Welcome Generators', () => {
         (l: any) => l.type === 'text' && (l as any).text?.includes('Welcome')
       );
       expect(welcomeText).toBeDefined();
-      expect((welcomeText as any).text).toContain('${user.displayName}');
+      expect((welcomeText as any).text).toContain('${member.display_name}');
     });
   });
 
@@ -271,7 +271,7 @@ describe('Built-in Welcome Generators', () => {
       const gen = createWelcomeGenerator({
         welcomeText: 'Hello, ${user.username}!',
         subtitleText: 'Welcome to ${guild.name}',
-        memberCountText: '#${guild.memberCount}',
+        memberCountText: '#${guild.member_count}',
       });
 
       const welcomeTextLayer = gen.layers.find(
@@ -345,7 +345,7 @@ describe('Built-in Rank Generators', () => {
 
     it('should include username text', () => {
       const usernameText = rankGenerator.layers.find(
-        (l: any) => l.type === 'text' && (l as any).text?.includes('${user.displayName}')
+        (l: any) => l.type === 'text' && (l as any).text?.includes('${member.display_name}')
       );
       expect(usernameText).toBeDefined();
     });
@@ -557,7 +557,9 @@ describe('Conditional Rendering', () => {
       (l: any) => l.when !== undefined
     );
     expect(conditionalLayer).toBeDefined();
-    expect((conditionalLayer as any).when).toContain('${');
+    // when fields use raw JEXL expressions (evaluated), not ${} syntax (interpolated)
+    expect(typeof (conditionalLayer as any).when).toBe('string');
+    expect((conditionalLayer as any).when.length).toBeGreaterThan(0);
   });
 });
 

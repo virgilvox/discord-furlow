@@ -54,10 +54,10 @@ Troubleshoot common issues and debug FURLOW bots effectively.
 2. **Type mismatches**
    ```yaml
    # Bad: Comparing number to string
-   when: "${state.guild.level === '5'}"
+   when: "state.guild.level === '5'"
 
    # Good: Consistent types
-   when: "${state.guild.level === 5}"
+   when: "state.guild.level === 5"
    ```
 
 3. **Missing state initialization**
@@ -121,7 +121,7 @@ Troubleshoot common issues and debug FURLOW bots effectively.
 2. **Check `when` conditions**
    ```yaml
    # This might never be true
-   when: "${member.permissions.has('ADMINISTRATOR')}"
+   when: "member.permissions.has('ADMINISTRATOR')"
 
    # Debug: Log the actual value
    - log:
@@ -223,7 +223,7 @@ furlow validate furlow.yaml --section commands
 # Log all events for debugging
 events:
   - event: "*"
-    when: "${env.DEBUG_EVENTS === 'true'}"
+    when: "env.DEBUG_EVENTS === 'true'"
     actions:
       - log:
           level: debug
@@ -275,7 +275,7 @@ content: "${user.username}"
 when: "user.id == '123'"
 
 # Correct: Expression syntax
-when: "${user.id === '123'}"
+when: "user.id === '123'"
 ```
 
 ## Debugging State
@@ -363,7 +363,7 @@ events:
       - log:
           message: "Event received, checking when..."
       - flow_if:
-          condition: "${message.content.startsWith('!')}"
+          condition: "message.content.startsWith('!')"
           then:
             - log:
                 message: "Condition passed!"

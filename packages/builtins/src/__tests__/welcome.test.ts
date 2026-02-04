@@ -200,7 +200,7 @@ describe('Welcome Builtin', () => {
       it('should display member name dynamically', () => {
         const memberNameLayer = generator.layers.find(
           (l) =>
-            l.type === 'text' && (l as { text?: string }).text?.includes('member.displayName')
+            l.type === 'text' && (l as { text?: string }).text?.includes('member.display_name')
         );
         expect(memberNameLayer).toBeDefined();
       });
@@ -208,7 +208,7 @@ describe('Welcome Builtin', () => {
       it('should display member count', () => {
         const memberCountLayer = generator.layers.find(
           (l) =>
-            l.type === 'text' && (l as { text?: string }).text?.includes('guild.memberCount')
+            l.type === 'text' && (l as { text?: string }).text?.includes('guild.member_count')
         );
         expect(memberCountLayer).toBeDefined();
       });

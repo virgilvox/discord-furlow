@@ -60,9 +60,9 @@ builtins:
     embed:
       color: "#5865F2"
       thumbnail:
-        url: "${user.avatarURL}"
+        url: "${user.avatar}"
       footer:
-        text: "Member #${guild.memberCount}"
+        text: "Member #${guild.member_count}"
     auto_roles:
       - "${env.MEMBER_ROLE}"
     goodbye:
@@ -173,11 +173,11 @@ builtins:
         responses:
           - "Hello there!"
           - "Hey!"
-          - "Hi ${user.displayName}!"
+          - "Hi ${member.display_name}!"
         chance: 100
         cooldown: 30
       - pattern: "(?i)good\\s*(morning|night|evening|afternoon)"
-        response: "Good ${match[1]} to you too, ${user.displayName}!"
+        response: "Good ${match[1]} to you too, ${member.display_name}!"
         chance: 100
 
   # AFK
@@ -271,9 +271,9 @@ commands:
               color: "#ffd700"
               author:
                 name: "${user.username}"
-                icon_url: "${user.avatarURL}"
+                icon_url: "${user.avatar}"
               footer:
-                text: "Suggestion #${guild_state.suggestion_count + 1}"
+                text: "Suggestion #${state.guild.suggestion_count + 1}"
               timestamp: true
           components:
             - type: row
@@ -420,9 +420,9 @@ scheduler:
             embeds:
               - title: "Daily Stats"
                 description: |
-                  **Members:** ${guild.memberCount}
-                  **Messages today:** ${guild_state.messages_today ?? 0}
-                  **Commands used:** ${guild_state.commands_today ?? 0}
+                  **Members:** ${guild.member_count}
+                  **Messages today:** ${state.guild.messages_today ?? 0}
+                  **Commands used:** ${state.guild.commands_today ?? 0}
                 color: "#00ff00"
                 timestamp: true
         - set:

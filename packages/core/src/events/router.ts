@@ -175,6 +175,14 @@ export class EventRouter {
     evaluator: ExpressionEvaluator
   ): Promise<boolean> {
     if (typeof condition === 'string') {
+      // Detect common mistake: using ${} in condition fields
+      if (condition.includes('${')) {
+        throw new Error(
+          `Invalid condition syntax: "${condition}". ` +
+          `Condition fields expect raw JEXL expressions without \${} wrapper. ` +
+          `Use: when: "${condition.replace(/\$\{([^}]+)\}/g, '$1')}" instead.`
+        );
+      }
       return evaluator.evaluate<boolean>(condition, context);
     }
     // Handle complex condition objects

@@ -89,7 +89,7 @@ pipes:
               - pipe_send:
                   pipe: tcp_server
                   data:
-                    message: "OK: ${guild.memberCount} members online"
+                    message: "OK: ${guild.member_count} members online"
 ```
 
 ### Request-Response Pattern

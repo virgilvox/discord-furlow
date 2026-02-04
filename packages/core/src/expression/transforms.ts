@@ -176,6 +176,8 @@ export function registerTransforms(jexl: Jexl.Jexl): void {
         return `<@&${id}>`;
       case 'channel':
         return `<#${id}>`;
+      case 'emoji':
+        return id.includes(':') ? `<${id}>` : id;
       default:
         return id;
     }

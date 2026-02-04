@@ -47,4 +47,4 @@ commands:
     description: Get server info
     actions:
       - reply:
-          content: "Server: ${interaction.guild.name} with ${interaction.guild.memberCount} members"
+          content: "Server: ${interaction.guild.name} with ${interaction.guild.member_count} members"

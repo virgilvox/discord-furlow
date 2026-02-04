@@ -164,7 +164,17 @@ const flowIfHandler: ActionHandler<FlowIfAction> = {
       return { success: false, error: new Error('Condition is required') };
     }
 
-    const result = await evaluator.evaluate<boolean>(String(condition), context);
+    const conditionStr = String(condition);
+    // Detect common mistake: using ${} in condition fields
+    if (conditionStr.includes('${')) {
+      throw new Error(
+        `Invalid condition syntax: "${conditionStr}". ` +
+        `Condition fields expect raw JEXL expressions without \${} wrapper. ` +
+        `Use: condition: "${conditionStr.replace(/\$\{([^}]+)\}/g, '$1')}" instead.`
+      );
+    }
+
+    const result = await evaluator.evaluate<boolean>(conditionStr, context);
 
     // The FlowEngine will handle executing the branches
     return { success: true, data: { condition: result } };

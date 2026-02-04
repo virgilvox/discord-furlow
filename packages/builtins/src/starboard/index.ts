@@ -55,30 +55,30 @@ export const starboardEventHandlers: EventHandler[] = [
   // Handle star reactions
   {
     event: 'reaction_add',
-    condition: '${(reaction.emoji.name === (config.starboard?.emoji || "⭐") || reaction.emoji.name === "🌟") && config.starboard?.channel}',
+    condition: '(reaction.emoji.name === (config.starboard?.emoji || "⭐") || reaction.emoji.name === "🌟") && config.starboard?.channel',
     actions: [
       // Check if channel is ignored
       {
         action: 'flow_if',
-        condition: '${config.starboard.ignoredChannels?.includes(channel.id)}',
+        condition: 'config.starboard.ignoredChannels?.includes(channel.id)',
         then: [{ action: 'abort' }],
       },
       // Check NSFW
       {
         action: 'flow_if',
-        condition: '${channel.nsfw && !config.starboard.nsfwAllowed}',
+        condition: 'channel.nsfw && !config.starboard.nsfwAllowed',
         then: [{ action: 'abort' }],
       },
       // Check self-star
       {
         action: 'flow_if',
-        condition: '${!config.starboard.selfStar && user.id === message.author.id}',
+        condition: '!config.starboard.selfStar && user.id === message.author.id',
         then: [{ action: 'abort' }],
       },
       // Check bot messages
       {
         action: 'flow_if',
-        condition: '${!config.starboard.botMessages && message.author.bot}',
+        condition: '!config.starboard.botMessages && message.author.bot',
         then: [{ action: 'abort' }],
       },
       // Check if already starred by this user
@@ -90,7 +90,7 @@ export const starboardEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${existingStar.length > 0}',
+        condition: 'existingStar.length > 0',
         then: [{ action: 'abort' }],
       },
       // Add star
@@ -146,7 +146,7 @@ export const starboardEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${existing.length > 0}',
+        condition: 'existing.length > 0',
         then: [
           // Update existing starboard message
           {
@@ -166,7 +166,7 @@ export const starboardEventHandlers: EventHandler[] = [
           // Create new starboard entry if threshold met
           {
             action: 'flow_if',
-            condition: '${starCount >= threshold}',
+            condition: 'starCount >= threshold',
             then: [
               // Build embed
               {
@@ -181,12 +181,12 @@ export const starboardEventHandlers: EventHandler[] = [
                 embed: {
                   author: {
                     name: '${message.author.tag}',
-                    icon_url: '${message.author.avatarURL}',
+                    icon_url: '${message.author.avatar}',
                   },
                   description: '${message.content}\n\n[Jump to message](${message.url})',
                   color: '${embedColor}',
                   image: '${imageUrl ? { url: imageUrl } : null}',
-                  timestamp: '${message.createdAt}',
+                  timestamp: '${message.created_at}',
                   footer: {
                     text: 'ID: ${message.id}',
                   },
@@ -215,7 +215,7 @@ export const starboardEventHandlers: EventHandler[] = [
   // Handle star removal
   {
     event: 'reaction_remove',
-    condition: '${(reaction.emoji.name === (config.starboard?.emoji || "⭐") || reaction.emoji.name === "🌟") && config.starboard?.channel}',
+    condition: '(reaction.emoji.name === (config.starboard?.emoji || "⭐") || reaction.emoji.name === "🌟") && config.starboard?.channel',
     actions: [
       // Remove star record
       {
@@ -244,11 +244,11 @@ export const starboardEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${existing.length > 0}',
+        condition: 'existing.length > 0',
         then: [
           {
             action: 'flow_if',
-            condition: '${starCount < (config.starboard.threshold || 3)}',
+            condition: 'starCount < (config.starboard.threshold || 3)',
             then: [
               // Remove from starboard
               {
@@ -316,7 +316,7 @@ export const starboardCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${args.threshold}',
+            condition: 'args.threshold',
             then: [
               {
                 action: 'set',
@@ -328,7 +328,7 @@ export const starboardCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${args.emoji}',
+            condition: 'args.emoji',
             then: [
               {
                 action: 'set',
@@ -394,7 +394,7 @@ export const starboardCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${allMessages.length === 0}',
+            condition: 'allMessages.length === 0',
             then: [
               { action: 'reply', content: 'No starred messages yet!', ephemeral: true },
               { action: 'abort' },

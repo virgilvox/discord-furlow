@@ -51,22 +51,22 @@ flows:
   check_voice:
     actions:
       - flow_if:
-          condition: "${!member.voice.channelId}"
+          if: "!member.voice.channel_id"
           then:
             - reply:
                 content: "You need to be in a voice channel!"
                 ephemeral: true
-            - abort
+            - abort:
 
   check_dj:
     actions:
       - flow_if:
-          condition: "${!member.roles.cache.has(env.DJ_ROLE) && queue.length > 0}"
+          if: "!(member.roles | includes(env.DJ_ROLE)) && queue.length > 0"
           then:
             - reply:
                 content: "Only DJs can use this command when music is playing."
                 ephemeral: true
-            - abort
+            - abort:
 
 # Commands
 commands:
@@ -81,13 +81,13 @@ commands:
       - call_flow:
           flow: check_voice
       - voice_join:
-          channel: "${member.voice.channelId}"
+          channel: "${member.voice.channel_id}"
       - voice_search:
           query: "${options.query}"
           limit: 1
           as: results
       - flow_if:
-          condition: "${results.length === 0}"
+          condition: "results.length === 0"
           then:
             - reply:
                 content: "No results found for: ${options.query}"
@@ -96,7 +96,7 @@ commands:
       - queue_add:
           track: "${results[0]}"
       - flow_if:
-          condition: "${!player.playing}"
+          condition: "!player.playing"
           then:
             - voice_play:
                 source: "${results[0]}"
@@ -170,7 +170,7 @@ commands:
       - call_flow:
           flow: check_voice
       - flow_if:
-          condition: "${!player.playing}"
+          condition: "!player.playing"
           then:
             - reply:
                 content: "Nothing is playing"
@@ -189,7 +189,7 @@ commands:
       - queue_get:
           as: current_queue
       - flow_if:
-          condition: "${current_queue.length === 0}"
+          condition: "current_queue.length === 0"
           then:
             - reply:
                 content: "Queue is empty. Use `/play` to add songs!"
@@ -214,7 +214,7 @@ commands:
     description: Show current track
     actions:
       - flow_if:
-          condition: "${!player.current}"
+          condition: "!player.current"
           then:
             - reply:
                 content: "Nothing is playing"
@@ -295,7 +295,7 @@ commands:
       - queue_get:
           as: current_queue
       - flow_if:
-          condition: "${options.position > current_queue.length}"
+          condition: "options.position > current_queue.length"
           then:
             - reply:
                 content: "Invalid position. Queue has ${current_queue.length} tracks."
@@ -341,13 +341,13 @@ events:
   - event: voice_track_end
     actions:
       - flow_if:
-          condition: "${state.guild.loop_mode === 'track'}"
+          condition: "state.guild.loop_mode === 'track'"
           then:
             - voice_play:
                 source: "${track}"
           else:
             - flow_if:
-                condition: "${queue.length > 0}"
+                condition: "queue.length > 0"
                 then:
                   - voice_play:
                       source: "${queue[0]}"
@@ -355,7 +355,7 @@ events:
                       position: 0
 
   - event: voice_queue_empty
-    when: "${state.guild.loop_mode !== 'queue'}"
+    when: "state.guild.loop_mode !== 'queue'"
     actions:
       - send_message:
           channel: "${player.textChannelId}"

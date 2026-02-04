@@ -40,7 +40,7 @@ content: "${function_name('hello', 5)}"
 # Output: "result"
 
 # In conditions
-condition: "${function_name(value) == expected}"
+condition: "function_name(value) == expected"
 ```
 
 ### Edge Cases

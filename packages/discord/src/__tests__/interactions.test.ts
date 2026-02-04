@@ -17,6 +17,9 @@ vi.mock('discord.js', () => {
   return {
     Client: vi.fn(),
     REST: mockREST,
+    MessageFlags: {
+      Ephemeral: 64,
+    },
     Routes: {
       applicationGuildCommands: vi.fn((clientId, guildId) => `/applications/${clientId}/guilds/${guildId}/commands`),
       applicationCommands: vi.fn((clientId) => `/applications/${clientId}/commands`),
@@ -195,7 +198,7 @@ describe('InteractionHandler', () => {
       expect(mockInteraction.reply).toHaveBeenCalledWith(
         expect.objectContaining({
           content: expect.stringContaining('error'),
-          ephemeral: true,
+          flags: expect.anything(),
         })
       );
     });

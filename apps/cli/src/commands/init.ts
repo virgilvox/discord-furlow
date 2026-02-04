@@ -51,10 +51,10 @@ export async function initCommand(
         },
       },
     ]);
-    name = answers.name;
+    name = answers.name ?? 'my-furlow-bot';
   }
 
-  const projectDir = join(process.cwd(), name);
+  const projectDir = join(process.cwd(), name!);
 
   const spinner = ora('Creating project structure...').start();
 

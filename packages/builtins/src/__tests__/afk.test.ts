@@ -62,7 +62,7 @@ describe('AFK Builtin', () => {
       const handler = afkEventHandlers.find(
         (h) =>
           h.event === 'message' &&
-          h.condition === '${!message.author.bot}'
+          h.condition === '!message.author.bot'
       )!;
 
       it('should check for bot messages', () => {

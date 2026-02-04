@@ -74,7 +74,7 @@ style: primary   # primary, secondary, success, danger
 Require a role before users can get another:
 
 ```yaml
-when: "${member.roles.cache.has('required_role_id')}"
+when: "member.roles | includes('required_role_id')"
 ```
 
 ### Limit Selections

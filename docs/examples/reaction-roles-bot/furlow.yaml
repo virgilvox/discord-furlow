@@ -121,7 +121,7 @@ commands:
           var: menu
           value: "${state.guild.role_menus[options.menu_id]}"
       - flow_if:
-          condition: "${!menu}"
+          condition: "!menu"
           then:
             - reply:
                 content: "Menu not found. Check the ID."
@@ -162,10 +162,10 @@ commands:
               components: "${buttons.slice(0, 5)}"
             - type: action_row
               components: "${buttons.slice(5, 10)}"
-              when: "${buttons.length > 5}"
+              when: "buttons.length > 5"
             - type: action_row
               components: "${buttons.slice(10, 15)}"
-              when: "${buttons.length > 10}"
+              when: "buttons.length > 10"
       - reply:
           content: "Added **${options.role.name}** to the menu!"
           ephemeral: true
@@ -207,7 +207,7 @@ commands:
           var: menus
           value: "${Object.entries(state.guild.role_menus || {})}"
       - flow_if:
-          condition: "${menus.length === 0}"
+          condition: "menus.length === 0"
           then:
             - reply:
                 content: "No role menus created yet."
@@ -235,7 +235,7 @@ commands:
           var: menus
           value: "${state.guild.role_menus || {}}"
       - flow_if:
-          condition: "${!menus[options.menu_id]}"
+          condition: "!menus[options.menu_id]"
           then:
             - reply:
                 content: "Menu not found."
@@ -266,7 +266,7 @@ components:
             var: role_id
             value: "${interaction.customId.replace('role_', '')}"
         - flow_if:
-            condition: "${member.roles.cache.has(role_id)}"
+            if: "member.roles | includes(role_id)"
             then:
               - remove_role:
                   role: "${role_id}"
@@ -291,7 +291,7 @@ events:
           var: role_id
           value: "${state.guild.reaction_roles?.[key]}"
       - flow_if:
-          condition: "${role_id && !reaction.message.author.bot}"
+          condition: "role_id && !reaction.message.author.bot"
           then:
             - assign_role:
                 user: "${user.id}"
@@ -306,7 +306,7 @@ events:
           var: role_id
           value: "${state.guild.reaction_roles?.[key]}"
       - flow_if:
-          condition: "${role_id}"
+          condition: "role_id"
           then:
             - remove_role:
                 user: "${user.id}"

@@ -47,9 +47,9 @@ voice:
 Join a voice channel.
 
 ```yaml
-- action: voice_join
-  channel: "${member.voice.channelId}"
-  self_deaf: true           # Bot deafens itself
+- voice_join:
+    channel: "${member.voice.channel_id}"
+    self_deaf: true           # Bot deafens itself
   self_mute: false          # Bot mutes itself
   as: connection            # Store connection reference
 ```
@@ -382,13 +382,13 @@ commands:
         required: true
     actions:
       # Check if user is in voice channel
-      - action: flow_if
-        condition: "${!member.voice.channelId}"
-        then:
-          - action: reply
-            content: "You need to be in a voice channel!"
-            ephemeral: true
-          - action: abort
+      - flow_if:
+          if: "!member.voice.channel_id"
+          then:
+            - reply:
+                content: "You need to be in a voice channel!"
+                ephemeral: true
+            - abort:
 
       # Defer for search
       - action: defer
@@ -400,7 +400,7 @@ commands:
         as: results
 
       - action: flow_if
-        condition: "${!results || results.length === 0}"
+        condition: "!results || results.length === 0"
         then:
           - action: reply
             content: "No results found for: ${options.query}"
@@ -412,11 +412,11 @@ commands:
         as: voiceState
 
       - action: flow_if
-        condition: "${!voiceState.connected}"
+        condition: "!voiceState.connected"
         then:
-          - action: voice_join
-            channel: "${member.voice.channelId}"
-            self_deaf: true
+          - voice_join:
+              channel: "${member.voice.channel_id}"
+              self_deaf: true
 
       # Add to queue
       - action: queue_add
@@ -447,7 +447,7 @@ commands:
         as: voiceState
 
       - action: flow_if
-        condition: "${!voiceState.playing}"
+        condition: "!voiceState.playing"
         then:
           - action: reply
             content: "Nothing is playing!"
@@ -467,7 +467,7 @@ commands:
         as: queue
 
       - action: flow_if
-        condition: "${queue.tracks.length === 0}"
+        condition: "queue.tracks.length === 0"
         then:
           - action: reply
             content: "The queue is empty!"
@@ -568,7 +568,7 @@ commands:
         as: voiceState
 
       - action: flow_if
-        condition: "${!voiceState.current}"
+        condition: "!voiceState.current"
         then:
           - action: reply
             content: "Nothing is playing!"
@@ -678,10 +678,10 @@ commands:
 
 events:
   - event: voice_state_update
-    condition: "${member.id === bot.user.id && !newState.channelId}"
+    when: "member.id == client.id && !new_state.channel_id"
     actions:
       # Bot was disconnected - clean up queue
-      - action: voice_stop
+      - voice_stop:
 ```
 
 ## Voice Events
@@ -721,17 +721,17 @@ events:
 
   # User joins voice
   - event: voice_join
-    condition: "${!member.user.bot}"
+    condition: "!member.user.bot"
     actions:
       - action: log
-        message: "${member.displayName} joined ${channel.name}"
+        message: "${member.display_name} joined ${channel.name}"
 
   # User leaves voice
   - event: voice_leave
-    condition: "${!member.user.bot}"
+    condition: "!member.user.bot"
     actions:
       - action: log
-        message: "${member.displayName} left voice"
+        message: "${member.display_name} left voice"
 ```
 
 ## Best Practices
@@ -745,13 +745,13 @@ events:
 
 ```yaml
 # DJ role check
-- action: flow_if
-  condition: "${!member.roles.cache.has(djRole) && !member.permissions.has('MANAGE_CHANNELS')}"
-  then:
-    - action: reply
-      content: "You need the DJ role to use this command!"
-      ephemeral: true
-    - action: abort
+- flow_if:
+    if: "!member.roles | includes(env.DJ_ROLE) && !member.permissions | includes('MANAGE_CHANNELS')"
+    then:
+      - reply:
+          content: "You need the DJ role to use this command!"
+          ephemeral: true
+      - abort:
 ```
 
 ## Next Steps

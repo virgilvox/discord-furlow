@@ -28,10 +28,10 @@ builtins:
       title: "Welcome!"
       description: "Welcome to ${guild.name}, ${user.mention}!"
       color: "#5865F2"
-      thumbnail: "${user.avatarURL}"
+      thumbnail: "${user.avatar}"
       fields:
         - name: "Member Count"
-          value: "You are member #${guild.memberCount}"
+          value: "You are member #${guild.member_count}"
           inline: true
       footer:
         text: "Enjoy your stay!"
@@ -79,13 +79,13 @@ Use these variables in welcome/goodbye messages:
 |----------|-------------|
 | `${user.mention}` | @mention the user |
 | `${user.username}` | Username |
-| `${user.displayName}` | Display name |
+| `${member.display_name}` | Display name |
 | `${user.id}` | User ID |
-| `${user.avatarURL}` | Avatar URL |
-| `${user.createdAt}` | Account creation date |
-| `${member.joinedAt}` | Join date |
+| `${user.avatar}` | Avatar URL |
+| `${user.created_at}` | Account creation date |
+| `${member.joined_at}` | Join date |
 | `${guild.name}` | Server name |
-| `${guild.memberCount}` | Total members |
+| `${guild.member_count}` | Total members |
 | `${guild.icon}` | Server icon URL |
 
 ## Welcome Images
@@ -137,7 +137,7 @@ builtins:
             height: 400
 
           - type: circle_image
-            src: "${user.avatarURL}"
+            src: "${user.avatar}"
             x: 400
             y: 150
             radius: 80
@@ -151,7 +151,7 @@ builtins:
             align: center
 
           - type: text
-            content: "${user.displayName}"
+            content: "${member.display_name}"
             x: 400
             y: 330
             font: "32px Sans"
@@ -195,16 +195,16 @@ builtins:
     goodbye:
       enabled: true
       channel: "goodbye-channel-id"
-      message: "${user.username} has left. We now have ${guild.memberCount} members."
+      message: "${user.username} has left. We now have ${guild.member_count} members."
 
       # Optional embed
       embed:
         title: "Goodbye!"
         description: "${user.username} has left the server."
         color: "#f04747"
-        thumbnail: "${user.avatarURL}"
+        thumbnail: "${user.avatar}"
         footer:
-          text: "Member count: ${guild.memberCount}"
+          text: "Member count: ${guild.member_count}"
 ```
 
 ## Commands
@@ -300,10 +300,10 @@ builtins:
 
         Have fun!
       color: "#5865F2"
-      thumbnail: "${user.avatarURL}"
+      thumbnail: "${user.avatar}"
       image: "${welcome_image_url}"
       footer:
-        text: "Member #${guild.memberCount}"
+        text: "Member #${guild.member_count}"
       timestamp: true
 
     image:

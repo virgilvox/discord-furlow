@@ -80,11 +80,14 @@ await client.shard.broadcastEval((c) => {
 
 ```yaml
 actions:
+  - shard_eval:
+      script: "guilds.size"
+      as: shard_guild_counts
   - set:
-      var: total_users
-      value: "${await client.shard.fetchClientValues('guilds.cache.reduce((a, g) => a + g.memberCount, 0)')}"
+      var: total_guilds
+      value: "${shard_guild_counts | sum}"
   - reply:
-      content: "Total users across all shards: ${total_users.reduce((a, b) => a + b, 0)}"
+      content: "Total guilds across all shards: ${total_guilds}"
 ```
 
 ## Distributed State

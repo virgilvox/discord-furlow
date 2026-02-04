@@ -145,8 +145,8 @@ function transformCommand(cmd: CommandDefinition): DiscordCommand {
   if (cmd.nsfw) discordCmd.nsfw = true;
 
   // Transform access rules to default_member_permissions if applicable
-  if (cmd.access?.require_permissions?.length) {
-    discordCmd.default_member_permissions = cmd.access.require_permissions.join(',');
+  if (cmd.access?.allow?.permissions?.length) {
+    discordCmd.default_member_permissions = cmd.access.allow.permissions.join(',');
   }
 
   return discordCmd;

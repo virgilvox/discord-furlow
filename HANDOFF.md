@@ -6,7 +6,7 @@ FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is 
 
 ## Current State: v1.0.1 - FEATURE COMPLETE
 
-As of 2026-02-03, all 9 packages are published to npm with comprehensive test coverage. **All code features are 100% implemented.**
+As of 2026-02-04, all 9 packages are published to npm with comprehensive test coverage. **All code features are 100% implemented.**
 
 | Package | Version | Status | Tests | Notes |
 |---------|---------|--------|-------|-------|
@@ -28,7 +28,7 @@ Comprehensive test coverage expansion following a structured plan:
 
 | Phase | Status | Tests Added | Description |
 |-------|--------|-------------|-------------|
-| Phase 1: Action Handlers | ✅ Complete | ~311 | 9 handler test files covering all 85 actions |
+| Phase 1: Action Handlers | ✅ Complete | ~311 | 9 handler test files covering all 84 actions |
 | Phase 2: Scheduler/Events/Automod | ✅ Complete | ~173 | Timer, cron, event router, automod engine |
 | Phase 3: Storage Adapters | ✅ Complete | ~156 | SQLite, PostgreSQL, contract tests |
 | Phase 4: Builtins Modules | ✅ Complete | 398 | 14 builtin module tests |
@@ -78,7 +78,7 @@ Comprehensive test coverage expansion following a structured plan:
 
 ## Complete Feature List
 
-### Action System (85 Actions)
+### Action System (84 Actions)
 
 | Category | Count | Actions |
 |----------|-------|---------|
@@ -268,7 +268,7 @@ furlow/
 │   ├── schema/                   # TypeScript types & JSON schemas
 │   │   └── src/types/
 │   │       ├── spec.ts           # FurlowSpec top-level
-│   │       ├── actions.ts        # 85 action types
+│   │       ├── actions.ts        # 84 action types
 │   │       ├── events.ts         # Event types
 │   │       └── ...
 │   ├── storage/                  # Database adapters
@@ -283,7 +283,7 @@ furlow/
 │   │   │   └── resolver.ts       # Import path resolution
 │   │   ├── expression/           # Jexl evaluator + 69 functions + caching
 │   │   ├── actions/
-│   │   │   ├── handlers/         # 85 action handlers
+│   │   │   ├── handlers/         # 84 action handlers
 │   │   │   ├── registry.ts       # Action registration
 │   │   │   └── executor.ts       # Action execution
 │   │   ├── events/               # EventRouter with normalization
@@ -313,7 +313,7 @@ furlow/
 │   └── compliance/               # Runtime compliance tests
 │       ├── minimal.furlow.yaml   # 20 actions
 │       ├── standard.furlow.yaml  # 63 actions
-│       └── full.furlow.yaml      # 85 actions
+│       └── full.furlow.yaml      # 84 actions
 ├── RUNTIME_SPEC.md               # Language-agnostic runtime spec
 └── HANDOFF.md                    # This file
 ```
@@ -328,7 +328,7 @@ The `RUNTIME_SPEC.md` document (2,346 lines) defines the complete FURLOW runtime
 | **YAML Format** | Top-level schema, version rules, action normalization |
 | **Expression Language** | 69 functions, 48 transforms, interpolation syntax |
 | **State Management** | 5 scope levels (global, guild, channel, user, member) |
-| **Action System** | Complete reference for all 85 actions with schemas |
+| **Action System** | Complete reference for all 84 actions with schemas |
 | **Event System** | Discord gateway events + FURLOW high-level events |
 | **Flow System** | Flow definitions, parameters, control flow semantics |
 
@@ -473,12 +473,403 @@ The `canvas_render` action now properly uses CanvasRenderer to render generators
 
 ## Recent Updates (2026-02-03)
 
+### Expression Syntax Comprehensive Audit
+
+**Critical Bug Fixed: Evaluated vs Interpolated Field Syntax**
+
+The documentation incorrectly showed `${}` wrapper syntax for condition fields, but the code actually expects raw JEXL expressions:
+
+```yaml
+# WRONG - causes ExpressionSyntaxError at runtime
+when: "${!message.author.bot}"
+
+# CORRECT - raw JEXL expression
+when: "!message.author.bot"
+```
+
+**Root Cause**: `when:`, `condition:`, `if:`, and `while:` fields use `evaluator.evaluate()` which expects raw JEXL. Other fields like `content:`, `title:`, `description:` use `evaluator.interpolate()` which expects `${}` wrapper syntax.
+
+**Field Types**:
+| Field Type | Syntax | Examples |
+|------------|--------|----------|
+| **Evaluated** (raw JEXL) | `"expression"` | `when`, `condition`, `if`, `while`, `loop.while`, `loop.count` |
+| **Interpolated** (`${}`) | `"${expression}"` | `content`, `title`, `description`, `reason`, `name` |
+
+**Files Modified (38 total)**:
+
+*Documentation*:
+- `docs/reference/llm-reference.md` - Rewrote Rule 2, fixed all `when:` examples, fixed `pick()` docs, fixed action count (85→84)
+- `docs/expression-language.md` - Fixed state variable syntax, standardized to `client.` context
+
+*Runtime Error Detection*:
+- `packages/core/src/events/router.ts` - Added `${}` detection in condition fields with helpful error message
+- `packages/core/src/actions/handlers/flow.ts` - Added `${}` detection to `flow_if` handler
+
+*Context Additions*:
+- `packages/core/src/expression/context.ts` - Added `MessageAuthorContext` interface and `author` property to `MessageContext`
+
+*Transform Fixes*:
+- `packages/core/src/expression/transforms.ts` - Added `emoji` type to `mention` transform
+
+*Discord.js Deprecation Fixes*:
+- `packages/discord/src/interactions/index.ts` - Changed `ephemeral: true` to `flags: MessageFlags.Ephemeral`
+- `packages/discord/src/__tests__/interactions.test.ts` - Added `MessageFlags` to mock
+
+*Builtin Condition Fixes (13 packages)*:
+- `packages/builtins/afk/src/index.ts`
+- `packages/builtins/auto-responder/src/index.ts`
+- `packages/builtins/giveaways/src/index.ts`
+- `packages/builtins/leveling/src/index.ts`
+- `packages/builtins/logging/src/index.ts`
+- `packages/builtins/moderation/src/index.ts`
+- `packages/builtins/music/src/index.ts`
+- `packages/builtins/polls/src/index.ts`
+- `packages/builtins/reaction-roles/src/index.ts`
+- `packages/builtins/reminders/src/index.ts`
+- `packages/builtins/starboard/src/index.ts`
+- `packages/builtins/tickets/src/index.ts`
+- `packages/builtins/welcome/src/index.ts`
+
+*Example Files*:
+- All example YAML files with condition fields updated
+
+**Property Name Standardization**:
+Context properties now consistently use snake_case:
+- `member.joined_at` (not `joinedAt`)
+- `member.display_name` (not `displayName`)
+- `member.is_boosting` (not `isBoosting`)
+- `message.created_at` (not `createdAt`)
+- `channel.parent_id` (not `parentId`)
+
+**Runtime Error Enhancement**:
+Added helpful error messages when users accidentally use `${}` in condition fields:
+```
+Invalid condition syntax: "${!message.author.bot}".
+Condition fields expect raw JEXL expressions without ${} wrapper.
+Use: when: "!message.author.bot" instead.
+```
+
+### Follow-up Audit Fixes (2026-02-03)
+
+Additional issues found and fixed in second audit pass:
+
+**1. Test Condition Mismatch** - `packages/builtins/src/__tests__/afk.test.ts`
+- Test was checking for `'${!message.author.bot}'` but code correctly uses `'!message.author.bot'`
+- Fixed line 65 to match the corrected implementation
+
+**2. Schema/Code Mismatch** - `apps/cli/src/commands/export.ts`
+- Line 148 referenced non-existent `cmd.access?.require_permissions`
+- Fixed to use correct schema path: `cmd.access?.allow?.permissions`
+
+**3. TypeScript Type Safety** - `apps/cli/src/commands/init.ts`
+- Line 57 had `string | undefined` type issue after inquirer prompt
+- Fixed with nullish coalescing and non-null assertion
+
+**Tests Verified**: All 398 builtin tests pass, all 79 discord tests pass.
+
+### Deep Audit #3 (2026-02-03)
+
+**CRITICAL fixes found and applied:**
+
+**1. Compliance Specs - CamelCase to snake_case** - `specs/compliance/full.furlow.yaml`
+- Lines 51-52, 529: Changed `selfDeaf`/`selfMute` to `self_deaf`/`self_mute`
+
+**2. Schema Violation - db_query fields** - `specs/compliance/standard.furlow.yaml`
+- Line 578: Changed `orderBy: "created_at"` + `order: "desc"` to `order_by: "created_at DESC"`
+
+**3. Expression Syntax - flow_if/flow_while** - `specs/compliance/minimal.furlow.yaml`
+- Lines 182, 259, 370, 403, 505, 914: Removed `${}` from `if:` and `while:` fields
+
+**4. Expression Syntax - flow_if** - `specs/compliance/full.furlow.yaml`
+- Line 810: Changed `if: "${result == true}"` to `if: "result == true"`
+
+**5. Expression Syntax - flow_if** - `specs/compliance/standard.furlow.yaml`
+- Line 981: Changed `if: "${result == true}"` to `if: "result == true"`
+
+**6. Documentation fix** - `docs/reference/llm-reference.md`
+- Line 1139: Removed non-existent `order` field, changed to `order_by: "xp DESC"`
+
+**7. Context variable fix** - `examples/moderation-bot/furlow.yaml`
+- Lines 234, 273, 293: Changed `member.roles|includes()` to `member.role_ids|includes()` (roles is names, role_ids is IDs)
+
+**8. Canvas test fix** - `packages/core/src/canvas/__tests__/canvas.test.ts`
+- Line 560: Changed test expectation from checking for `${}` to validating non-empty string (when fields use raw JEXL)
+
+**Tests Verified**: 1,956+ tests pass across all packages (856 core, 398 builtins, 197 storage, 234 pipes, 192 testing, 79 discord)
+
+### Deep Audit #4 (2026-02-04)
+
+**CRITICAL: Context Variable Naming Convention**
+
+Discovered widespread use of Discord.js camelCase naming (`displayName`, `displayAvatarURL`) instead of FURLOW context snake_case naming (`display_name`, `avatar`) across documentation, examples, and production code.
+
+**Files Fixed (45+ files):**
+
+*Documentation (22 files):*
+- `docs/reference/llm-reference.md` - 9 instances
+- `docs/reference/actions/_index.md` - 2 instances + db_query fix
+- `docs/reference/yaml-spec.md` - 4 instances
+- `docs/reference/events.md` - 3 instances
+- `docs/reference/canvas.md` - 4 instances
+- `docs/reference/voice.md` - 2 instances
+- `docs/expression-language.md` - 1 instance
+- `docs/actions-reference.md` - 2 instances
+- `docs/guides/quickstart.md` - 2 instances
+- `docs/advanced/performance.md` - 2 instances + db_query fixes
+- `docs/builtins/welcome.md` - 2 instances
+- `docs/builtins/leveling.md` - 1 instance
+- `RUNTIME_SPEC.md` - db_query fix
+- `README.md` - 2 instances
+- `apps/cli/README.md` - 2 instances
+
+*Examples (6 files):*
+- `examples/canvas-bot/furlow.yaml` - 3 instances
+- `examples/canvas-bot/README.md` - 1 instance
+- `examples/simple-bot/furlow.yaml` - 1 instance
+- `examples/full-featured/furlow.yaml` - 2 instances
+- `docs/examples/welcome-bot/furlow.yaml` - 2 instances
+- `docs/examples/simple-bot/furlow.yaml` - 2 instances
+
+*Production Code (5 files):*
+- `packages/builtins/src/welcome/index.ts` - 6 instances
+- `packages/builtins/src/leveling/index.ts` - 2 instances
+- `packages/builtins/src/__tests__/welcome.test.ts` - 1 instance
+- `packages/core/src/canvas/generators/welcome.ts` - 2 instances + doc comment
+- `packages/core/src/canvas/generators/rank.ts` - 2 instances + doc comment
+- `packages/core/src/canvas/__tests__/canvas.test.ts` - 2 instances
+
+**Additional db_query fixes:**
+- `docs/reference/actions/_index.md` - removed `order: desc` field
+- `docs/advanced/performance.md` - changed `order: { xp: desc }` to `order_by: "xp DESC"`
+- `RUNTIME_SPEC.md` - removed `order: "desc"` field
+
+**Context Variable Reference:**
+| Discord.js (Wrong) | FURLOW Context (Correct) |
+|-------------------|--------------------------|
+| `member.displayName` | `member.display_name` |
+| `user.displayName` | `user.display_name` |
+| `displayAvatarURL` | `avatar` |
+| `guild.member_count` | `guild.member_count` |
+
+**Tests Verified**: All 1,956+ tests pass across all packages
+
+### Deep Audit #5 (2026-02-04)
+
+**Final Test Alignment Fix**
+
+After fixing the source files in Deep Audit #4, one test assertion was still checking for the old (incorrect) Discord.js camelCase naming:
+
+**File Fixed:**
+- `packages/builtins/src/__tests__/welcome.test.ts` (line 211)
+  - Changed: `text?.includes('guild.memberCount')` → `text?.includes('guild.member_count')`
+  - Test was checking for `guild.memberCount` but source file `welcome/index.ts` was correctly using `guild.member_count`
+
+**Context Variable Source of Truth:**
+- `packages/core/src/expression/context.ts` defines all FURLOW context interfaces
+- `MemberContext` has `display_name` (NOT `UserContext`)
+- `GuildContext` has `member_count` (snake_case, not camelCase)
+
+**Schema Source of Truth:**
+- `packages/schema/src/types/actions.ts` - 84 action definitions
+- `db_query` has only `order_by?: string` field (no separate `order` field)
+- Voice actions use snake_case: `self_deaf`, `self_mute`
+
+**Action Count Standardization:**
+Fixed "85 actions" → "84 actions" across 15 files (schema defines exactly 84 actions):
+- `HANDOFF.md` (7 instances)
+- `README.md` (2 instances)
+- `RUNTIME_SPEC.md` (2 instances)
+- `DOCUMENTATION_PLAN.md` (1 instance)
+- `docs/reference/actions/_index.md` (1 instance)
+- `docs/guides/quickstart.md` (1 instance)
+- `docs/guides/configuration.md` (1 instance)
+- `docs/Home.md` (1 instance)
+- `apps/site/HANDOFF.md` (3 instances)
+
+**Tests Verified**: All tests pass
+- Core: 856 tests in 21 files
+- Builtins: 398 tests in 14 files (including all 29 welcome tests)
+
+### Deep Audit #6 (2026-02-04)
+
+**Comprehensive Multi-Agent Audit**
+
+Launched 6 parallel audit agents to deeply examine:
+1. Schema action definitions
+2. Context variable definitions
+3. Builtin modules
+4. Compliance specs
+5. Example YAML files
+6. Documentation accuracy
+
+**Critical Documentation Fixes:**
+
+*Actions Reference (`docs/reference/actions/_index.md`)*:
+- `create_thread`: Removed non-existent `channel` field, added correct `type: public | private`
+- `show_modal`: Fixed to use correct `modal:` wrapper structure per schema
+- `queue_add`: Fixed fields from `guild`/`url` to correct `source`/`track`/`requester`/`position`
+- `queue_remove`: Fixed field from `index` to `position`
+- `queue_clear`, `queue_shuffle`: Removed incorrect `guild` parameters (schema has no params)
+- `queue_loop`: Removed incorrect `guild` parameter
+
+*Example YAML Files Fixed*:
+- `docs/examples/welcome-bot/furlow.yaml`:
+  - Changed Discord.js method syntax `member.avatar({ size: 128 })` → `member.avatar`
+  - Changed `guild.iconURL({ size: 256 })` → `guild.icon`
+  - Changed JavaScript `Math.floor(member.user.createdTimestamp / 1000)` → `timestamp(member.created_at, 'R')`
+  - Changed `member.joinedTimestamp` → `member.joined_at`
+
+- `docs/examples/utility-bot/furlow.yaml`:
+  - Changed `guild.iconURL({ size: 256 })` → `guild.icon`
+  - Changed `guild.ownerId` → `guild.owner_id`
+  - Changed `guild.premiumSubscriptionCount` → `guild.boost_count`
+  - Changed `Math.floor(guild.createdTimestamp)` → `timestamp(guild.created_at, 'R')`
+  - Changed `target.avatar({ size: ... })` → `target.avatar`
+  - Changed `Math.random()` → `random`
+  - Changed `reaction.message.author.avatar()` → `reaction.message.author.avatar`
+  - Changed `reaction.message.createdAt` → `reaction.message.created_at`
+  - Removed unsupported Discord.js cache properties
+
+- `docs/reference/canvas.md`:
+  - Changed `target.avatar({ size: 256, extension: 'png' })` → `target.avatar` (2 instances)
+
+- `docs/packages/pipes/examples.md`:
+  - Changed `message.author.avatar()` → `message.author.avatar`
+
+**Schema Verification:**
+- Confirmed 84 actions in union type (lines 766-849 of actions.ts)
+- Verified queue actions have minimal/no parameters
+- Verified `show_modal` uses `modal: string | ComponentDefinition` wrapper
+- Verified `create_thread` has no `channel` field
+
+**Context Property Reference (from context.ts):**
+| Context | Property | Type | Notes |
+|---------|----------|------|-------|
+| UserContext | `avatar` | `string \| null` | URL string, NOT a method |
+| GuildContext | `icon` | `string \| null` | URL string, NOT `iconURL()` |
+| GuildContext | `owner_id` | `string` | snake_case |
+| GuildContext | `member_count` | `number` | snake_case |
+| GuildContext | `boost_count` | `number` | alias for premium_subscription_count |
+| MemberContext | `display_name` | `string` | snake_case |
+| MemberContext | `joined_at` | `Date \| null` | snake_case |
+| MessageContext | `created_at` | `Date` | snake_case |
+| BaseContext | `random` | `number` | 0-1 random value |
+
+**Tests Verified**: All 1,254 tests pass (856 core + 398 builtins)
+
+### Deep Audit #7 (2026-02-04)
+
+**Extended Multi-Agent Deep Audit - 47+ Additional Issues Found**
+
+Launched 6 specialized audit agents to search for remaining inconsistencies.
+
+**LLM Reference Fixes (`docs/reference/llm-reference.md`):**
+- Line 340, 1544: `guild.systemChannelId` → `env.WELCOME_CHANNEL` (invalid property)
+- Line 670: `msg.author.bot` → removed (undefined variable `msg`)
+- Line 748, 1063: `voiceChannel.id` → `options.channel.id` (camelCase)
+- Line 1002: Removed invalid `as: "created_role"` from `create_role`
+- Line 1125: `newName` → `options.name` (undefined variable)
+
+**Builtin Module Fixes:**
+- `packages/builtins/src/welcome/index.ts` line 292: `member.avatarURL` → `member.avatar`
+- `packages/builtins/src/leveling/index.ts` lines 190, 324, 461: `avatarURL` → `avatar`
+
+**Example YAML Fixes (30+ files):**
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `examples/canvas-bot/furlow.yaml` | `guild.iconURL`, `guild.systemChannelId` | `guild.icon`, `env.WELCOME_CHANNEL` |
+| `examples/simple-bot/furlow.yaml` | `guild.ownerId`, `createdAt`, `boostLevel` | `owner_id`, `created_at`, `premium_tier` |
+| `examples/full-featured/furlow.yaml` | `user.avatarURL` (2x) | `user.avatar` |
+| `examples/multi-file-bot/commands/utility.yaml` | 7 camelCase properties | All snake_case |
+| `examples/multi-file-bot/events/member.yaml` | `systemChannelId`, `avatarURL` | env vars, `avatar` |
+
+**Documentation Fixes:**
+- `docs/reference/yaml-spec.md`: `guild.createdAt` → `created_at`, `iconURL` → `icon`, `systemChannelId` → env
+- `docs/builtins/welcome.md`: `user.avatarURL` → `user.avatar` (5 instances)
+- `docs/builtins/leveling.md`: `user.avatarURL` → `user.avatar`
+
+**Invalid Context Properties Removed:**
+- `guild.systemChannelId` - Not in FURLOW context (use `env.WELCOME_CHANNEL`)
+- `user.avatarURL` / `member.avatarURL` - Context has `avatar` property (plain URL string)
+- `guild.iconURL` - Context has `icon` property
+- `guild.boostLevel` - Context has `premium_tier`
+- `guild.boostCount` - Context has `boost_count`
+
+**Additional Documentation Fixes (final pass):**
+- `docs/reference/events.md`: Fixed 2x `systemChannelId` → `env.WELCOME_CHANNEL`
+- `docs/reference/canvas.md`: Fixed `systemChannelId` → `env.WELCOME_CHANNEL`
+- `docs/guides/quickstart.md`: Fixed `systemChannelId` → `env.WELCOME_CHANNEL`
+- `docs/examples/simple-bot/furlow.yaml`: Fixed `target.createdAt` → `target.created_at`
+
+**Tests Verified**: All 1,254 tests pass
+
+### Deep Audit #8 (2026-02-04)
+
+**Comprehensive Multi-Agent Audit - 55+ Additional Issues Fixed**
+
+Launched 5 specialized audit agents to search for remaining camelCase context variables, Discord.js method syntax, `${}` in evaluated fields, action field mismatches, and invalid context properties.
+
+**Critical Documentation/Code Fixes:**
+
+| File | Issues Fixed |
+|------|-------------|
+| `RUNTIME_SPEC.md` | `guild.systemChannelId`→`env.WELCOME_CHANNEL`, `user.avatarURL`→`user.avatar`, `flow_if`/`flow_while` `${}` syntax |
+| `README.md` | `guild.systemChannelId`→`env.WELCOME_CHANNEL` |
+| `apps/cli/README.md` | `guild.systemChannelId`→`env.WELCOME_CHANNEL` |
+
+**Builtin Module Fixes:**
+
+| File | Issues | Fix |
+|------|--------|-----|
+| `packages/builtins/src/logging/index.ts` | 4x `avatarURL`, 1x `joinedAt` | `avatar`, `joined_at` |
+| `packages/builtins/src/utilities/index.ts` | 11x Discord.js methods/properties | All FURLOW context properties |
+| `packages/builtins/src/welcome/index.ts` | `avatarURL` | `avatar` |
+| `packages/builtins/src/starboard/index.ts` | `avatarURL`, `createdAt` | `avatar`, `created_at` |
+
+**Documentation Fixes:**
+
+| File | Issues Fixed |
+|------|-------------|
+| `docs/reference/events.md` | 3x `guild.logChannelId`→`env.LOG_CHANNEL` |
+| `docs/guides/quickstart.md` | `guild.logChannelId`→`env.LOG_CHANNEL` |
+| `docs/reference/llm-reference.md` | `flow_while`/`flow_if` `${}` syntax in conditions |
+| `docs/advanced/performance.md` | `.cache` references in examples |
+| `docs/reference/voice.md` | 5x `channelId`→`channel_id`, `.cache.has()`→`includes()`, action syntax |
+| `docs/events-reference.md` | `channelId`→`channel_id` |
+| `docs/actions-reference.md` | `show_modal` wrapper, `create_thread` field names |
+| `docs/examples/reaction-roles-bot/README.md` | `.cache.has()`→`includes()` |
+| `docs/advanced/scaling.md` | Discord.js shard syntax |
+
+**Example YAML Fixes:**
+
+| File | Issues Fixed |
+|------|-------------|
+| `docs/examples/music-bot/furlow.yaml` | 5x `channelId`→`channel_id`, `.cache.has()`→`includes()`, `condition:`→`if:` |
+| `docs/examples/reaction-roles-bot/furlow.yaml` | `.cache.has()`→`includes()`, `condition:`→`if:` |
+| `docs/examples/simple-bot/furlow.yaml` | Commented `systemChannelId`→`env.WELCOME_CHANNEL` |
+| `examples/canvas-bot/furlow.yaml` | `channelId`→`channel_id` |
+| `examples/music-bot/furlow.yaml` | 6x `channelId`→`channel_id`, `bot.`→`client.`, `condition:`→`if:` |
+
+**Website Landing Page Fix:**
+- `apps/site/src/components/landing/CodeExample.vue`: `systemChannelId`→`env.WELCOME_CHANNEL`, `member.name`→`member.display_name`, `when: "${}"`→raw expression
+
+**Key Pattern Corrections:**
+- Evaluated fields (`when`, `if`, `while`) use raw JEXL: `when: "!message.author.bot"` (no `${}`)
+- Interpolated fields (`content`, `title`) use `${}`: `content: "Hello ${user.username}"`
+- Context properties use snake_case: `channel_id`, `created_at`, `display_name`
+- Collections use transforms: `member.roles | includes(role_id)` (not `.cache.has()`)
+
+**Tests Verified**: All tests pass
+
+---
+
 ### 100% Accuracy Audit Complete
 
 Comprehensive audit of the entire repository to ensure all documentation, examples, and YAML files match the authoritative schema definitions exactly.
 
 **Schema Source of Truth:**
-- `/packages/schema/src/types/actions.ts` - 85 action definitions
+- `/packages/schema/src/types/actions.ts` - 84 action definitions
 - `/packages/schema/src/types/events.ts` - 76 events (57 Discord + 19 FURLOW)
 - `/packages/schema/src/types/spec.ts` - Top-level YAML structure
 

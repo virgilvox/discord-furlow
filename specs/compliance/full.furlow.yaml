@@ -48,8 +48,8 @@ flows:
 
       - voice_join:
           channel: "${config.testVoiceChannelId}"
-          selfDeaf: true
-          selfMute: false
+          self_deaf: true
+          self_mute: false
           when: "false"  # Skip in dry run
 
       - return:
@@ -526,7 +526,7 @@ flows:
       # 1. Join voice channel
       - voice_join:
           channel: "${config.testVoiceChannelId}"
-          selfDeaf: true
+          self_deaf: true
           when: "false"
 
       # 2. Search for tracks
@@ -807,7 +807,7 @@ flows:
           as: result
           each:
             - flow_if:
-                if: "${result == true}"
+                if: "result == true"
                 then:
                   - increment:
                       var: passedCount

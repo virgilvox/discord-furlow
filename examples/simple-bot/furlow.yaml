@@ -46,7 +46,7 @@ commands:
         required: false
     actions:
       - reply:
-          content: "Hello, ${options.user ? mention('user', options.user.id) : user.displayName}!"
+          content: "Hello, ${options.user ? mention('user', options.user.id) : member.display_name}!"
 
   # Echo command
   - name: echo
@@ -76,16 +76,16 @@ commands:
               color: "#5865F2"
               fields:
                 - name: "Owner"
-                  value: "<@${guild.ownerId}>"
+                  value: "<@${guild.owner_id}>"
                   inline: true
                 - name: "Members"
-                  value: "${guild.memberCount|format}"
+                  value: "${guild.member_count|format}"
                   inline: true
                 - name: "Created"
-                  value: "${timestamp(guild.createdAt, 'relative')}"
+                  value: "${timestamp(guild.created_at, 'relative')}"
                   inline: true
                 - name: "Boost Level"
-                  value: "Tier ${guild.boostLevel}"
+                  value: "Tier ${guild.premium_tier}"
                   inline: true
               footer:
                 text: "ID: ${guild.id}"
@@ -110,7 +110,7 @@ commands:
                   value: "`${options.user?.id ?? user.id}`"
                   inline: true
                 - name: "Created"
-                  value: "${timestamp(options.user?.createdAt ?? user.createdAt, 'relative')}"
+                  value: "${timestamp(options.user?.created_at ?? user.created_at, 'relative')}"
                   inline: true
                 - name: "Bot"
                   value: "${(options.user?.bot ?? user.bot) ? 'Yes' : 'No'}"

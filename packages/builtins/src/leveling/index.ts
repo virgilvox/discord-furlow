@@ -55,7 +55,7 @@ export const levelingTables: Record<string, TableDefinition> = {
 export const levelingEventHandlers: EventHandler[] = [
   {
     event: 'message',
-    condition: '${!message.author.bot && !config.leveling.ignoredChannels?.includes(channel.id)}',
+    condition: '!message.author.bot && !config.leveling.ignoredChannels?.includes(channel.id)',
     actions: [
       // Check cooldown
       {
@@ -70,7 +70,7 @@ export const levelingEventHandlers: EventHandler[] = [
       // Initialize if new user
       {
         action: 'flow_if',
-        condition: '${!userData || userData.length === 0}',
+        condition: '!userData || userData.length === 0',
         then: [
           {
             action: 'db_insert',
@@ -99,7 +99,7 @@ export const levelingEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${cooldownPassed}',
+        condition: 'cooldownPassed',
         then: [
           // Calculate XP gain
           {
@@ -169,25 +169,25 @@ export const levelingEventHandlers: EventHandler[] = [
           // Handle level up
           {
             action: 'flow_if',
-            condition: '${leveledUp}',
+            condition: 'leveledUp',
             then: [
               // Announce level up
               {
                 action: 'flow_if',
-                condition: '${config.leveling.announceChannel}',
+                condition: 'config.leveling.announceChannel',
                 then: [
                   {
                     action: 'flow_if',
-                    condition: '${config.leveling.levelUpEmbed}',
+                    condition: 'config.leveling.levelUpEmbed',
                     then: [
                       {
                         action: 'send_message',
                         channel: '${config.leveling.announceChannel}',
                         embed: {
                           title: 'Level Up!',
-                          description: '${config.leveling.levelUpMessage || member.displayName + " has reached level " + newLevel + "!"}',
+                          description: '${config.leveling.levelUpMessage || member.display_name + " has reached level " + newLevel + "!"}',
                           color: '#ffd700',
-                          thumbnail: '${member.avatarURL}',
+                          thumbnail: '${member.avatar}',
                         },
                       },
                     ],
@@ -195,7 +195,7 @@ export const levelingEventHandlers: EventHandler[] = [
                       {
                         action: 'send_message',
                         channel: '${config.leveling.announceChannel}',
-                        content: '${config.leveling.levelUpMessage || "Congratulations " + member.displayName + "! You reached level " + newLevel + "!"}',
+                        content: '${config.leveling.levelUpMessage || "Congratulations " + member.display_name + "! You reached level " + newLevel + "!"}',
                       },
                     ],
                   },
@@ -204,12 +204,12 @@ export const levelingEventHandlers: EventHandler[] = [
               // Award role rewards
               {
                 action: 'flow_if',
-                condition: '${config.leveling.rewards && config.leveling.rewards[newLevel]}',
+                condition: 'config.leveling.rewards && config.leveling.rewards[newLevel]',
                 then: [
                   // Remove previous rewards if not stacking
                   {
                     action: 'flow_if',
-                    condition: '${!config.leveling.stackRewards && currentLevel > 0 && config.leveling.rewards[currentLevel]}',
+                    condition: '!config.leveling.stackRewards && currentLevel > 0 && config.leveling.rewards[currentLevel]',
                     then: [
                       {
                         action: 'remove_role',
@@ -257,7 +257,7 @@ export const levelingCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${!userData || userData.length === 0}',
+        condition: '!userData || userData.length === 0',
         then: [
           {
             action: 'reply',
@@ -289,7 +289,7 @@ export const levelingCommands: CommandDefinition[] = [
           // Render rank card or embed
           {
             action: 'flow_if',
-            condition: '${config.leveling.useRankCard}',
+            condition: 'config.leveling.useRankCard',
             then: [
               {
                 action: 'canvas_render',
@@ -321,7 +321,7 @@ export const levelingCommands: CommandDefinition[] = [
                 embed: {
                   title: '${targetUser.username}\'s Rank',
                   color: '#5865f2',
-                  thumbnail: '${targetUser.avatarURL}',
+                  thumbnail: '${targetUser.avatar}',
                   fields: [
                     { name: 'Rank', value: '#${rank}', inline: true },
                     { name: 'Level', value: '${userData[0].level}', inline: true },
@@ -458,7 +458,7 @@ export const levelingCanvasGenerators: Record<string, CanvasGenerator> = {
       // User avatar
       {
         type: 'circle_image',
-        url: '${user.avatarURL || user.defaultAvatarURL}',
+        url: '${user.avatar}',
         x: 120,
         y: 141,
         radius: 80,

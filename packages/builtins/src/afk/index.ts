@@ -30,7 +30,7 @@ export const afkEventHandlers: EventHandler[] = [
   // Remove AFK when user sends message
   {
     event: 'message',
-    condition: '${!message.author.bot}',
+    condition: '!message.author.bot',
     actions: [
       {
         action: 'db_query',
@@ -40,7 +40,7 @@ export const afkEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${afkStatus.length > 0}',
+        condition: 'afkStatus.length > 0',
         then: [
           // Remove AFK
           {
@@ -51,7 +51,7 @@ export const afkEventHandlers: EventHandler[] = [
           // Remove nickname prefix if set
           {
             action: 'flow_if',
-            condition: '${config.afk?.nicknamePrefix && member.nickname?.startsWith(config.afk.nicknamePrefix)}',
+            condition: 'config.afk?.nicknamePrefix && member.nickname?.startsWith(config.afk.nicknamePrefix)',
             then: [
               {
                 action: 'set_nickname',
@@ -82,7 +82,7 @@ export const afkEventHandlers: EventHandler[] = [
   // Notify when AFK user is mentioned
   {
     event: 'message',
-    condition: '${message.mentions.users.size > 0 && !message.author.bot}',
+    condition: 'message.mentions.users.size > 0 && !message.author.bot',
     actions: [
       {
         action: 'set',
@@ -102,7 +102,7 @@ export const afkEventHandlers: EventHandler[] = [
       },
       {
         action: 'flow_if',
-        condition: '${afkMentioned.length > 0}',
+        condition: 'afkMentioned.length > 0',
         then: [
           {
             action: 'set',
@@ -152,7 +152,7 @@ export const afkCommands: CommandDefinition[] = [
       },
       {
         action: 'flow_if',
-        condition: '${existing.length > 0}',
+        condition: 'existing.length > 0',
         then: [
           {
             action: 'db_update',
@@ -177,7 +177,7 @@ export const afkCommands: CommandDefinition[] = [
       // Add nickname prefix if configured
       {
         action: 'flow_if',
-        condition: '${config.afk?.nicknamePrefix && !member.nickname?.startsWith(config.afk.nicknamePrefix)}',
+        condition: 'config.afk?.nicknamePrefix && !member.nickname?.startsWith(config.afk.nicknamePrefix)',
         then: [
           {
             action: 'set_nickname',

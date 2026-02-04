@@ -200,7 +200,7 @@ commands:
             value: hi
     actions:
       - reply:
-          content: "${options.message || 'Hello'}, ${options.user?.displayName || user.username}!"
+          content: "${options.message || 'Hello'}, ${options.user?.display_name || user.username}!"
 ```
 
 ### Command Fields
@@ -276,8 +276,8 @@ events:
   - event: guild_member_add
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome, ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome, ${member.display_name}!"
 
   - event: message_create
     when: "message.content | startsWith('!')"
@@ -434,27 +434,27 @@ Reusable embed templates.
 embeds:
   welcome:
     title: "Welcome to ${guild.name}!"
-    description: "Thanks for joining, ${member.displayName}"
+    description: "Thanks for joining, ${member.display_name}"
     color: 0x5865F2
     thumbnail:
-      url: "${member.displayAvatarURL}"
+      url: "${member.avatar}"
     fields:
       - name: "Members"
-        value: "${guild.memberCount}"
+        value: "${guild.member_count}"
         inline: true
       - name: "Created"
-        value: "${timestamp(guild.createdAt, 'R')}"
+        value: "${timestamp(guild.created_at, 'R')}"
         inline: true
     footer:
-      text: "User #${guild.memberCount}"
-      icon_url: "${guild.iconURL}"
+      text: "User #${guild.member_count}"
+      icon_url: "${guild.icon}"
     timestamp: true
 
 events:
   - event: guild_member_add
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
+          channel: "${env.WELCOME_CHANNEL}"
           embeds:
             - $ref: embeds.welcome
 ```
@@ -600,7 +600,7 @@ canvas:
         - type: image
           src: ./assets/bg.png
         - type: text
-          text: "Welcome, ${member.displayName}!"
+          text: "Welcome, ${member.display_name}!"
           font: "32px Bold"
           color: white
           x: 400

@@ -409,13 +409,13 @@ A user's voice state changed.
 
 ```yaml
 events:
-  voice_state_update:
+  - event: voice_state_update
     # User joined a voice channel
-    condition: "!old_state.channelId && state.channelId"
+    when: "!old_state.channel_id && new_state.channel_id"
     actions:
       - send_message:
-          channel: "logs-channel"
-          content: "${user.username} joined ${state.channel.name}"
+          channel: "${env.LOG_CHANNEL}"
+          content: "${user.username} joined ${new_state.channel.name}"
 ```
 
 ### `voice_server_update`
@@ -682,7 +682,7 @@ events:
   ready:
     actions:
       - log:
-          message: "Bot is online! Serving ${bot.guilds.size} guilds"
+          message: "Bot is online! Serving ${client.guilds.size} guilds"
 ```
 
 ### `shard_ready` / `shard_disconnect` / `shard_error`
@@ -766,7 +766,7 @@ events:
 events:
   message_create:
     - name: "welcome_new_users"
-      condition: "includes(message.content, 'hello') && isNull(member_state.welcomed)"
+      condition: "includes(message.content, 'hello') && isNull(state.member.welcomed)"
       actions:
         - reply: "Welcome! Check out #rules"
         - set:

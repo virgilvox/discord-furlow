@@ -50,21 +50,32 @@ content: "${shuffle(['🍒','🍋','🔔'])}"
 content: "Check this: important"
 ```
 
-### Rule 2: ALL Expressions Must Be Quoted
+### Rule 2: Expression Syntax by Field Type
 
-Every `${}` expression MUST be in double quotes, no exceptions:
+FURLOW has two types of expression fields:
 
+**Interpolated fields** (content, title, description, etc.) - use `${}` syntax:
 ```yaml
-# WRONG
-content: Hello ${user.username}!
-value: ${random(1, 100)}
-when: ${member.roles.includes('admin')}
-
-# CORRECT
 content: "Hello ${user.username}!"
 value: "${random(1, 100)}"
-when: "${member.roles.includes('admin')}"
+title: "Welcome to ${guild.name}"
 ```
+
+**Evaluated fields** (when, condition, flow_if.if) - use raw JEXL expressions WITHOUT `${}`:
+```yaml
+# WRONG - causes ExpressionSyntaxError
+when: "${member.roles.includes('admin')}"
+when: "${!message.author.bot}"
+
+# CORRECT - raw expression without ${}
+when: "member.roles.includes('admin')"
+when: "!message.author.bot"
+```
+
+**Common evaluated fields:**
+- `when` - condition on events, commands, actions
+- `condition` / `if` - flow_if conditional branching
+- `while` - flow_while loop condition
 
 ### Rule 3: Escape Quotes Inside Strings
 
@@ -296,10 +307,10 @@ commands:
       message: "Please wait before using this again."  # optional
     permissions: SEND_MESSAGES
     level: 0
-    when: "${guild.id == '123'}"
+    when: "guild.id == '123'"
     actions:
       - reply:
-          content: "Hello, ${options.user?.displayName || user.username}!"
+          content: "Hello, ${options.user?.display_name || user.username}!"
 ```
 
 ### Context Menus
@@ -320,14 +331,14 @@ context_menus:
 ```yaml
 events:
   - event: guild_member_add
-    when: "${!member.user.bot}"
+    when: "!member.user.bot"
     debounce: 5s
     throttle: 1m
     once: false
     actions:
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome, ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome, ${member.display_name}!"
 ```
 
 ### Flows
@@ -429,13 +440,13 @@ embeds:
     description: "Thanks for joining"
     color: 0x5865F2
     thumbnail:
-      url: "${member.displayAvatarURL}"
+      url: "${member.avatar}"
     fields:
       - name: Members
-        value: "${guild.memberCount}"
+        value: "${guild.member_count}"
         inline: true
     footer:
-      text: "User #${guild.memberCount}"
+      text: "User #${guild.member_count}"
     timestamp: true
 ```
 
@@ -561,11 +572,11 @@ canvas:
           x: 320
           y: 40
           radius: 80
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
         - type: text
           x: 400
           y: 215
-          text: "Welcome, ${user.displayName}!"
+          text: "Welcome, ${member.display_name}!"
           font: sans-serif
           size: 32
           color: "#FFFFFF"
@@ -583,7 +594,7 @@ imports:
 
 ---
 
-## Actions Reference (85 Actions)
+## Actions Reference (84 Actions)
 
 ### Message Actions (11)
 
@@ -656,7 +667,6 @@ imports:
 - bulk_delete:
     channel: "${channel.id}"
     count: 10
-    filter: "${msg.author.bot}"
 ```
 
 ### Member Actions (14)
@@ -734,7 +744,7 @@ imports:
 # move_member
 - move_member:
     user: "${user.id}"
-    channel: "${voiceChannel.id}"
+    channel: "${options.channel.id}"
 
 # disconnect_member
 - disconnect_member:
@@ -841,7 +851,7 @@ imports:
 
 # flow_if
 - flow_if:
-    condition: "${count > 10}"
+    condition: "count > 10"
     then:
       - reply:
           content: "High"
@@ -865,7 +875,7 @@ imports:
 
 # flow_while
 - flow_while:
-    while: "${i < 10}"
+    while: "i < 10"           # Raw expression, no ${}
     do:
       - increment:
           var: "i"
@@ -988,7 +998,6 @@ imports:
     mentionable: false
     permissions:
       - send_messages
-    as: "created_role"
 
 # edit_role
 - edit_role:
@@ -1049,7 +1058,7 @@ imports:
 ```yaml
 # voice_join
 - voice_join:
-    channel: "${voiceChannel.id}"
+    channel: "${options.channel.id}"
     self_deaf: true
     self_mute: false
 
@@ -1111,7 +1120,7 @@ imports:
     where:
       id: "${user.id}"
     data:
-      name: "${newName}"
+      name: "${options.name}"
 
 # db_delete
 - db_delete:
@@ -1124,8 +1133,7 @@ imports:
     table: "users"
     where:
       guild_id: "${guild.id}"
-    order_by: "xp"
-    order: desc
+    order_by: "xp DESC"
     limit: 10
     as: "top_users"
 ```
@@ -1208,11 +1216,11 @@ imports:
         x: 320
         y: 40
         radius: 80
-        src: "${user.displayAvatarURL}"
+        src: "${user.avatar}"
       - type: text
         x: 400
         y: 200
-        text: "Hello, ${user.displayName}!"
+        text: "Hello, ${member.display_name}!"
         font: sans-serif
         size: 32
         color: "#FFFFFF"
@@ -1331,7 +1339,7 @@ content: "Today: ${now() | formatDate}"
 | `sort(arr, key?)` | Sort |
 | `unique(arr)` | Remove duplicates |
 | `flatten(arr)` | Flatten nested |
-| `pick(obj, keys)` | Pick properties |
+| `pick(arr)` | Pick random element |
 | `shuffle(arr)` | Shuffle |
 | `range(start, end, step?)` | Number range |
 | `chunk(arr, size)` | Split into chunks |
@@ -1533,8 +1541,8 @@ events:
             user: "${member.user}"
           as: "welcome_image"
       - send_message:
-          channel: "${guild.systemChannelId}"
-          content: "Welcome ${member.displayName}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome ${member.display_name}!"
           files:
             - attachment: "${welcome_image}"
               name: "welcome.png"
@@ -1545,7 +1553,7 @@ events:
 ```yaml
 events:
   - event: message_reaction_add
-    when: "${message.id == '123456789'}"
+    when: "message.id == '123456789'"
     actions:
       - flow_switch:
           value: "${reaction.emoji.name}"
@@ -1654,7 +1662,7 @@ state:
 
 events:
   - event: message_create
-    when: "${!message.author.bot}"
+    when: "!message.author.bot"
     throttle: 1m
     actions:
       - increment:
@@ -1662,7 +1670,7 @@ events:
           by: "${random(15, 25)}"
           scope: member
       - flow_if:
-          if: "${state.member.xp >= state.member.level * 100}"
+          if: "state.member.xp >= state.member.level * 100"  # Raw expression
           then:
             - increment:
                 var: "level"
@@ -1670,7 +1678,7 @@ events:
                 scope: member
             - send_message:
                 channel: "${channel.id}"
-                content: "Congrats ${user.displayName}! Level ${state.member.level}!"
+                content: "Congrats ${member.display_name}! Level ${state.member.level}!"
 ```
 
 ---

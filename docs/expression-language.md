@@ -11,7 +11,7 @@ Use `${}` to embed expressions in strings:
 ```yaml
 content: "Hello, ${user.username}!"
 content: "You have ${points} points"
-content: "Welcome to ${guild.name}, member #${guild.memberCount}"
+content: "Welcome to ${guild.name}, member #${guild.member_count}"
 ```
 
 ### Pure Expressions
@@ -83,22 +83,26 @@ nickname: "${member?.nickname}"
 | `user.id` | string | User's Discord ID |
 | `user.username` | string | Username |
 | `user.discriminator` | string | Discriminator (legacy) |
-| `user.displayName` | string | Display name |
-| `user.avatar` | string | Avatar hash |
+| `user.tag` | string | User tag (username#0000) |
+| `user.avatar` | string | Avatar URL |
 | `user.bot` | boolean | Whether user is a bot |
 | `user.mention` | string | User mention string |
-| `user.createdAt` | Date | Account creation date |
+| `user.created_at` | Date | Account creation date |
 
 ### Member Context
 | Variable | Type | Description |
 |----------|------|-------------|
 | `member.id` | string | Member's Discord ID |
 | `member.nickname` | string | Server nickname |
-| `member.displayName` | string | Display name in server |
-| `member.roles` | string[] | Array of role IDs |
-| `member.joinedAt` | Date | When they joined |
-| `member.premiumSince` | Date | Boost start date |
-| `member.pending` | boolean | Membership screening |
+| `member.display_name` | string | Display name in server |
+| `member.roles` | string[] | Array of role names |
+| `member.role_ids` | string[] | Array of role IDs |
+| `member.joined_at` | Date | When they joined |
+| `member.boosting_since` | Date | Boost start date |
+| `member.is_boosting` | boolean | Whether member is boosting |
+| `member.highest_role` | string | Highest role name |
+| `member.permissions` | string[] | Permission names |
+| `member.is_owner` | boolean | Whether member is server owner |
 | `member.mention` | string | Member mention |
 
 ### Guild Context
@@ -106,12 +110,12 @@ nickname: "${member?.nickname}"
 |----------|------|-------------|
 | `guild.id` | string | Server ID |
 | `guild.name` | string | Server name |
-| `guild.icon` | string | Icon hash |
-| `guild.memberCount` | number | Total members |
-| `guild.ownerId` | string | Owner's user ID |
-| `guild.createdAt` | Date | Creation date |
-| `guild.boostLevel` | number | Nitro boost level |
-| `guild.boostCount` | number | Number of boosts |
+| `guild.icon` | string | Icon URL |
+| `guild.member_count` | number | Total members |
+| `guild.owner_id` | string | Owner's user ID |
+| `guild.created_at` | Date | Creation date |
+| `guild.premium_tier` | number | Nitro boost level (0-3) |
+| `guild.boost_count` | number | Number of boosts |
 
 ### Channel Context
 | Variable | Type | Description |
@@ -121,7 +125,7 @@ nickname: "${member?.nickname}"
 | `channel.type` | string | Channel type |
 | `channel.topic` | string | Channel topic |
 | `channel.nsfw` | boolean | NSFW flag |
-| `channel.parentId` | string | Category ID |
+| `channel.parent_id` | string | Category ID |
 | `channel.mention` | string | Channel mention |
 
 ### Message Context
@@ -129,11 +133,19 @@ nickname: "${member?.nickname}"
 |----------|------|-------------|
 | `message.id` | string | Message ID |
 | `message.content` | string | Message content |
-| `message.author` | object | Author user object |
-| `message.attachments` | array | Attachments |
-| `message.embeds` | array | Embeds |
-| `message.mentions` | array | Mentioned users |
-| `message.createdAt` | Date | Send timestamp |
+| `message.clean_content` | string | Content without mentions |
+| `message.author.id` | string | Author's user ID |
+| `message.author.username` | string | Author's username |
+| `message.author.tag` | string | Author's tag (user#0000) |
+| `message.author.bot` | boolean | Whether author is a bot |
+| `message.attachments` | number | Number of attachments |
+| `message.embeds` | number | Number of embeds |
+| `message.mentions` | string[] | Mentioned user IDs |
+| `message.mention_roles` | string[] | Mentioned role IDs |
+| `message.created_at` | Date | Send timestamp |
+| `message.edited_at` | Date | Edit timestamp (null if unedited) |
+| `message.pinned` | boolean | Whether message is pinned |
+| `message.url` | string | Message URL |
 
 ### Command Options
 | Variable | Type | Description |
@@ -144,19 +156,19 @@ nickname: "${member?.nickname}"
 ### State Context
 | Variable | Type | Description |
 |----------|------|-------------|
-| `global_state.<key>` | varies | Global variables |
-| `guild_state.<key>` | varies | Guild variables |
-| `channel_state.<key>` | varies | Channel variables |
-| `user_state.<key>` | varies | User variables |
-| `member_state.<key>` | varies | Member variables |
+| `state.global.<key>` | varies | Global variables |
+| `state.guild.<key>` | varies | Guild variables |
+| `state.channel.<key>` | varies | Channel variables |
+| `state.user.<key>` | varies | User variables |
+| `state.member.<key>` | varies | Member variables |
 
-### Bot Context
+### Client Context
 | Variable | Type | Description |
 |----------|------|-------------|
-| `bot.id` | string | Bot's user ID |
-| `bot.username` | string | Bot's username |
-| `bot.ping` | number | Gateway latency (ms) |
-| `bot.uptime` | number | Uptime in ms |
+| `client.id` | string | Bot's user ID |
+| `client.username` | string | Bot's username |
+| `client.ping` | number | Gateway latency (ms) |
+| `client.uptime` | number | Uptime in ms |
 
 ## Built-in Functions
 
@@ -171,7 +183,7 @@ content: "Current time: ${now()}"
 #### `timestamp(date?, format?)`
 Converts a date to Unix timestamp or Discord timestamp format.
 ```yaml
-content: "Joined ${timestamp(member.joinedAt, 'relative')}"
+content: "Joined ${timestamp(member.joined_at, 'relative')}"
 content: "Unix: ${timestamp()}"
 ```
 
@@ -425,7 +437,7 @@ content: "You have ${count} ${pluralize(count, 'warning')}"
 #### `duration(ms)`
 Formats milliseconds as human-readable duration.
 ```yaml
-uptime: "${duration(bot.uptime)}"  # "5h 30m"
+uptime: "${duration(client.uptime)}"  # "5h 30m"
 ```
 
 ### Utility Functions
@@ -532,8 +544,8 @@ content: "${items|join(' | ')}"
 ```yaml
 content: |
   Welcome to **${guild.name}**, ${user.mention}!
-  You are member #${guild.memberCount|format}.
-  Account created: ${timestamp(user.createdAt, 'relative')}
+  You are member #${guild.member_count|format}.
+  Account created: ${timestamp(user.created_at, 'relative')}
 ```
 
 ### Level Up
@@ -547,7 +559,7 @@ content: |
 
 ### Conditional Greeting
 ```yaml
-content: "${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, ${user.displayName}!"
+content: "${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, ${member.display_name}!"
 ```
 
 ### Moderation Log

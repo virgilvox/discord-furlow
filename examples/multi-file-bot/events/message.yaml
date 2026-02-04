@@ -3,7 +3,7 @@
 events:
   - event: message
     # Skip bot messages
-    condition: "${!message.author.bot}"
+    condition: "!message.author.bot"
     actions:
       # Check for custom responses
       - action: db_query

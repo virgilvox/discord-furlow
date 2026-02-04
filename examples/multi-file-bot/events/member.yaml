@@ -8,18 +8,18 @@ events:
         message: "${user.username} joined ${guild.name}"
 
       - action: flow_if
-        condition: "${guild.systemChannelId}"
+        condition: "env.WELCOME_CHANNEL"
         then:
           - action: send_message
-            channel: "${guild.systemChannelId}"
+            channel: "${env.WELCOME_CHANNEL}"
             embed:
               title: "Welcome!"
               description: "Welcome to **${guild.name}**, ${member.mention}!"
               thumbnail:
-                url: "${member.user.avatarURL ?? member.user.defaultAvatarURL}"
+                url: "${member.avatar}"
               color: "#57f287"
               footer:
-                text: "Member #${guild.memberCount}"
+                text: "Member #${guild.member_count}"
               timestamp: true
 
   - event: member_leave
@@ -29,8 +29,8 @@ events:
         message: "${user.username} left ${guild.name}"
 
       - action: flow_if
-        condition: "${guild.systemChannelId}"
+        condition: "env.GOODBYE_CHANNEL"
         then:
           - action: send_message
-            channel: "${guild.systemChannelId}"
+            channel: "${env.GOODBYE_CHANNEL}"
             content: "${user.username} has left the server."

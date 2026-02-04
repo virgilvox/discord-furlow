@@ -73,7 +73,7 @@ commands:
         key: choices
         value: "${split(args.options, ',').map(c => trim(c)).filter(c => c)}"
       - action: flow_if
-        condition: "${length(choices) < 2}"
+        condition: "length(choices) < 2"
         then:
           - action: reply
             content: "Please provide at least 2 options!"

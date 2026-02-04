@@ -52,7 +52,7 @@ furlow start
 - [Configuration](guides/configuration) — YAML specification reference
 
 ### Reference
-- [Actions](reference/actions/_index) — All 85 actions documented
+- [Actions](reference/actions/_index) — All 84 actions documented
 - [Expressions](reference/expressions/_index) — 71 functions and 50 transforms
 - [Events](reference/events) — 76 event types
 - [CLI](reference/cli) — Command-line interface

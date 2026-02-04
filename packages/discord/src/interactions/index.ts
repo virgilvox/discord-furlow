@@ -6,6 +6,7 @@ import {
   Client,
   REST,
   Routes,
+  MessageFlags,
   type Interaction,
   type ChatInputCommandInteraction,
   type ButtonInteraction,
@@ -67,7 +68,7 @@ export class InteractionHandler {
         if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
           await interaction.reply({
             content: 'An error occurred while processing this interaction.',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           }).catch(() => {});
         }
       }

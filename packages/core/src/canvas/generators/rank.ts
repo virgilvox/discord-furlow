@@ -4,9 +4,8 @@
  * Creates rank/level cards showing user's XP progress and rank.
  *
  * Context variables:
- * - user.avatar: User avatar URL
- * - user.username: Username
- * - user.displayName: Display name
+ * - member.avatar: Member avatar URL
+ * - member.display_name: Display name
  * - user.discriminator: User discriminator (if available)
  * - level: Current level
  * - xp: Current XP
@@ -126,14 +125,14 @@ export function createRankGenerator(
         height: 30,
         color: '#43b581',
         radius: 15,
-        when: '${user.status == "online"}',
+        when: 'user.status == "online"',
       },
       // Username
       {
         type: 'text',
         x: contentX,
         y: usernameY,
-        text: '${user.displayName}',
+        text: '${member.display_name}',
         font: opts.fontFamily,
         size: 36,
         color: opts.textColor,
@@ -294,7 +293,7 @@ export const rankGradientGenerator: CanvasGenerator = {
       type: 'text',
       x: 250,
       y: 60,
-      text: '${user.displayName}',
+      text: '${member.display_name}',
       font: 'sans-serif',
       size: 36,
       color: '#FFFFFF',

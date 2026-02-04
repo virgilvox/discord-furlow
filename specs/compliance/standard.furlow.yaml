@@ -575,8 +575,7 @@ flows:
       # Query with ordering and limit
       - db_query:
           table: "test_records"
-          orderBy: "created_at"
-          order: "desc"
+          order_by: "created_at DESC"
           limit: 1
           as: latestRecord
 
@@ -979,7 +978,7 @@ flows:
           as: result
           each:
             - flow_if:
-                if: "${result == true}"
+                if: "result == true"
                 then:
                   - increment:
                       var: passedCount

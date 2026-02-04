@@ -369,14 +369,13 @@ Deletes a channel.
 
 ### `create_thread`
 
-Creates a thread.
+Creates a thread in the current channel or from a message.
 
 ```yaml
 - create_thread:
-    channel: "${channel.id}"
     name: "Discussion Thread"
     message: "${message.id}"           # Optional: Start from message
-    auto_archive: 1440                 # Minutes: 60, 1440, 4320, 10080
+    auto_archive_duration: 1440        # Minutes: 60, 1440, 4320, 10080
     type: public                       # public, private
     invitable: true                    # Private threads only
 ```
@@ -538,7 +537,7 @@ Sets a variable value.
 - set:
     scope: guild                       # global, guild, channel, user, member
     key: "welcome_count"
-    value: "${guild_state.welcome_count + 1}"
+    value: "${state.guild.welcome_count + 1}"
 
 # Shorthand for member scope
 - set:
@@ -742,7 +741,7 @@ Conditional execution.
 
 ```yaml
 - flow_if:
-    condition: "${user.roles.includes('vip-role-id')}"
+    condition: "user.roles.includes('vip-role-id')"
     then:
       - reply: "Welcome, VIP!"
     else:
@@ -774,15 +773,15 @@ Pattern matching with conditions.
 ```yaml
 - flow_match:
     cases:
-      - when: "${level >= 100}"
+      - when: "level >= 100"
         actions:
           - assign_role:
               role: "legendary-role"
-      - when: "${level >= 50}"
+      - when: "level >= 50"
         actions:
           - assign_role:
               role: "veteran-role"
-      - when: "${level >= 10}"
+      - when: "level >= 10"
         actions:
           - assign_role:
               role: "member-role"
@@ -988,15 +987,16 @@ Shows a modal dialog.
 
 ```yaml
 - show_modal:
-    title: "Submit Report"
-    custom_id: "report_modal"
-    components:
-      - type: text_input
-        label: "Reason"
-        custom_id: "reason"
-        style: paragraph
-        required: true
-        placeholder: "Describe the issue..."
+    modal:
+      custom_id: "report_modal"
+      title: "Submit Report"
+      components:
+        - type: text_input
+          label: "Reason"
+          custom_id: "reason"
+          style: paragraph
+          required: true
+          placeholder: "Describe the issue..."
 ```
 
 ### `update_message`
@@ -1163,11 +1163,11 @@ canvas:
           x: 320
           y: 40
           radius: 80
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
         - type: text
           x: 400
           y: 215
-          text: "Welcome, ${user.displayName}!"
+          text: "Welcome, ${member.display_name}!"
           font: sans-serif
           size: 32
           color: "#FFFFFF"
@@ -1207,11 +1207,11 @@ Renders canvas layers inline without requiring a pre-defined generator.
         x: 320
         y: 40
         radius: 80
-        src: "${user.displayAvatarURL}"
+        src: "${user.avatar}"
       - type: text
         x: 400
         y: 200
-        text: "Hello, ${user.displayName}!"
+        text: "Hello, ${member.display_name}!"
         font: sans-serif
         size: 32
         color: "#FFFFFF"

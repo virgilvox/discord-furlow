@@ -50,7 +50,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Message Delete
   {
     event: 'message_delete',
-    condition: '${config.logging.events?.messageDelete !== false && !config.logging.ignoredChannels?.includes(channel.id)}',
+    condition: 'config.logging.events?.messageDelete !== false && !config.logging.ignoredChannels?.includes(channel.id)',
     actions: [
       {
         action: 'send_message',
@@ -75,7 +75,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Message Edit
   {
     event: 'message_update',
-    condition: '${config.logging.events?.messageEdit !== false && oldMessage.content !== newMessage.content && !config.logging.ignoredChannels?.includes(channel.id)}',
+    condition: 'config.logging.events?.messageEdit !== false && oldMessage.content !== newMessage.content && !config.logging.ignoredChannels?.includes(channel.id)',
     actions: [
       {
         action: 'send_message',
@@ -101,7 +101,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Bulk Message Delete
   {
     event: 'message_bulk_delete',
-    condition: '${config.logging.events?.messageBulkDelete !== false}',
+    condition: 'config.logging.events?.messageBulkDelete !== false',
     actions: [
       {
         action: 'set',
@@ -129,12 +129,12 @@ export const loggingEventHandlers: EventHandler[] = [
   // Member Join
   {
     event: 'member_join',
-    condition: '${config.logging.events?.memberJoin !== false}',
+    condition: 'config.logging.events?.memberJoin !== false',
     actions: [
       {
         action: 'set',
         key: 'accountAge',
-        value: '${floor((now() - member.user.createdAt) / (1000 * 60 * 60 * 24))}',
+        value: '${floor((now() - member.joined_at) / (1000 * 60 * 60 * 24))}',
       },
       {
         action: 'send_message',
@@ -143,11 +143,11 @@ export const loggingEventHandlers: EventHandler[] = [
           title: 'Member Joined',
           description: '<@${member.id}> joined the server',
           color: '#57f287',
-          thumbnail: '${member.user.avatarURL}',
+          thumbnail: '${member.avatar}',
           fields: [
             { name: 'Username', value: '${member.user.tag}', inline: true },
             { name: 'Account Age', value: '${accountAge} days', inline: true },
-            { name: 'Member Count', value: '${guild.memberCount}', inline: true },
+            { name: 'Member Count', value: '${guild.member_count}', inline: true },
           ],
           footer: {
             text: 'User ID: ${member.id}',
@@ -160,7 +160,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Member Leave
   {
     event: 'member_leave',
-    condition: '${config.logging.events?.memberLeave !== false}',
+    condition: 'config.logging.events?.memberLeave !== false',
     actions: [
       {
         action: 'set',
@@ -174,11 +174,11 @@ export const loggingEventHandlers: EventHandler[] = [
           title: 'Member Left',
           description: '<@${member.id}> left the server',
           color: '#ed4245',
-          thumbnail: '${member.user.avatarURL}',
+          thumbnail: '${member.avatar}',
           fields: [
             { name: 'Username', value: '${member.user.tag}', inline: true },
             { name: 'Roles', value: '${truncate(roles, 1024)}', inline: false },
-            { name: 'Joined At', value: '${timestamp(member.joinedAt, "R")}', inline: true },
+            { name: 'Joined At', value: '${timestamp(member.joined_at, "R")}', inline: true },
           ],
           footer: {
             text: 'User ID: ${member.id}',
@@ -191,12 +191,12 @@ export const loggingEventHandlers: EventHandler[] = [
   // Member Update (roles, nickname)
   {
     event: 'member_update',
-    condition: '${config.logging.events?.memberUpdate !== false}',
+    condition: 'config.logging.events?.memberUpdate !== false',
     actions: [
       // Role changes
       {
         action: 'flow_if',
-        condition: '${oldMember.roles.cache.size !== newMember.roles.cache.size}',
+        condition: 'oldMember.roles.cache.size !== newMember.roles.cache.size',
         then: [
           {
             action: 'set',
@@ -230,7 +230,7 @@ export const loggingEventHandlers: EventHandler[] = [
       // Nickname changes
       {
         action: 'flow_if',
-        condition: '${oldMember.nickname !== newMember.nickname}',
+        condition: 'oldMember.nickname !== newMember.nickname',
         then: [
           {
             action: 'send_message',
@@ -256,7 +256,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Member Ban
   {
     event: 'member_ban',
-    condition: '${config.logging.events?.memberBan !== false}',
+    condition: 'config.logging.events?.memberBan !== false',
     actions: [
       {
         action: 'send_message',
@@ -265,7 +265,7 @@ export const loggingEventHandlers: EventHandler[] = [
           title: 'Member Banned',
           description: '<@${user.id}> was banned',
           color: '#ed4245',
-          thumbnail: '${user.avatarURL}',
+          thumbnail: '${user.avatar}',
           fields: [
             { name: 'Username', value: '${user.tag}', inline: true },
             { name: 'Reason', value: '${ban.reason || "No reason provided"}', inline: false },
@@ -281,7 +281,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Member Unban
   {
     event: 'member_unban',
-    condition: '${config.logging.events?.memberUnban !== false}',
+    condition: 'config.logging.events?.memberUnban !== false',
     actions: [
       {
         action: 'send_message',
@@ -290,7 +290,7 @@ export const loggingEventHandlers: EventHandler[] = [
           title: 'Member Unbanned',
           description: '<@${user.id}> was unbanned',
           color: '#57f287',
-          thumbnail: '${user.avatarURL}',
+          thumbnail: '${user.avatar}',
           fields: [
             { name: 'Username', value: '${user.tag}', inline: true },
           ],
@@ -305,7 +305,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Voice Join
   {
     event: 'voice_join',
-    condition: '${config.logging.events?.voiceJoin !== false}',
+    condition: 'config.logging.events?.voiceJoin !== false',
     actions: [
       {
         action: 'send_message',
@@ -325,7 +325,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Voice Leave
   {
     event: 'voice_leave',
-    condition: '${config.logging.events?.voiceLeave !== false}',
+    condition: 'config.logging.events?.voiceLeave !== false',
     actions: [
       {
         action: 'send_message',
@@ -345,7 +345,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Voice Move
   {
     event: 'voice_move',
-    condition: '${config.logging.events?.voiceMove !== false}',
+    condition: 'config.logging.events?.voiceMove !== false',
     actions: [
       {
         action: 'send_message',
@@ -369,7 +369,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Channel Create
   {
     event: 'channel_create',
-    condition: '${config.logging.events?.channelCreate !== false}',
+    condition: 'config.logging.events?.channelCreate !== false',
     actions: [
       {
         action: 'send_message',
@@ -390,7 +390,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Channel Delete
   {
     event: 'channel_delete',
-    condition: '${config.logging.events?.channelDelete !== false}',
+    condition: 'config.logging.events?.channelDelete !== false',
     actions: [
       {
         action: 'send_message',
@@ -410,7 +410,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Role Create
   {
     event: 'role_create',
-    condition: '${config.logging.events?.roleCreate !== false}',
+    condition: 'config.logging.events?.roleCreate !== false',
     actions: [
       {
         action: 'send_message',
@@ -435,7 +435,7 @@ export const loggingEventHandlers: EventHandler[] = [
   // Role Delete
   {
     event: 'role_delete',
-    condition: '${config.logging.events?.roleDelete !== false}',
+    condition: 'config.logging.events?.roleDelete !== false',
     actions: [
       {
         action: 'send_message',
@@ -476,7 +476,7 @@ export const loggingCommands: CommandDefinition[] = [
         actions: [
           {
             action: 'flow_if',
-            condition: '${!args.category || args.category === "all"}',
+            condition: '!args.category || args.category === "all"',
             then: [
               {
                 action: 'set',

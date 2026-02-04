@@ -84,7 +84,7 @@ canvas:
           x: 320
           y: 40
           radius: 80
-          src: "${user.displayAvatarURL}"
+          src: "${user.avatar}"
           border:
             width: 4
             color: "#5865F2"
@@ -92,7 +92,7 @@ canvas:
         - type: text
           x: 400
           y: 200
-          text: "Hello, ${user.displayName}!"
+          text: "Hello, ${member.display_name}!"
           font: sans-serif
           size: 32
           color: "#FFFFFF"
@@ -150,7 +150,7 @@ Show layers only when conditions are met:
 ```yaml
 - type: text
   text: "VIP Member"
-  when: "${user.roles.includes('vip')}"
+  when: "user.roles.includes('vip')"
 ```
 
 ### Gradients

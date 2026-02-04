@@ -9,24 +9,30 @@ Best practices for building high-performance FURLOW bots.
 Expensive expressions are re-evaluated each time. Cache when possible:
 
 ```yaml
-# Bad: Evaluates complex filter on every message
+# Bad: Checks all members on every message
 events:
   - event: message_create
-    when: "${guild.members.cache.filter(m => m.roles.has(adminRole)).size > 0}"
+    when: "guild.admin_count > 0"  # Computed property
 
-# Good: Cache the result
+# Good: Cache the result using a scheduled job
 flows:
   cache_admin_count:
     actions:
+      - db_query:
+          table: members
+          where:
+            guild_id: "${guild.id}"
+            is_admin: true
+          as: admins
       - set:
           var: admin_count
           scope: guild
-          value: "${guild.members.cache.filter(m => m.roles.has(adminRole)).size}"
+          value: "${admins.length}"
 
 # Use cached value
 events:
   - event: message_create
-    when: "${state.guild.admin_count > 0}"
+    when: "state.guild.admin_count > 0"
 ```
 
 ### Avoid Expensive Operations in `when`
@@ -35,22 +41,22 @@ events:
 # Bad: Fetches from API on every event
 events:
   - event: message_create
-    when: "${await fetchUserLevel(user.id) > 10}"
+    when: "await fetchUserLevel(user.id) > 10"
 
 # Good: Use cached state
 events:
   - event: message_create
-    when: "${state.member.level > 10}"
+    when: "state.member.level > 10"
 ```
 
 ### Use Short-Circuit Evaluation
 
 ```yaml
 # Good: Checks cheap condition first
-when: "${message.content.length > 0 && expensiveCheck(message.content)}"
+when: "message.content.length > 0 && expensiveCheck(message.content)"
 
 # Bad: Expensive check runs even on empty messages
-when: "${expensiveCheck(message.content) && message.content.length > 0}"
+when: "expensiveCheck(message.content) && message.content.length > 0"
 ```
 
 ## State Management
@@ -145,7 +151,7 @@ actions:
 actions:
   - db_query:
       table: leaderboard
-      order: { points: desc }
+      order_by: "points DESC"
       limit: 10  # Don't fetch entire table
       as: top_users
 ```
@@ -177,7 +183,7 @@ events:
 # Good: Filter in when clause
 events:
   - event: message_create
-    when: "${!message.author.bot && message.content.startsWith('!')}"
+    when: "!message.author.bot && message.content.startsWith('!')"
     actions:
       - # Process command
 
@@ -186,11 +192,11 @@ events:
   - event: message_create
     actions:
       - flow_if:
-          condition: "${message.author.bot}"
+          condition: "message.author.bot"
           then:
             - abort
       - flow_if:
-          condition: "${!message.content.startsWith('!')}"
+          condition: "!message.content.startsWith('!')"
           then:
             - abort
       - # Process command
@@ -261,21 +267,21 @@ actions:
       var: user_data
       value: "${guild.members.fetch(options.user.id)}"
   - flow_if:
-      condition: "${options.show_info}"
+      condition: "options.show_info"
       then:
         - reply:
-            content: "${user_data.displayName}"
+            content: "${user_data.display_name}"
 
 # Good: Only fetch when needed
 actions:
   - flow_if:
-      condition: "${options.show_info}"
+      condition: "options.show_info"
       then:
         - set:
             var: user_data
             value: "${guild.members.fetch(options.user.id)}"
         - reply:
-            content: "${user_data.displayName}"
+            content: "${user_data.display_name}"
 ```
 
 ## Caching
@@ -304,7 +310,7 @@ flows:
     actions:
       - db_query:
           table: members
-          order: { xp: desc }
+          order_by: "xp DESC"
           limit: 10
           as: result
       - return:

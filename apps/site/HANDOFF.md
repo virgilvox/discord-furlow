@@ -28,7 +28,7 @@ Rather than duplicating docs, the site loads markdown directly from `../../docs/
 ### Schema Builder with Live Preview
 The builder generates valid FURLOW YAML in real-time:
 - Form-based UI for all 20+ spec sections
-- Action picker with all 85 actions organized by category
+- Action picker with all 84 actions organized by category
 - **Editable YAML preview** with two-way sync
 - **Full action field editing** with type-specific inputs
 - **Conditional (`when`) support** for events and flows
@@ -146,7 +146,7 @@ apps/site/
 - `src/components/docs/MarkdownRenderer.vue` - Renders markdown with Shiki
 
 ### Schema Builder
-- `src/data/action-schemas.ts` - Field definitions for all 85 actions
+- `src/data/action-schemas.ts` - Field definitions for all 84 actions
 - `src/stores/schema.ts` - Pinia store for spec state and YAML generation
 - `src/stores/projects.ts` - Dexie database for saving/loading projects
 - `src/components/builder/ActionCard.vue` - Expandable card with full field editing
@@ -229,7 +229,7 @@ The site deploys to GitHub Pages via `.github/workflows/deploy-site.yml`:
 ### Session 5 - LLM Reference & SEO
 - **LLM Reference Documentation** - Created comprehensive AI-friendly reference:
   - New `docs/reference/llm-reference.md` (1,473 lines, ~31KB)
-  - Covers: full YAML spec, all 85 actions with examples, 76 events, 121 expressions/transforms
+  - Covers: full YAML spec, all 84 actions with examples, 76 events, 121 expressions/transforms
   - Common patterns and quick start templates
   - Designed for copy-paste into AI assistants
 - **Highlighted AI Reference Section** - Updated `DocNav.vue`:

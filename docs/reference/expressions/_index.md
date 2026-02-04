@@ -294,7 +294,7 @@ content: "Top users: ${leaderboard | slice(0, 5) | pluck('name') | join(', ')}"
 ### Date Formatting
 
 ```yaml
-content: "Account created: ${user.createdAt | formatDate}"
+content: "Account created: ${user.created_at | formatDate}"
 content: "Uptime: ${client.uptime | duration}"
 ```
 
@@ -307,5 +307,5 @@ content: "${get(user, 'profile.bio', 'No bio set')}"
 ### Complex Expressions
 
 ```yaml
-condition: "${member.roles | pluck('id') | includes(adminRoleId)}"
+condition: "member.roles | pluck('id') | includes(adminRoleId)"
 ```

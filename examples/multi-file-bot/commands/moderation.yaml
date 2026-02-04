@@ -59,7 +59,7 @@ commands:
         as: warnings
 
       - action: flow_if
-        condition: "${length(warnings) === 0}"
+        condition: "length(warnings) === 0"
         then:
           - action: reply
             content: "No warnings found!"
@@ -93,7 +93,7 @@ commands:
         as: warning
 
       - action: flow_if
-        condition: "${length(warning) === 0}"
+        condition: "length(warning) === 0"
         then:
           - action: reply
             content: "Warning not found!"

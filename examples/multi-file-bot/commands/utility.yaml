@@ -18,19 +18,19 @@ commands:
             url: "https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png"
           fields:
             - name: "Owner"
-              value: "<@${guild.ownerId}>"
+              value: "<@${guild.owner_id}>"
               inline: true
             - name: "Members"
-              value: "${guild.memberCount|format}"
+              value: "${guild.member_count|format}"
               inline: true
             - name: "Created"
-              value: "${timestamp(guild.createdAt, 'relative')}"
+              value: "${timestamp(guild.created_at, 'relative')}"
               inline: true
             - name: "Boost Level"
-              value: "Tier ${guild.boostLevel}"
+              value: "Tier ${guild.premium_tier}"
               inline: true
             - name: "Boosts"
-              value: "${guild.boostCount}"
+              value: "${guild.boost_count}"
               inline: true
           color: "#5865f2"
           footer:
@@ -51,13 +51,13 @@ commands:
         embed:
           title: "${target.username}"
           thumbnail:
-            url: "${target.avatarURL ?? target.defaultAvatarURL}"
+            url: "${target.avatar}"
           fields:
             - name: "ID"
               value: "`${target.id}`"
               inline: true
             - name: "Created"
-              value: "${timestamp(target.createdAt, 'relative')}"
+              value: "${timestamp(target.created_at, 'relative')}"
               inline: true
             - name: "Bot"
               value: "${target.bot ? 'Yes' : 'No'}"
@@ -80,5 +80,5 @@ commands:
         embed:
           title: "${target.username}'s Avatar"
           image:
-            url: "${target.avatarURL ?? target.defaultAvatarURL}?size=512"
+            url: "${target.avatar}"
           color: "#5865f2"

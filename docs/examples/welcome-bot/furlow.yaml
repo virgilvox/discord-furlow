@@ -50,7 +50,7 @@ canvas:
 
         # Avatar
         - type: image
-          src: "${member.displayAvatarURL({ size: 128 })}"
+          src: "${member.avatar}"
           x: 85
           y: 85
           width: 130
@@ -67,7 +67,7 @@ canvas:
 
         # Username
         - type: text
-          text: "${member.displayName}"
+          text: "${member.display_name}"
           x: 280
           y: 150
           font: "bold 36px sans-serif"
@@ -84,7 +84,7 @@ canvas:
 
         # Member count
         - type: text
-          text: "Member #${guild.memberCount}"
+          text: "Member #${guild.member_count}"
           x: 280
           y: 240
           font: "16px sans-serif"
@@ -100,31 +100,31 @@ embeds:
       Make sure to read the rules and have fun!
     color: "#5865F2"
     thumbnail:
-      url: "${member.displayAvatarURL({ size: 256 })}"
+      url: "${member.avatar}"
     fields:
       - name: "Member Count"
-        value: "${guild.memberCount}"
+        value: "${guild.member_count}"
         inline: true
       - name: "Account Created"
-        value: "<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>"
+        value: "${timestamp(member.created_at, 'R')}"
         inline: true
     footer:
       text: "Welcome!"
-      icon_url: "${guild.iconURL}"
+      icon_url: "${guild.icon}"
     timestamp: true
 
   goodbye:
     title: "Goodbye!"
-    description: "${member.displayName} has left the server."
+    description: "${member.display_name} has left the server."
     color: "#ed4245"
     thumbnail:
-      url: "${member.displayAvatarURL({ size: 256 })}"
+      url: "${member.avatar}"
     fields:
       - name: "Joined"
-        value: "<t:${Math.floor(member.joinedTimestamp / 1000)}:R>"
+        value: "${timestamp(member.joined_at, 'R')}"
         inline: true
       - name: "Members Now"
-        value: "${guild.memberCount}"
+        value: "${guild.member_count}"
         inline: true
     timestamp: true
 
@@ -150,7 +150,7 @@ events:
 
       # Auto-assign role if configured
       - flow_if:
-          condition: "${env.AUTO_ROLE}"
+          condition: "env.AUTO_ROLE"
           then:
             - assign_role:
                 role: "${env.AUTO_ROLE}"
@@ -171,11 +171,11 @@ events:
                 If you have any questions, feel free to ask!
               color: "#5865F2"
               thumbnail:
-                url: "${guild.iconURL({ size: 256 })}"
+                url: "${guild.icon}"
 
   # Goodbye messages
   - event: guild_member_remove
-    when: "${env.GOODBYE_CHANNEL}"
+    when: "env.GOODBYE_CHANNEL"
     actions:
       - send_message:
           channel: "${env.GOODBYE_CHANNEL}"

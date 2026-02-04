@@ -50,7 +50,7 @@ export const autoResponderTables: Record<string, TableDefinition> = {
 export const autoResponderEventHandlers: EventHandler[] = [
   {
     event: 'message',
-    condition: '${!message.author.bot || !config.autoResponder?.ignoreBots}',
+    condition: '!message.author.bot || !config.autoResponder?.ignoreBots',
     actions: [
       // Get all triggers for this guild
       {
@@ -65,34 +65,34 @@ export const autoResponderEventHandlers: EventHandler[] = [
         items: '${triggers}',
         each: {
           action: 'flow_if',
-          condition: '${(() => { const t = item; const msg = t.ignore_case ? message.content.toLowerCase() : message.content; const trig = t.ignore_case ? t.trigger.toLowerCase() : t.trigger; switch(t.trigger_type) { case "exact": return msg === trig; case "contains": return msg.includes(trig); case "startswith": return msg.startsWith(trig); case "endswith": return msg.endsWith(trig); case "regex": return new RegExp(t.trigger, t.ignore_case ? "i" : "").test(message.content); default: return false; } })()}',
+          condition: '(() => { const t = item; const msg = t.ignore_case ? message.content.toLowerCase() : message.content; const trig = t.ignore_case ? t.trigger.toLowerCase() : t.trigger; switch(t.trigger_type) { case "exact": return msg === trig; case "contains": return msg.includes(trig); case "startswith": return msg.startsWith(trig); case "endswith": return msg.endsWith(trig); case "regex": return new RegExp(t.trigger, t.ignore_case ? "i" : "").test(message.content); default: return false; } })()',
           then: [
             // Check channel restrictions
             {
               action: 'flow_if',
-              condition: '${item.allowed_channels?.length && !item.allowed_channels.includes(channel.id)}',
+              condition: 'item.allowed_channels?.length && !item.allowed_channels.includes(channel.id)',
               then: [{ action: 'abort' }],
             },
             {
               action: 'flow_if',
-              condition: '${item.ignored_channels?.includes(channel.id)}',
+              condition: 'item.ignored_channels?.includes(channel.id)',
               then: [{ action: 'abort' }],
             },
             // Check role restrictions
             {
               action: 'flow_if',
-              condition: '${item.allowed_roles?.length && !item.allowed_roles.some(r => member.roles.cache.has(r))}',
+              condition: 'item.allowed_roles?.length && !item.allowed_roles.some(r => member.roles.cache.has(r))',
               then: [{ action: 'abort' }],
             },
             {
               action: 'flow_if',
-              condition: '${item.ignored_roles?.some(r => member.roles.cache.has(r))}',
+              condition: 'item.ignored_roles?.some(r => member.roles.cache.has(r))',
               then: [{ action: 'abort' }],
             },
             // Check cooldown
             {
               action: 'flow_if',
-              condition: '${item.cooldown > 0}',
+              condition: 'item.cooldown > 0',
               then: [
                 {
                   action: 'db_query',
@@ -102,7 +102,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
                 },
                 {
                   action: 'flow_if',
-                  condition: '${cooldown[0] && (now() - new Date(cooldown[0].last_triggered)) < item.cooldown * 1000}',
+                  condition: 'cooldown[0] && (now() - new Date(cooldown[0].last_triggered)) < item.cooldown * 1000',
                   then: [{ action: 'abort' }],
                 },
               ],
@@ -110,7 +110,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
             // Check chance
             {
               action: 'flow_if',
-              condition: '${item.chance < 100 && random(1, 100) > item.chance}',
+              condition: 'item.chance < 100 && random(1, 100) > item.chance',
               then: [{ action: 'abort' }],
             },
             // Execute response
@@ -121,7 +121,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
                 message: [
                   {
                     action: 'flow_if',
-                    condition: '${item.dm_response}',
+                    condition: 'item.dm_response',
                     then: [
                       { action: 'send_dm', user: '${user.id}', content: '${item.response}' },
                     ],
@@ -133,7 +133,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
                 embed: [
                   {
                     action: 'flow_if',
-                    condition: '${item.dm_response}',
+                    condition: 'item.dm_response',
                     then: [
                       { action: 'send_dm', user: '${user.id}', embed: '${item.embed_data}' },
                     ],
@@ -150,7 +150,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
             // Delete trigger message if configured
             {
               action: 'flow_if',
-              condition: '${item.delete_trigger}',
+              condition: 'item.delete_trigger',
               then: [
                 { action: 'delete_message', channel: '${channel.id}', message: '${message.id}' },
               ],
@@ -158,7 +158,7 @@ export const autoResponderEventHandlers: EventHandler[] = [
             // Update cooldown
             {
               action: 'flow_if',
-              condition: '${item.cooldown > 0}',
+              condition: 'item.cooldown > 0',
               then: [
                 {
                   action: 'db_update',
@@ -206,7 +206,7 @@ export const autoResponderCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${existing.length >= (config.autoResponder?.maxTriggers || 50)}',
+            condition: 'existing.length >= (config.autoResponder?.maxTriggers || 50)',
             then: [
               { action: 'reply', content: 'Maximum triggers reached!', ephemeral: true },
               { action: 'abort' },
@@ -244,7 +244,7 @@ export const autoResponderCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${triggers.length === 0}',
+            condition: 'triggers.length === 0',
             then: [
               { action: 'reply', content: 'No auto-responses configured!', ephemeral: true },
               { action: 'abort' },
@@ -282,7 +282,7 @@ export const autoResponderCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${trigger.length === 0}',
+            condition: 'trigger.length === 0',
             then: [
               { action: 'reply', content: 'Trigger not found!', ephemeral: true },
               { action: 'abort' },
@@ -324,7 +324,7 @@ export const autoResponderCommands: CommandDefinition[] = [
           },
           {
             action: 'flow_if',
-            condition: '${trigger.length === 0}',
+            condition: 'trigger.length === 0',
             then: [
               { action: 'reply', content: 'Trigger not found!', ephemeral: true },
               { action: 'abort' },

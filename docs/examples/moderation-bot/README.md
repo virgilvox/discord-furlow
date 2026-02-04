@@ -99,7 +99,7 @@ flows:
   check_warnings:
     actions:
       - flow_if:
-          condition: "${warning_count >= 5}"
+          condition: "warning_count >= 5"
           then:
             - ban:
                 user: "${target_user}"

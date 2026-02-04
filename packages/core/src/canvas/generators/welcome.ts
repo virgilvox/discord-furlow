@@ -4,11 +4,10 @@
  * Creates welcome images for new members joining a server.
  *
  * Context variables:
- * - user.avatar: User avatar URL
- * - user.username: Username
- * - user.displayName: Display name (nickname or username)
+ * - member.avatar: Member avatar URL
+ * - member.display_name: Display name (nickname or username)
  * - guild.name: Server name
- * - guild.memberCount: Number of members
+ * - guild.member_count: Number of members
  * - guild.icon: Server icon URL (optional)
  */
 
@@ -50,9 +49,9 @@ const DEFAULT_OPTIONS: Required<WelcomeCardOptions> = {
   subtitleColor: '#B9BBBE',
   avatarBorderColor: '#5865F2',
   avatarRadius: 80,
-  welcomeText: 'Welcome, ${user.displayName}!',
+  welcomeText: 'Welcome, ${member.display_name}!',
   subtitleText: 'to ${guild.name}',
-  memberCountText: 'Member #${guild.memberCount}',
+  memberCountText: 'Member #${guild.member_count}',
   fontFamily: 'sans-serif',
 };
 
@@ -170,5 +169,5 @@ export const welcomeMinimalGenerator = createWelcomeGenerator({
   avatarRadius: 50,
   welcomeText: 'Welcome ${user.username}!',
   subtitleText: '${guild.name}',
-  memberCountText: '#${guild.memberCount}',
+  memberCountText: '#${guild.member_count}',
 });

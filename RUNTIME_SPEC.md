@@ -125,11 +125,11 @@ commands:
 
 # OPTIONAL: Event handlers
 events:
-  - event: guildMemberAdd
+  - event: guild_member_add
     actions:
       - send_message:
-          channel: "${event.guild.systemChannelId}"
-          content: "Welcome, ${event.user.username}!"
+          channel: "${env.WELCOME_CHANNEL}"
+          content: "Welcome, ${member.display_name}!"
 
 # OPTIONAL: Button handlers
 buttons:
@@ -808,7 +808,7 @@ function executeAction(action, context):
 
 ### 5.3 Action Categories
 
-FURLOW defines 85 actions in 9 categories:
+FURLOW defines 84 actions in 9 categories:
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -1075,7 +1075,7 @@ When limits are exceeded:
 
 ```yaml
 - flow_if:
-    if: "${count > 10}"       # REQUIRED: Condition
+    if: "count > 10"          # REQUIRED: Condition (raw expression, no ${})
     then:                     # REQUIRED: Actions if true
       - log:
           message: "Count is high"
@@ -1104,7 +1104,7 @@ When limits are exceeded:
 
 ```yaml
 - flow_while:
-    while: "${counter < 10}"  # REQUIRED: Loop condition
+    while: "counter < 10"     # REQUIRED: Loop condition (raw expression, no ${})
     do:                       # REQUIRED: Loop body
       - increment:
           var: counter
@@ -1265,7 +1265,7 @@ All 69 functions
 - Canvas actions (2): `canvas_render`, `render_layers`
 - Metrics actions (2): `counter_increment`, `record_metric`
 
-### 8.3 Full Runtime (85 Actions)
+### 8.3 Full Runtime (84 Actions)
 
 A full runtime implements all FURLOW features.
 
@@ -1947,8 +1947,7 @@ Query rows.
     table: "warnings"           # Table name
     where:                      # Optional filter
       userId: "${user.id}"
-    order_by: "timestamp"       # Optional sort field
-    order: "desc"               # asc|desc
+    order_by: "timestamp DESC"  # Optional sort field with direction
     limit: 10                   # Optional limit
     offset: 0                   # Optional offset
     as: warnings                # Store results
@@ -2205,7 +2204,7 @@ Render a canvas image using a named generator.
 - canvas_render:
     generator: "welcome_card"   # Canvas generator name
     context:                    # Context data for generator
-      avatar: "${user.avatarURL}"
+      avatar: "${user.avatar}"
       username: "${user.username}"
     as: imageBuffer             # Store rendered image buffer
 ```

@@ -166,7 +166,7 @@ commands:
         required: false
     actions:
       - flow_if:
-          condition: "${options.action == 'lock'}"
+          condition: "options.action == 'lock'"
           then:
             - lock_channel:
                 channel: "${options.channel?.id ?? channel.id}"
@@ -231,7 +231,7 @@ events:
   # Auto-delete messages with too many mentions
   message_create:
     - name: "anti_mass_mention"
-      condition: "length(message.mentions) > 5 && !member.roles|includes(env.MOD_ROLE)"
+      condition: "length(message.mentions) > 5 && !member.role_ids|includes(env.MOD_ROLE)"
       actions:
         - delete_message:
             channel: "${channel.id}"
@@ -270,7 +270,7 @@ events:
       condition: "startsWith(custom_id, 'report_warn_')"
       actions:
         - flow_if:
-            condition: "!member.roles|includes(env.MOD_ROLE)"
+            condition: "!member.role_ids|includes(env.MOD_ROLE)"
             then:
               - reply:
                   content: "You don't have permission to do this."
@@ -290,7 +290,7 @@ events:
       condition: "custom_id == 'report_dismiss'"
       actions:
         - flow_if:
-            condition: "!member.roles|includes(env.MOD_ROLE)"
+            condition: "!member.role_ids|includes(env.MOD_ROLE)"
             then:
               - reply:
                   content: "You don't have permission to do this."

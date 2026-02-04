@@ -26,13 +26,13 @@ const examples = [
   - event: member_join
     actions:
       - send_message:
-          channel: "\${guild.systemChannelId}"
-          content: "Welcome \${member.name}!"
+          channel: "\${env.WELCOME_CHANNEL}"
+          content: "Welcome \${member.display_name}!"
       - assign_role:
           role: "Member"
 
   - event: message_create
-    when: "\${message.content.startsWith('!')}"
+    when: "message.content | startsWith('!')"
     actions:
       - add_reaction:
           emoji: "wave"`,

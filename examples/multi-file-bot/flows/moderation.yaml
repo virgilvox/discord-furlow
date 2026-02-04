@@ -16,10 +16,10 @@ flows:
     actions:
       # Only log if mod log channel is configured
       - action: flow_if
-        condition: "${guild_state.mod_log_channel}"
+        condition: "state.guild.mod_log_channel"
         then:
           - action: send_message
-            channel: "${guild_state.mod_log_channel}"
+            channel: "${state.guild.mod_log_channel}"
             embed:
               title: "Moderation Action"
               fields:

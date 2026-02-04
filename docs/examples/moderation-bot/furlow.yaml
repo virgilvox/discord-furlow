@@ -132,7 +132,7 @@ commands:
           content: "Warned **${options.user.tag}** (Warning #${warning_count})"
           ephemeral: true
       - flow_if:
-          condition: "${warning_count >= 3}"
+          condition: "warning_count >= 3"
           then:
             - timeout:
                 user: "${options.user.id}"
@@ -154,7 +154,7 @@ commands:
           var: target_warnings
           value: "${state.member[options.user.id].warnings || []}"
       - flow_if:
-          condition: "${target_warnings.length === 0}"
+          condition: "target_warnings.length === 0"
           then:
             - reply:
                 content: "${options.user.tag} has no warnings."
@@ -364,7 +364,7 @@ commands:
         description: Reason for closing
     actions:
       - flow_if:
-          condition: "${!channel.name.startsWith('ticket-')}"
+          condition: "!channel.name.startsWith('ticket-')"
           then:
             - reply:
                 content: "This command can only be used in ticket channels."

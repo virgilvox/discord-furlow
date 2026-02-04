@@ -97,7 +97,7 @@ commands:
           value: "${options.user || user}"
       - reply:
           embeds:
-            - title: "User Info: ${target.displayName}"
+            - title: "User Info: ${target.display_name}"
               color: 0x5865F2
               thumbnail:
                 url: "${target.avatar}"
@@ -109,7 +109,7 @@ commands:
                   value: "${target.id}"
                   inline: true
                 - name: "Created"
-                  value: "${date(target.createdAt) | formatDate}"
+                  value: "${timestamp(target.created_at, 'R')}"
                   inline: true
 
   # Stats command
@@ -145,5 +145,5 @@ events:
   # - event: guild_member_add
   #   actions:
   #     - send_message:
-  #         channel: "${guild.systemChannelId}"
-  #         content: "Welcome to the server, ${member.displayName}!"
+  #         channel: "${env.WELCOME_CHANNEL}"
+  #         content: "Welcome to the server, ${member.display_name}!"

@@ -236,7 +236,7 @@ commands:
         as: warnings
 
       - action: flow_if
-        condition: "${length(warnings) === 0}"
+        condition: "length(warnings) === 0"
         then:
           - action: reply
             content: "No warnings found!"
@@ -269,7 +269,7 @@ events:
             url: "${member.user.avatar}"
           color: "#57f287"
           footer:
-            text: "Member #${guild.memberCount}"
+            text: "Member #${guild.member_count}"
 
   - event: member_leave
     actions:
