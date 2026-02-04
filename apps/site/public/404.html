@@ -5,17 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FURLOW - Redirecting</title>
   <script>
-    // SPA redirect for GitHub Pages
-    // Store the path in sessionStorage and redirect to index.html
+    // SPA redirect for GitHub Pages with custom domain
+    // Store the full path in sessionStorage and redirect to index.html
     (function() {
-      const path = window.location.pathname;
-      const basePath = '/discord-furlow';
-      let route = path;
-      if (path.startsWith(basePath)) {
-        route = path.slice(basePath.length) || '/';
-      }
-      sessionStorage.setItem('spa-redirect', route + window.location.search + window.location.hash);
-      window.location.replace(basePath + '/');
+      const fullPath = window.location.pathname + window.location.search + window.location.hash;
+      sessionStorage.setItem('spa-redirect', fullPath);
+      window.location.replace('/');
     })();
   </script>
 </head>

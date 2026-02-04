@@ -9,9 +9,9 @@ export default defineConfig(({ mode }) => ({
       '@': resolve(__dirname, 'src'),
     },
   },
-  // Use /discord-furlow/ base path only in production (for GitHub Pages)
-  // In development, use root path for easier local testing
-  base: mode === 'production' ? '/discord-furlow/' : '/',
+  // With custom domain (furlow.dev), use root path
+  // Falls back to /discord-furlow/ if CNAME is removed
+  base: '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,

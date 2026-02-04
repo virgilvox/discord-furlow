@@ -41,7 +41,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm build --filter=@furlow/schema
+        run: pnpm --filter @furlow/schema build
 
       - name: Build site
         run: pnpm --filter @furlow/site build
