@@ -125,8 +125,5 @@
     "discord.js": {
       "optional": false
     }
-  },
-  "optionalDependencies": {
-    "@types/canvas": "^2.0.0"
   }
 }
