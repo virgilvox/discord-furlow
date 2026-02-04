@@ -23,12 +23,15 @@ furlow --version
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Click "New Application" and give it a name
-3. Go to the "Bot" section
-4. Click "Reset Token" and copy the token
-5. Enable required Privileged Gateway Intents:
+3. On the "General Information" page, copy the **Application ID** (also called Client ID)
+4. Go to the "Bot" section
+5. Click "Reset Token" and copy the **Bot Token**
+6. Enable required Privileged Gateway Intents:
    - **Message Content Intent** - Required for reading message content
    - **Server Members Intent** - Required for member events
    - **Presence Intent** - Required for presence updates
+
+You'll need both the **Application ID** and **Bot Token** for your `.env` file.
 
 ## Create a New Bot Project
 
@@ -58,7 +61,13 @@ Create a `.env` file in your project directory:
 
 ```env
 DISCORD_TOKEN=your_bot_token_here
+DISCORD_CLIENT_ID=your_application_id_here
 ```
+
+| Variable | Description | Where to Find |
+|----------|-------------|---------------|
+| `DISCORD_TOKEN` | Bot authentication token | Developer Portal → Bot → Token |
+| `DISCORD_CLIENT_ID` | Application ID for slash commands | Developer Portal → General Information → Application ID |
 
 Never commit `.env` to version control. The `.gitignore` file created by `furlow init` already excludes it.
 

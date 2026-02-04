@@ -14,11 +14,20 @@ furlow init my-first-bot
 cd my-first-bot
 ```
 
-## Configure Token
+## Configure Credentials
+
+Create a `.env` file with your Discord credentials:
 
 ```bash
-echo "DISCORD_TOKEN=your_token_here" > .env
+cat > .env << EOF
+DISCORD_TOKEN=your_bot_token_here
+DISCORD_CLIENT_ID=your_application_id_here
+EOF
 ```
+
+Get these from the [Discord Developer Portal](https://discord.com/developers/applications):
+- **Token**: Bot → Reset Token
+- **Client ID**: General Information → Application ID
 
 ## Your First Command
 

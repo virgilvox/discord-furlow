@@ -3,6 +3,15 @@
   "title": "FURLOW Documentation",
   "sections": [
     {
+      "id": "ai-reference",
+      "title": "AI / LLM Reference",
+      "icon": "fas fa-robot",
+      "highlight": true,
+      "pages": [
+        { "id": "llm-reference", "title": "Complete Reference", "path": "reference/llm-reference.md", "copyable": true, "badge": "AI" }
+      ]
+    },
+    {
       "id": "getting-started",
       "title": "Getting Started",
       "icon": "fas fa-rocket",
@@ -95,14 +104,6 @@
         { "id": "welcome-bot", "title": "Welcome Bot", "path": "examples/welcome-bot/README.md" },
         { "id": "reaction-roles-bot", "title": "Reaction Roles", "path": "examples/reaction-roles-bot/README.md" },
         { "id": "utility-bot", "title": "Utility Bot", "path": "examples/utility-bot/README.md" }
-      ]
-    },
-    {
-      "id": "resources",
-      "title": "Resources",
-      "icon": "fas fa-robot",
-      "pages": [
-        { "id": "llm-reference", "title": "LLM Reference", "path": "llm-reference.md", "copyable": true }
       ]
     }
   ]

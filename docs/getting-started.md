@@ -7,7 +7,9 @@ FURLOW is a declarative Discord bot framework that lets you build bots using YAM
 ### Prerequisites
 
 - Node.js 20 or later
-- A Discord bot token
+- A Discord Application with:
+  - **Bot Token** - For authentication
+  - **Application ID** (Client ID) - For registering slash commands
 
 ### Create a New Bot
 
@@ -21,9 +23,11 @@ furlow init my-bot
 # Navigate to the project
 cd my-bot
 
-# Copy the environment file and add your token
+# Set up environment variables
 cp .env.example .env
-# Edit .env with your DISCORD_TOKEN and DISCORD_CLIENT_ID
+# Edit .env and add:
+#   DISCORD_TOKEN=your_bot_token
+#   DISCORD_CLIENT_ID=your_application_id
 ```
 
 ### Project Structure
@@ -39,8 +43,17 @@ my-bot/
 │   └── ready.yaml
 ├── flows/               # Reusable action sequences
 ├── .env                 # Environment variables (secrets)
+├── .env.example         # Template for .env
 └── package.json
 ```
+
+### Getting Discord Credentials
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create or select your application
+3. Copy **Application ID** from General Information page
+4. Go to **Bot** section and copy the **Token**
+5. Enable required **Privileged Gateway Intents** (Message Content, Server Members)
 
 ## Your First Bot
 
