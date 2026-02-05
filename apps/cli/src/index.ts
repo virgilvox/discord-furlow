@@ -35,6 +35,7 @@ program
   .description('Start the FURLOW bot')
   .option('-e, --env <file>', 'Path to .env file', '.env')
   .option('-g, --guild <id>', 'Register commands to specific guild (instant)')
+  .option('-v, --verbose', 'Enable verbose logging (shows context, actions, results)')
   .option('--no-validate', 'Skip schema validation')
   .action(startCommand);
 

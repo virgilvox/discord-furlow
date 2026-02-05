@@ -11,6 +11,33 @@ interface StartOptions {
   env: string;
   validate: boolean;
   guild?: string;
+  verbose?: boolean;
+}
+
+// Global verbose flag for logging
+let verboseMode = false;
+
+function log(category: string, message: string, data?: unknown) {
+  if (!verboseMode) return;
+  const timestamp = new Date().toISOString().split('T')[1]?.slice(0, 12);
+  console.log(chalk.dim(`[${timestamp}]`), chalk.cyan(`[${category}]`), message);
+  if (data !== undefined) {
+    if (typeof data === 'object' && data !== null) {
+      const str = JSON.stringify(data, (key, value) => {
+        // Truncate long strings and buffers
+        if (typeof value === 'string' && value.length > 200) {
+          return value.slice(0, 200) + '... (truncated)';
+        }
+        if (value?.type === 'Buffer') {
+          return `<Buffer ${value.data?.length || 0} bytes>`;
+        }
+        return value;
+      }, 2);
+      console.log(chalk.dim(str));
+    } else {
+      console.log(chalk.dim(String(data)));
+    }
+  }
 }
 
 export async function startCommand(
@@ -18,8 +45,13 @@ export async function startCommand(
   options: StartOptions
 ): Promise<void> {
   const specPath = resolve(path ?? 'furlow.yaml');
+  verboseMode = options.verbose ?? false;
 
   console.log(chalk.bold.cyan('\n  FURLOW Bot Runner\n'));
+
+  if (verboseMode) {
+    console.log(chalk.yellow('  Verbose mode enabled\n'));
+  }
 
   // Load environment variables
   const envResult = loadEnv({ path: resolve(options.env) });
@@ -234,6 +266,8 @@ export async function startCommand(
       // Set up command handlers
       for (const cmd of spec.commands) {
         interactionHandler.onCommand(cmd.name, async (interaction) => {
+          log('command', `Executing command: /${cmd.name}`);
+
           try {
             // Build context for expression evaluation
             const context = buildActionContext({
@@ -265,10 +299,34 @@ export async function startCommand(
               }
             }
 
+            // Log context in verbose mode
+            log('context', 'Command context:', {
+              user: { id: context.user?.id, username: context.user?.username, avatar: context.user?.avatar },
+              guild: { id: context.guild?.id, name: context.guild?.name },
+              options: context.options,
+            });
+
             // Execute actions using the action executor
             if (cmd.actions) {
               const actions = normalizeActions(cmd.actions);
+              log('actions', `Executing ${actions.length} action(s):`);
+              actions.forEach((a, i) => log('actions', `  ${i + 1}. ${a.action}`));
+
               const results = await actionExecutor.executeSequence(actions, context);
+
+              // Log action results in verbose mode
+              results.forEach((r, i) => {
+                const actionName = actions[i]?.action || 'unknown';
+                if (r.success) {
+                  // For canvas_render, show the evaluated context
+                  if (actionName === 'canvas_render' && (context as any)._canvasContextDebug) {
+                    log('canvas', 'Canvas render context evaluation:', (context as any)._canvasContextDebug);
+                  }
+                  log('result', `Action "${actionName}" succeeded`, r.data instanceof Buffer ? `<Buffer ${r.data.length} bytes>` : r.data);
+                } else {
+                  log('result', `Action "${actionName}" FAILED: ${r.error?.message}`);
+                }
+              });
 
               // Check for failed actions
               const failedResult = results.find(r => !r.success);

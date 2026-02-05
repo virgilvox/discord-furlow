@@ -427,17 +427,24 @@ const canvasRenderHandler: ActionHandler<CanvasRenderAction> = {
 
     // Build render context
     const renderContext: Record<string, unknown> = { ...context };
+    const contextDebug: Record<string, { input: string; output: unknown }> = {};
     if (config.context) {
       for (const [key, value] of Object.entries(config.context)) {
         const strValue = String(value);
+        let result: unknown;
         // Support both ${expr} interpolation syntax and raw expressions
         if (strValue.includes('${')) {
-          renderContext[key] = await evaluator.interpolate(strValue, context);
+          result = await evaluator.interpolate(strValue, context);
         } else {
-          renderContext[key] = await evaluator.evaluate(strValue, context);
+          result = await evaluator.evaluate(strValue, context);
         }
+        renderContext[key] = result;
+        contextDebug[key] = { input: strValue, output: result };
       }
     }
+
+    // Store debug info for verbose logging
+    (context as any)._canvasContextDebug = contextDebug;
 
     try {
       // Get or create canvas renderer
