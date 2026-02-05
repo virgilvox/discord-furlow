@@ -97,8 +97,40 @@ export async function startCommand(
     // Create expression evaluator
     const evaluator = createEvaluator();
 
-    // Create storage adapter (memory by default)
-    const storage = createMemoryAdapter();
+    // Create storage adapter based on spec configuration
+    let storage;
+    const storageConfig = spec.state?.storage;
+
+    if (storageConfig?.type === 'sqlite') {
+      try {
+        const { createSQLiteAdapter } = await import('@furlow/storage/sqlite');
+        storage = createSQLiteAdapter({ path: storageConfig.path || './furlow.db' });
+        console.log(chalk.dim(`  Using SQLite storage: ${storageConfig.path || './furlow.db'}`));
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(chalk.red(`  Failed to load SQLite adapter: ${errorMsg}`));
+        console.log(chalk.yellow('  Install better-sqlite3: npm install better-sqlite3'));
+        console.log(chalk.dim('  Falling back to memory storage'));
+        storage = createMemoryAdapter();
+      }
+    } else if (storageConfig?.type === 'postgres') {
+      try {
+        const { createPostgresAdapter } = await import('@furlow/storage/postgres');
+        const connectionString = typeof storageConfig.connection === 'string'
+          ? storageConfig.connection
+          : process.env.DATABASE_URL;
+        storage = createPostgresAdapter({ connectionString });
+        console.log(chalk.dim('  Using PostgreSQL storage'));
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(chalk.red(`  Failed to load PostgreSQL adapter: ${errorMsg}`));
+        console.log(chalk.yellow('  Install pg: npm install pg'));
+        console.log(chalk.dim('  Falling back to memory storage'));
+        storage = createMemoryAdapter();
+      }
+    } else {
+      storage = createMemoryAdapter();
+    }
 
     // Create state manager
     const stateManager = createStateManager(storage);
