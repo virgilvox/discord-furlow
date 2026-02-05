@@ -147,16 +147,26 @@ export class FurlowClient {
     return [...intents];
   }
 
+  /** Default timeout for ready event (30 seconds) */
+  private static readonly READY_TIMEOUT_MS = 30000;
+
   /**
    * Start the client
    */
   async start(): Promise<void> {
     await this.client.login(this.token);
 
-    // Wait for ready
+    // Wait for ready with timeout
     if (!this.client.isReady()) {
-      await new Promise<void>((resolve) => {
-        this.client.once('ready', () => resolve());
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Client ready timeout - Discord client did not become ready within 30 seconds'));
+        }, FurlowClient.READY_TIMEOUT_MS);
+
+        this.client.once('ready', () => {
+          clearTimeout(timeoutId);
+          resolve();
+        });
       });
     }
 
@@ -186,8 +196,9 @@ export class FurlowClient {
     if (identity.name && this.client.user?.username !== identity.name) {
       try {
         await this.client.user?.setUsername(identity.name);
-      } catch {
-        // Username changes are rate limited
+      } catch (err) {
+        // Username changes are rate limited - log but don't fail startup
+        console.warn('Failed to set bot username (may be rate limited):', err instanceof Error ? err.message : String(err));
       }
     }
 
@@ -195,8 +206,9 @@ export class FurlowClient {
     if (identity.avatar) {
       try {
         await this.client.user?.setAvatar(identity.avatar);
-      } catch {
-        // Avatar might be rate limited
+      } catch (err) {
+        // Avatar might be rate limited - log but don't fail startup
+        console.warn('Failed to set bot avatar (may be rate limited):', err instanceof Error ? err.message : String(err));
       }
     }
   }
@@ -209,19 +221,23 @@ export class FurlowClient {
 
     const presence = this.spec.presence;
 
-    this.client.user?.setPresence({
-      status: presence.status ?? 'online',
-      activities: presence.activity
-        ? [
-            {
-              type: this.getActivityType(presence.activity.type),
-              name: presence.activity.text,
-              url: presence.activity.url,
-              state: presence.activity.state,
-            },
-          ]
-        : undefined,
-    });
+    try {
+      this.client.user?.setPresence({
+        status: presence.status ?? 'online',
+        activities: presence.activity
+          ? [
+              {
+                type: this.getActivityType(presence.activity.type),
+                name: presence.activity.text,
+                url: presence.activity.url,
+                state: presence.activity.state,
+              },
+            ]
+          : undefined,
+      });
+    } catch (err) {
+      console.error('Failed to set presence:', err);
+    }
   }
 
   /**

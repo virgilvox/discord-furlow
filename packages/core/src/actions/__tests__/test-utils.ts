@@ -10,26 +10,30 @@ import { ChannelType } from 'discord.js';
  * Create a mock evaluator with common functionality
  */
 export function createMockEvaluator() {
+  const interpolate = vi.fn(async (str: string, ctx: Record<string, unknown>) => {
+    // Simple template interpolation
+    return str.replace(/\$\{(\w+(?:\.\w+)*)\}/g, (_, key) => {
+      const parts = key.split('.');
+      let value: unknown = ctx;
+      for (const part of parts) {
+        value = (value as Record<string, unknown>)?.[part];
+      }
+      return value !== undefined ? String(value) : '';
+    });
+  });
+
+  const evaluate = vi.fn(async <T>(expr: string, ctx: Record<string, unknown>): Promise<T> => {
+    if (expr === 'true') return true as T;
+    if (expr === 'false') return false as T;
+    if (/^\d+$/.test(expr)) return parseInt(expr, 10) as T;
+    // Check for simple property access
+    if (ctx[expr] !== undefined) return ctx[expr] as T;
+    return expr as T;
+  });
+
   return {
-    interpolate: vi.fn(async (str: string, ctx: Record<string, unknown>) => {
-      // Simple template interpolation
-      return str.replace(/\$\{(\w+(?:\.\w+)*)\}/g, (_, key) => {
-        const parts = key.split('.');
-        let value: unknown = ctx;
-        for (const part of parts) {
-          value = (value as Record<string, unknown>)?.[part];
-        }
-        return value !== undefined ? String(value) : '';
-      });
-    }),
-    evaluate: vi.fn(async <T>(expr: string, ctx: Record<string, unknown>): Promise<T> => {
-      if (expr === 'true') return true as T;
-      if (expr === 'false') return false as T;
-      if (/^\d+$/.test(expr)) return parseInt(expr, 10) as T;
-      // Check for simple property access
-      if (ctx[expr] !== undefined) return ctx[expr] as T;
-      return expr as T;
-    }),
+    interpolate,
+    evaluate,
     evaluateSync: vi.fn((expr: string, ctx: Record<string, unknown>) => {
       if (expr === 'true') return true;
       if (expr === 'false') return false;
@@ -38,6 +42,19 @@ export function createMockEvaluator() {
     }),
     interpolateSync: vi.fn((str: string, ctx: Record<string, unknown>) => {
       return str.replace(/\$\{(\w+)\}/g, (_, key) => ctx[key] ? String(ctx[key]) : '');
+    }),
+    // evaluateTemplate: Returns raw value for exact ${expr} match, otherwise interpolates as string
+    // Pass through non-strings directly
+    evaluateTemplate: vi.fn(async (template: unknown, ctx: Record<string, unknown>) => {
+      if (typeof template !== 'string') {
+        return template;
+      }
+      const exactMatch = template.match(/^\$\{([^}]+)\}$/);
+      if (exactMatch) {
+        const expr = exactMatch[1]!.trim();
+        return evaluate(expr, ctx);
+      }
+      return interpolate(template, ctx);
     }),
     hasExpressions: vi.fn().mockReturnValue(false),
     addFunction: vi.fn(),

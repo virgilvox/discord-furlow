@@ -25,10 +25,34 @@ export class StateManager {
   private tables: Map<string, TableDefinition> = new Map();
   private cache: Map<string, CacheEntry> = new Map();
   private options: Required<StateManagerOptions>;
+  private locks: Map<string, Promise<void>> = new Map();
+  private closed = false;
 
   constructor(storage: StorageAdapter, options: StateManagerOptions = {}) {
     this.storage = storage;
     this.options = { ...DEFAULT_OPTIONS, ...options };
+  }
+
+  /**
+   * Acquire a lock for a key to prevent race conditions
+   */
+  private async acquireLock(key: string): Promise<() => void> {
+    // Wait for any existing lock
+    while (this.locks.has(key)) {
+      await this.locks.get(key);
+    }
+
+    // Create a new lock
+    let releaseLock: () => void;
+    const lockPromise = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    this.locks.set(key, lockPromise);
+
+    return () => {
+      this.locks.delete(key);
+      releaseLock!();
+    };
   }
 
   /**
@@ -164,17 +188,34 @@ export class StateManager {
   }
 
   /**
-   * Increment a numeric variable
+   * Increment a numeric variable (atomic operation)
    */
   async increment(
     name: string,
     by: number,
     context: { guildId?: string; channelId?: string; userId?: string }
   ): Promise<number> {
-    const current = await this.get<number>(name, context);
-    const newValue = (current ?? 0) + by;
-    await this.set(name, newValue, context);
-    return newValue;
+    const def = this.variables.get(name);
+    const scope = def?.scope ?? 'guild';
+
+    const key = buildStorageKey({
+      name,
+      scope,
+      guildId: context.guildId,
+      channelId: context.channelId,
+      userId: context.userId,
+    });
+
+    // Acquire lock to prevent race conditions
+    const releaseLock = await this.acquireLock(key);
+    try {
+      const current = await this.get<number>(name, context);
+      const newValue = (current ?? 0) + by;
+      await this.set(name, newValue, context);
+      return newValue;
+    } finally {
+      releaseLock();
+    }
   }
 
   /**
@@ -255,7 +296,8 @@ export class StateManager {
     const entry = this.cache.get(key);
     if (!entry) return undefined;
 
-    if (entry.expiresAt < Date.now()) {
+    // Check if expired (expiresAt is in the past)
+    if (entry.expiresAt <= Date.now()) {
       this.cache.delete(key);
       return undefined;
     }
@@ -325,7 +367,10 @@ export class StateManager {
    * Close the state manager
    */
   async close(): Promise<void> {
+    if (this.closed) return;
+    this.closed = true;
     this.cache.clear();
+    this.locks.clear();
     await this.storage.close();
   }
 }

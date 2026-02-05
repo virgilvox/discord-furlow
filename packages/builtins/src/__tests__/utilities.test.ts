@@ -46,7 +46,7 @@ describe('Utilities Builtin', () => {
       });
 
       it('should display server information in embed', () => {
-        const replyAction = cmd.actions.find((a) => a.action === 'reply');
+        const replyAction = cmd.actions!.find((a) => a.action === 'reply');
         expect(replyAction).toBeDefined();
         expect((replyAction as { embed?: unknown }).embed).toBeDefined();
       });
@@ -62,7 +62,7 @@ describe('Utilities Builtin', () => {
       });
 
       it('should default to command author', () => {
-        const targetSet = cmd.actions.find(
+        const targetSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'targetUser'
@@ -80,12 +80,11 @@ describe('Utilities Builtin', () => {
         expect(userOpt!.required).toBe(false);
       });
 
-      it('should provide multiple format links', () => {
-        const replyAction = cmd.actions.find((a) => a.action === 'reply');
-        const desc = (replyAction as { embed?: { description?: string } }).embed?.description;
-        expect(desc).toContain('PNG');
-        expect(desc).toContain('JPG');
-        expect(desc).toContain('WEBP');
+      it('should display avatar image in embed', () => {
+        const replyAction = cmd.actions!.find((a) => a.action === 'reply');
+        const embed = (replyAction as { embed?: { image?: string; description?: string } }).embed;
+        expect(embed?.image).toContain('avatar');
+        expect(embed?.description).toBe('Click the image to view full size');
       });
     });
 
@@ -93,10 +92,10 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'banner')!;
 
       it('should check if user has banner', () => {
-        const bannerCheck = cmd.actions.find(
+        const bannerCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
-            (a as { condition?: string }).condition?.includes('bannerURL')
+            (a as { condition?: string }).condition?.includes('banner')
         );
         expect(bannerCheck).toBeDefined();
       });
@@ -125,7 +124,7 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'ping')!;
 
       it('should display latency', () => {
-        const replyAction = cmd.actions.find((a) => a.action === 'reply');
+        const replyAction = cmd.actions!.find((a) => a.action === 'reply');
         expect((replyAction as { content?: string }).content).toContain('client.ws.ping');
       });
     });
@@ -134,7 +133,7 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'invite')!;
 
       it('should provide invite link in embed', () => {
-        const replyAction = cmd.actions.find((a) => a.action === 'reply');
+        const replyAction = cmd.actions!.find((a) => a.action === 'reply');
         const embed = (replyAction as { embed?: { description?: string } }).embed;
         expect(embed?.description).toContain('oauth2/authorize');
       });
@@ -144,14 +143,14 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'membercount')!;
 
       it('should calculate humans and bots', () => {
-        const humansSet = cmd.actions.find(
+        const humansSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'humans'
         );
         expect(humansSet).toBeDefined();
 
-        const botsSet = cmd.actions.find(
+        const botsSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'bots'
@@ -164,14 +163,14 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'emojis')!;
 
       it('should separate static and animated emojis', () => {
-        const staticSet = cmd.actions.find(
+        const staticSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'staticEmojis'
         );
         expect(staticSet).toBeDefined();
 
-        const animatedSet = cmd.actions.find(
+        const animatedSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'animatedEmojis'
@@ -184,7 +183,7 @@ describe('Utilities Builtin', () => {
       const cmd = utilitiesCommands.find((c) => c.name === 'roles')!;
 
       it('should list server roles', () => {
-        const roleListSet = cmd.actions.find(
+        const roleListSet = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { key?: string }).key === 'roleList'

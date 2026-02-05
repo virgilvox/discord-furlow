@@ -7,6 +7,7 @@ import type { FlowExecutionContext, FlowResult, RegisteredFlow } from './types.j
 import type { ActionExecutor } from '../actions/executor.js';
 import type { ActionContext, ActionResult } from '../actions/types.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
+import type { StateManager } from '../state/manager.js';
 import { FlowNotFoundError, FlowAbortedError, MaxFlowDepthError } from '../errors/index.js';
 import { normalizeActionsDeep } from '../parser/normalize.js';
 
@@ -191,7 +192,11 @@ export class FlowEngine {
 
       // Handle flow_if
       if (action.action === 'flow_if') {
-        const condition = await evaluator.evaluate<boolean>(action.if as string, context);
+        const condition = await this.evaluateConditionWithState(
+          action.if as string,
+          context,
+          evaluator
+        );
         const branch = condition
           ? (action.then as Action[])
           : (action.else as Action[] | undefined);
@@ -231,8 +236,14 @@ export class FlowEngine {
       // Handle flow_while
       if (action.action === 'flow_while') {
         let iterations = 0;
-        while (iterations < this.options.maxIterations) {
-          const condition = await evaluator.evaluate<boolean>(action.while as string, context);
+        // Use per-action max_iterations if defined, otherwise use global
+        const maxIter = (action.max_iterations as number) ?? this.options.maxIterations;
+        while (iterations < maxIter) {
+          const condition = await this.evaluateConditionWithState(
+            action.while as string,
+            context,
+            evaluator
+          );
           if (!condition || flowCtx.aborted) break;
 
           const loopResults = await this.executeActions(
@@ -243,6 +254,10 @@ export class FlowEngine {
             flowCtx
           );
           results.push(...loopResults);
+
+          // Check abort after executing loop body
+          if (flowCtx.aborted) break;
+
           iterations++;
         }
         continue;
@@ -250,7 +265,17 @@ export class FlowEngine {
 
       // Handle repeat
       if (action.action === 'repeat') {
-        const times = action.times as number;
+        const rawTimes = action.times;
+        // Validate times is a positive integer
+        if (typeof rawTimes !== 'number' || !Number.isInteger(rawTimes) || rawTimes < 0) {
+          results.push({
+            success: false,
+            error: new Error(`repeat.times must be a non-negative integer, got: ${typeof rawTimes === 'number' ? rawTimes : typeof rawTimes}`),
+          });
+          continue;
+        }
+        // Cap at maxIterations to prevent runaway loops
+        const times = Math.min(rawTimes, this.options.maxIterations);
         const varName = action.as ?? 'i';
 
         for (let i = 0; i < times && !flowCtx.aborted; i++) {
@@ -287,6 +312,12 @@ export class FlowEngine {
           flowCtx
         );
 
+        // Propagate abort from nested flow to parent
+        if (result.aborted) {
+          flowCtx.aborted = true;
+          flowCtx.abortReason = result.error?.message ?? 'Nested flow aborted';
+        }
+
         if (action.as && result.value !== undefined) {
           (context as Record<string, unknown>)[action.as as string] = result.value;
         }
@@ -306,6 +337,134 @@ export class FlowEngine {
           context
         );
         results.push(...parallelResults);
+        continue;
+      }
+
+      // Handle batch - iterate over items and execute actions for each
+      if (action.action === 'batch') {
+        const items = await evaluator.evaluate<unknown[]>(action.items as string, context);
+        if (!Array.isArray(items)) {
+          results.push({ success: false, error: new Error('Batch items must be an array') });
+          continue;
+        }
+
+        const varName = action.as ?? 'item';
+        const concurrency = (action.concurrency as number) ?? 1;
+        const eachActions = Array.isArray(action.each) ? action.each : [action.each];
+
+        if (concurrency === 1) {
+          // Sequential execution
+          for (let i = 0; i < items.length && !flowCtx.aborted; i++) {
+            const itemContext = {
+              ...context,
+              [varName]: items[i],
+              [`${varName}_index`]: i,
+            } as ActionContext;
+            const itemResults = await this.executeActions(
+              eachActions as Action[],
+              itemContext,
+              executor,
+              evaluator,
+              flowCtx
+            );
+            results.push(...itemResults);
+          }
+        } else {
+          // Parallel execution with concurrency limit
+          for (let i = 0; i < items.length && !flowCtx.aborted; i += concurrency) {
+            const batch = items.slice(i, i + concurrency);
+            const batchPromises = batch.map((item, idx) => {
+              const itemContext = {
+                ...context,
+                [varName]: item,
+                [`${varName}_index`]: i + idx,
+              } as ActionContext;
+              return this.executeActions(
+                eachActions as Action[],
+                itemContext,
+                executor,
+                evaluator,
+                flowCtx
+              );
+            });
+            const batchResults = await Promise.all(batchPromises);
+            for (const itemResults of batchResults) {
+              results.push(...itemResults);
+            }
+          }
+        }
+        continue;
+      }
+
+      // Handle try/catch/finally
+      if (action.action === 'try') {
+        const doActions = action.do as Action[];
+        const catchActions = action.catch as Action[] | undefined;
+        const finallyActions = action.finally as Action[] | undefined;
+
+        let tryError: Error | undefined;
+
+        try {
+          const tryResults = await this.executeActions(
+            doActions,
+            context,
+            executor,
+            evaluator,
+            flowCtx
+          );
+          results.push(...tryResults);
+
+          // Check if any action in try block failed
+          const failedResult = tryResults.find(r => !r.success && r.error);
+          if (failedResult) {
+            tryError = failedResult.error;
+          }
+        } catch (err) {
+          tryError = err instanceof Error ? err : new Error(String(err));
+        }
+
+        // Execute catch block if there was an error
+        if (tryError && catchActions && catchActions.length > 0) {
+          const catchContext = {
+            ...context,
+            error: tryError,
+            errorMessage: tryError.message,
+          } as ActionContext;
+          try {
+            const catchResults = await this.executeActions(
+              catchActions,
+              catchContext,
+              executor,
+              evaluator,
+              flowCtx
+            );
+            results.push(...catchResults);
+          } catch (catchErr) {
+            results.push({
+              success: false,
+              error: catchErr instanceof Error ? catchErr : new Error(String(catchErr)),
+            });
+          }
+        }
+
+        // Execute finally block always
+        if (finallyActions && finallyActions.length > 0) {
+          try {
+            const finallyResults = await this.executeActions(
+              finallyActions,
+              context,
+              executor,
+              evaluator,
+              flowCtx
+            );
+            results.push(...finallyResults);
+          } catch (finallyErr) {
+            results.push({
+              success: false,
+              error: finallyErr instanceof Error ? finallyErr : new Error(String(finallyErr)),
+            });
+          }
+        }
         continue;
       }
 
@@ -355,6 +514,32 @@ export class FlowEngine {
     }
 
     return resolved;
+  }
+
+  /**
+   * Evaluate a condition expression with state variables loaded from StateManager
+   */
+  private async evaluateConditionWithState(
+    expression: string,
+    context: ActionContext,
+    evaluator: ExpressionEvaluator
+  ): Promise<boolean> {
+    // Check if stateManager is available and has getVariableNames method
+    const stateManager = context.stateManager as StateManager | undefined;
+    if (stateManager && typeof stateManager.getVariableNames === 'function') {
+      return evaluator.evaluateWithState<boolean>(
+        expression,
+        context,
+        stateManager,
+        {
+          guildId: context.guildId,
+          channelId: context.channelId,
+          userId: context.userId,
+        }
+      );
+    }
+    // Fallback to regular evaluation if stateManager not available
+    return evaluator.evaluate<boolean>(expression, context);
   }
 
   /**

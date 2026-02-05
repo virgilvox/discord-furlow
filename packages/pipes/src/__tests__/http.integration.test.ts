@@ -37,7 +37,7 @@ describe('HttpPipe Integration', () => {
   let mockInterceptorsUse: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    const axiosModule = await import('axios') as typeof axios & {
+    const axiosModule = await import('axios') as unknown as {
       __mockRequest: ReturnType<typeof vi.fn>;
       __mockInterceptorsUse: ReturnType<typeof vi.fn>;
     };

@@ -73,13 +73,46 @@ async function buildMessageOptions(
     options.ephemeral = true;
   }
 
-  // Files
+  // Files - use evaluateTemplate to preserve Buffer types from canvas_render
   if (config.files) {
+    const { AttachmentBuilder } = await import('discord.js');
     options.files = await Promise.all(
       config.files.map(async (f) => {
         if (typeof f === 'string') {
-          return await evaluator.interpolate(f, context);
+          // Evaluate template, preserving raw types (Buffer, etc.)
+          const value = await evaluator.evaluateTemplate(f, context);
+          // Handle binary data types (Buffer, Uint8Array, ArrayBuffer)
+          if (Buffer.isBuffer(value) || value instanceof Uint8Array) {
+            return new AttachmentBuilder(Buffer.from(value));
+          }
+          if (value instanceof ArrayBuffer) {
+            return new AttachmentBuilder(Buffer.from(value));
+          }
+          // Already an AttachmentBuilder or similar
+          if (value && typeof value === 'object' && 'attachment' in value) {
+            return value;
+          }
+          return String(value);
         }
+        // Handle { attachment, name } object format
+        const fileObj = f as { attachment?: string; name?: string };
+        if (fileObj.attachment) {
+          const attachment = await evaluator.evaluateTemplate(fileObj.attachment, context);
+          // Handle binary data types
+          if (Buffer.isBuffer(attachment) || attachment instanceof Uint8Array) {
+            return new AttachmentBuilder(Buffer.from(attachment), { name: fileObj.name });
+          }
+          if (attachment instanceof ArrayBuffer) {
+            return new AttachmentBuilder(Buffer.from(attachment), { name: fileObj.name });
+          }
+          // Already an AttachmentBuilder or similar
+          if (attachment && typeof attachment === 'object' && 'attachment' in attachment) {
+            return attachment;
+          }
+          // String path or URL
+          return new AttachmentBuilder(String(attachment), { name: fileObj.name });
+        }
+        // Fallback: evaluate as object
         return await evaluateObject(f as unknown as Record<string, unknown>, context, evaluator);
       })
     ) as any[];

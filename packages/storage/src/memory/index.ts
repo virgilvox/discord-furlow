@@ -56,9 +56,18 @@ export class MemoryAdapter implements StorageAdapter {
 
       // Match pattern if provided
       if (pattern) {
-        const regex = new RegExp(
-          '^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$'
-        );
+        // Limit pattern length to prevent ReDoS
+        if (pattern.length > 100) {
+          console.warn('Pattern too long (max 100 chars), skipping pattern match');
+          continue;
+        }
+        // Escape all regex special characters FIRST, then convert glob wildcards
+        // This prevents ReDoS by ensuring the pattern only has simple .* and . wildcards
+        const escaped = pattern
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
+          .replace(/\*/g, '.*')                    // Convert glob * to .*
+          .replace(/\?/g, '.');                    // Convert glob ? to .
+        const regex = new RegExp('^' + escaped + '$');
         if (!regex.test(key)) {
           continue;
         }
@@ -150,12 +159,16 @@ export class MemoryAdapter implements StorageAdapter {
       });
     }
 
-    // Offset and limit
+    // Offset and limit (with caps to prevent resource exhaustion)
+    const MAX_OFFSET = 1000000;
+    const MAX_LIMIT = 10000;
     if (options.offset) {
-      results = results.slice(options.offset);
+      const offset = Math.min(MAX_OFFSET, Math.max(0, options.offset));
+      results = results.slice(offset);
     }
     if (options.limit) {
-      results = results.slice(0, options.limit);
+      const limit = Math.min(MAX_LIMIT, Math.max(0, options.limit));
+      results = results.slice(0, limit);
     }
 
     // Select specific columns

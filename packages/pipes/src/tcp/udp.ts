@@ -218,7 +218,13 @@ export class UdpPipe implements Pipe {
     const handlers = this.eventHandlers.get(event) ?? [];
     for (const handler of handlers) {
       try {
-        handler(data);
+        const result = handler(data);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error(`UDP async handler error for "${event}":`, error);
+          });
+        }
       } catch (error) {
         console.error(`UDP handler error for "${event}":`, error);
       }
@@ -233,7 +239,13 @@ export class UdpPipe implements Pipe {
 
     for (const handler of this.messageHandlers) {
       try {
-        handler(msg);
+        const result = handler(msg);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error('UDP async message handler error:', error);
+          });
+        }
       } catch (error) {
         console.error('UDP message handler error:', error);
       }

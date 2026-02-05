@@ -1,6 +1,6 @@
 # Actions Reference
 
-FURLOW provides 84 actions across 9 categories.
+FURLOW provides 85 actions across 9 categories.
 
 ## Message Actions (11)
 
@@ -585,7 +585,7 @@ Loop while condition is true.
 
 ```yaml
 - flow_while:
-    while: "${i < 10}"
+    while: "i < 10"
     do:
       - increment:
           var: "i"

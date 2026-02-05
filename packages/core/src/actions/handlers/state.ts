@@ -280,7 +280,14 @@ const listRemoveHandler: ActionHandler<ListRemoveAction> = {
       } else {
         index = config.index;
       }
-      list.splice(index, 1);
+      // Bounds checking for array index
+      if (index >= 0 && index < list.length) {
+        list.splice(index, 1);
+      } else if (index < 0 && Math.abs(index) <= list.length) {
+        // Support negative indexing like Python
+        list.splice(list.length + index, 1);
+      }
+      // Silently ignore out-of-bounds indices
     } else if (config.value !== undefined) {
       let value: unknown;
       if (typeof config.value === 'string') {
@@ -327,6 +334,11 @@ const setMapHandler: ActionHandler<SetMapAction> = {
     // Evaluate the map key
     const mapKey = await evaluator.interpolate(String(config.map_key), context);
 
+    // Protect against prototype pollution
+    if (mapKey === '__proto__' || mapKey === 'constructor' || mapKey === 'prototype') {
+      return { success: false, error: new Error(`Invalid map key: ${mapKey}`) };
+    }
+
     // Evaluate the value
     let value: unknown;
     if (typeof config.value === 'string') {
@@ -350,8 +362,13 @@ const setMapHandler: ActionHandler<SetMapAction> = {
       map = typeof current === 'object' && current !== null ? { ...(current as Record<string, unknown>) } : {};
     }
 
-    // Set value
-    map[mapKey] = value;
+    // Set value using Object.defineProperty for safety
+    Object.defineProperty(map, mapKey, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
 
     // Save
     if (stateManager) {
@@ -382,6 +399,11 @@ const deleteMapHandler: ActionHandler<DeleteMapAction> = {
     // Evaluate the map key
     const mapKey = await evaluator.interpolate(String(config.map_key), context);
 
+    // Protect against prototype pollution
+    if (mapKey === '__proto__' || mapKey === 'constructor' || mapKey === 'prototype') {
+      return { success: false, error: new Error(`Invalid map key: ${mapKey}`) };
+    }
+
     // Get current map
     let map: Record<string, unknown>;
     if (stateManager) {
@@ -393,8 +415,10 @@ const deleteMapHandler: ActionHandler<DeleteMapAction> = {
       map = typeof current === 'object' && current !== null ? { ...(current as Record<string, unknown>) } : {};
     }
 
-    // Delete value
-    delete map[mapKey];
+    // Delete value (only if it's an own property)
+    if (Object.prototype.hasOwnProperty.call(map, mapKey)) {
+      delete map[mapKey];
+    }
 
     // Save
     if (stateManager) {

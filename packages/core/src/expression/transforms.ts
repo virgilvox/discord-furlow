@@ -22,7 +22,12 @@ export function registerTransforms(jexl: Jexl.Jexl): void {
   });
   jexl.addTransform('split', (s: string, delimiter: string) => s?.split(delimiter) ?? []);
   jexl.addTransform('replace', (s: string, search: string, replace: string) => {
-    return s?.replace(new RegExp(search, 'g'), replace) ?? '';
+    if (!s) return '';
+    // Validate regex to prevent ReDoS - fall back to literal replacement on invalid pattern
+    if (!isValidRegexPattern(search)) {
+      return s.split(search).join(replace);
+    }
+    return s.replace(new RegExp(search, 'g'), replace);
   });
   jexl.addTransform('padStart', (s: string, len: number, char = ' ') => {
     return String(s ?? '').padStart(len, char);
@@ -132,7 +137,7 @@ export function registerTransforms(jexl: Jexl.Jexl): void {
   jexl.addTransform('int', (value: unknown) => parseInt(String(value), 10) || 0);
   jexl.addTransform('float', (value: unknown) => parseFloat(String(value)) || 0);
   jexl.addTransform('boolean', Boolean);
-  jexl.addTransform('json', (value: unknown) => JSON.stringify(value));
+  jexl.addTransform('json', (value: unknown) => safeJsonStringify(value));
 
   // Utility transforms
   jexl.addTransform('default', (value: unknown, defaultValue: unknown) => value ?? defaultValue);
@@ -184,6 +189,37 @@ export function registerTransforms(jexl: Jexl.Jexl): void {
   });
   jexl.addTransform('pluralize', (count: number, singular: string, plural?: string) => {
     return count === 1 ? singular : (plural ?? singular + 's');
+  });
+}
+
+/**
+ * Check if a regex pattern is safe (no ReDoS patterns)
+ */
+function isValidRegexPattern(pattern: string): boolean {
+  if (pattern.length > 500) return false;
+  // Check for dangerous nested quantifiers
+  if (/\([^)]*[+*][^)]*\)[+*]/.test(pattern)) return false;
+  if (/\([^)]*\|[^)]*\)[+*]/.test(pattern)) return false;
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely stringify with circular reference handling
+ */
+function safeJsonStringify(value: unknown): string {
+  const seen = new WeakSet();
+  return JSON.stringify(value, (_key, val) => {
+    if (typeof val === 'object' && val !== null) {
+      if (seen.has(val)) return '[Circular]';
+      seen.add(val);
+    }
+    if (typeof val === 'bigint') return val.toString();
+    return val;
   });
 }
 

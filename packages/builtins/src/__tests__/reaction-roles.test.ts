@@ -11,6 +11,11 @@ import {
   type ReactionRolesConfig,
 } from '../reaction-roles/index.js';
 
+// Helper to safely check if condition includes a substring
+const conditionIncludes = (condition: unknown, str: string): boolean => {
+  return typeof condition === 'string' && condition.includes(str);
+};
+
 describe('Reaction Roles Builtin', () => {
   describe('Exports', () => {
     it('should export reactionRolesTables object', () => {
@@ -112,7 +117,7 @@ describe('Reaction Roles Builtin', () => {
       const handler = reactionRolesEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('startsWith("rr_")')
+          conditionIncludes(h.condition, 'startsWith("rr_")')
       );
       expect(handler).toBeDefined();
     });
@@ -121,7 +126,7 @@ describe('Reaction Roles Builtin', () => {
       const handler = reactionRolesEventHandlers.find(
         (h) =>
           h.event === 'select_menu' &&
-          h.condition?.includes('rr_select_')
+          conditionIncludes(h.condition, 'rr_select_')
       );
       expect(handler).toBeDefined();
     });
@@ -140,7 +145,7 @@ describe('Reaction Roles Builtin', () => {
       const handler = reactionRolesEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('startsWith("rr_")')
+          conditionIncludes(h.condition, 'startsWith("rr_")')
       )!;
 
       it('should support toggle mode', () => {
@@ -178,7 +183,7 @@ describe('Reaction Roles Builtin', () => {
       const handler = reactionRolesEventHandlers.find(
         (h) =>
           h.event === 'select_menu' &&
-          h.condition?.includes('rr_select_')
+          conditionIncludes(h.condition, 'rr_select_')
       )!;
 
       it('should batch remove unselected roles', () => {

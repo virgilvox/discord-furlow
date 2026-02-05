@@ -621,6 +621,491 @@ describe('SQLiteAdapter', () => {
       });
     });
   });
+
+  // ==========================================
+  // Edge Cases
+  // ==========================================
+
+  describe('Edge Cases', () => {
+    describe('Unicode Handling', () => {
+      it('should handle unicode in string values', async () => {
+        const now = Date.now();
+        const unicodeValue = '你好世界 🎉 مرحبا العالم 🌍';
+
+        await adapter.set('unicode-key', {
+          value: unicodeValue,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('unicode-key');
+        expect(result?.value).toBe(unicodeValue);
+      });
+
+      it('should handle unicode in JSON values', async () => {
+        const now = Date.now();
+        const unicodeData = {
+          greeting: '你好',
+          emoji: '🎉🎊🎈',
+          arabic: 'مرحبا',
+          mixed: 'Hello 世界 🌍',
+          nested: { value: '日本語' },
+        };
+
+        await adapter.set('unicode-json', {
+          value: unicodeData,
+          type: 'json',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('unicode-json');
+        expect(result?.value).toEqual(unicodeData);
+      });
+
+      it('should handle unicode in keys', async () => {
+        const now = Date.now();
+        const unicodeKey = 'キー:emoji:🔑';
+
+        await adapter.set(unicodeKey, {
+          value: 'unicode key test',
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get(unicodeKey);
+        expect(result?.value).toBe('unicode key test');
+      });
+
+      it('should handle emoji-only values', async () => {
+        const now = Date.now();
+
+        await adapter.set('emoji-only', {
+          value: '🎉🎊🎈🎁🎀',
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('emoji-only');
+        expect(result?.value).toBe('🎉🎊🎈🎁🎀');
+      });
+    });
+
+    describe('Special Characters', () => {
+      it('should handle keys with colons', async () => {
+        const now = Date.now();
+
+        await adapter.set('guild:123:user:456:xp', {
+          value: 100,
+          type: 'number',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('guild:123:user:456:xp');
+        expect(result?.value).toBe(100);
+      });
+
+      it('should handle keys with slashes', async () => {
+        const now = Date.now();
+
+        await adapter.set('path/to/resource', {
+          value: 'resource',
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('path/to/resource');
+        expect(result?.value).toBe('resource');
+      });
+
+      it('should handle values with quotes', async () => {
+        const now = Date.now();
+        const quotedValue = 'He said "Hello" and \'Goodbye\'';
+
+        await adapter.set('quoted', {
+          value: quotedValue,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('quoted');
+        expect(result?.value).toBe(quotedValue);
+      });
+
+      it('should handle values with backslashes', async () => {
+        const now = Date.now();
+        const backslashValue = 'C:\\Users\\Name\\Documents';
+
+        await adapter.set('backslash', {
+          value: backslashValue,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('backslash');
+        expect(result?.value).toBe(backslashValue);
+      });
+
+      it('should handle newlines and tabs', async () => {
+        const now = Date.now();
+        const multilineValue = 'Line 1\nLine 2\n\tIndented';
+
+        await adapter.set('multiline', {
+          value: multilineValue,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('multiline');
+        expect(result?.value).toBe(multilineValue);
+      });
+
+      it('should handle null byte in strings', async () => {
+        const now = Date.now();
+        const nullByteValue = 'before\x00after';
+
+        await adapter.set('null-byte', {
+          value: nullByteValue,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('null-byte');
+        expect(result?.value).toBe(nullByteValue);
+      });
+    });
+
+    describe('Large Data', () => {
+      it('should handle very long strings', async () => {
+        const now = Date.now();
+        const longString = 'x'.repeat(100000);
+
+        await adapter.set('long-string', {
+          value: longString,
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('long-string');
+        expect(result?.value).toBe(longString);
+        expect((result?.value as string).length).toBe(100000);
+      });
+
+      it('should handle large JSON objects', async () => {
+        const now = Date.now();
+        const largeObject = {
+          items: Array(1000).fill(null).map((_, i) => ({
+            id: i,
+            name: `Item ${i}`,
+            data: 'x'.repeat(100),
+          })),
+        };
+
+        await adapter.set('large-json', {
+          value: largeObject,
+          type: 'json',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('large-json');
+        expect(result?.value).toEqual(largeObject);
+      });
+
+      it('should handle deeply nested objects', async () => {
+        const now = Date.now();
+        let nested: any = { value: 'deep' };
+        for (let i = 0; i < 50; i++) {
+          nested = { level: i, nested };
+        }
+
+        await adapter.set('deep-nested', {
+          value: nested,
+          type: 'json',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('deep-nested');
+        expect(result?.value).toEqual(nested);
+      });
+    });
+
+    describe('Boundary Values', () => {
+      it('should handle empty string value', async () => {
+        const now = Date.now();
+
+        await adapter.set('empty-string', {
+          value: '',
+          type: 'string',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('empty-string');
+        expect(result?.value).toBe('');
+      });
+
+      it('should handle zero number value', async () => {
+        const now = Date.now();
+
+        await adapter.set('zero', {
+          value: 0,
+          type: 'number',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('zero');
+        expect(result?.value).toBe(0);
+      });
+
+      it('should handle negative numbers', async () => {
+        const now = Date.now();
+
+        await adapter.set('negative', {
+          value: -12345.67,
+          type: 'number',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('negative');
+        expect(result?.value).toBe(-12345.67);
+      });
+
+      it('should handle very large numbers', async () => {
+        const now = Date.now();
+        const largeNumber = Number.MAX_SAFE_INTEGER;
+
+        await adapter.set('large-number', {
+          value: largeNumber,
+          type: 'number',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('large-number');
+        expect(result?.value).toBe(largeNumber);
+      });
+
+      it('should handle very small numbers', async () => {
+        const now = Date.now();
+        const smallNumber = Number.MIN_SAFE_INTEGER;
+
+        await adapter.set('small-number', {
+          value: smallNumber,
+          type: 'number',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('small-number');
+        expect(result?.value).toBe(smallNumber);
+      });
+
+      it('should handle empty array', async () => {
+        const now = Date.now();
+
+        await adapter.set('empty-array', {
+          value: [],
+          type: 'array',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('empty-array');
+        expect(result?.value).toEqual([]);
+      });
+
+      it('should handle empty object', async () => {
+        const now = Date.now();
+
+        await adapter.set('empty-object', {
+          value: {},
+          type: 'object',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('empty-object');
+        expect(result?.value).toEqual({});
+      });
+
+      it('should handle null values in objects', async () => {
+        const now = Date.now();
+        const objWithNulls = {
+          field: null,
+          nested: { inner: null },
+          array: [null, 'value', null],
+        };
+
+        await adapter.set('nulls-in-object', {
+          value: objWithNulls,
+          type: 'json',
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        const result = await adapter.get('nulls-in-object');
+        expect(result?.value).toEqual(objWithNulls);
+      });
+    });
+
+    describe('Concurrent Operations', () => {
+      it('should handle concurrent writes to different keys', async () => {
+        const now = Date.now();
+        const writes = Array(50).fill(null).map((_, i) =>
+          adapter.set(`concurrent-${i}`, {
+            value: `value-${i}`,
+            type: 'string',
+            createdAt: now,
+            updatedAt: now,
+          })
+        );
+
+        await Promise.all(writes);
+
+        const keys = await adapter.keys('concurrent-*');
+        expect(keys).toHaveLength(50);
+      });
+
+      it('should handle concurrent reads and writes', async () => {
+        const now = Date.now();
+
+        // Pre-populate
+        for (let i = 0; i < 10; i++) {
+          await adapter.set(`rw-${i}`, {
+            value: `initial-${i}`,
+            type: 'string',
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+
+        // Mix of reads and writes concurrently
+        const operations = Array(30).fill(null).map((_, i) => {
+          if (i % 2 === 0) {
+            return adapter.get(`rw-${i % 10}`);
+          } else {
+            return adapter.set(`rw-${i % 10}`, {
+              value: `updated-${i}`,
+              type: 'string',
+              createdAt: now,
+              updatedAt: now + i,
+            });
+          }
+        });
+
+        const results = await Promise.all(operations);
+        expect(results.length).toBe(30);
+      });
+
+      it('should handle concurrent table operations', async () => {
+        await adapter.createTable('concurrent_items', {
+          columns: {
+            id: { type: 'number', primary: true },
+            value: { type: 'string' },
+          },
+        });
+
+        // Concurrent inserts
+        const inserts = Array(20).fill(null).map((_, i) =>
+          adapter.insert('concurrent_items', { id: i, value: `item-${i}` })
+        );
+
+        await Promise.all(inserts);
+
+        const rows = await adapter.query('concurrent_items', {});
+        expect(rows).toHaveLength(20);
+      });
+    });
+
+    describe('Table Edge Cases', () => {
+      it('should handle table with many columns', async () => {
+        const columns: Record<string, { type: 'string' | 'number' }> = {};
+        for (let i = 0; i < 50; i++) {
+          columns[`col_${i}`] = { type: 'string' };
+        }
+        columns['id'] = { type: 'number' };
+
+        await adapter.createTable('many_columns', { columns });
+
+        const row: Record<string, unknown> = { id: 1 };
+        for (let i = 0; i < 50; i++) {
+          row[`col_${i}`] = `value_${i}`;
+        }
+
+        await adapter.insert('many_columns', row);
+        const result = await adapter.query('many_columns', { where: { id: 1 } });
+
+        expect(result).toHaveLength(1);
+        expect(result[0]!.col_0).toBe('value_0');
+        expect(result[0]!.col_49).toBe('value_49');
+      });
+
+      it('should handle many rows in a table', async () => {
+        await adapter.createTable('many_rows', {
+          columns: {
+            id: { type: 'number', primary: true },
+            value: { type: 'string' },
+          },
+        });
+
+        // Insert 1000 rows
+        for (let i = 0; i < 1000; i++) {
+          await adapter.insert('many_rows', { id: i, value: `value-${i}` });
+        }
+
+        const allRows = await adapter.query('many_rows', {});
+        expect(allRows).toHaveLength(1000);
+
+        const limited = await adapter.query('many_rows', { limit: 10 });
+        expect(limited).toHaveLength(10);
+      });
+
+      it('should handle query with large offset', async () => {
+        await adapter.createTable('offset_test', {
+          columns: {
+            id: { type: 'number', primary: true },
+          },
+        });
+
+        for (let i = 0; i < 100; i++) {
+          await adapter.insert('offset_test', { id: i });
+        }
+
+        // Large offset beyond data
+        const result = await adapter.query('offset_test', { offset: 1000, limit: 10 });
+        expect(result).toHaveLength(0);
+      });
+    });
+
+    describe('Error Handling', () => {
+      it('should handle querying non-existent table gracefully', async () => {
+        // SQLite will throw an error for non-existent table
+        await expect(
+          adapter.query('nonexistent_table', {})
+        ).rejects.toThrow();
+      });
+
+      it('should handle inserting into non-existent table gracefully', async () => {
+        await expect(
+          adapter.insert('nonexistent_table', { id: 1 })
+        ).rejects.toThrow();
+      });
+    });
+  });
 });
 
 describe('createSQLiteAdapter', () => {

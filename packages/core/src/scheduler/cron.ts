@@ -6,6 +6,7 @@ import type { CronJob, SchedulerConfig } from '@furlow/schema';
 import type { ActionExecutor } from '../actions/executor.js';
 import type { ActionContext } from '../actions/types.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
+import { handleError } from '../errors/handler.js';
 
 interface ScheduledJob {
   id: string;
@@ -81,11 +82,25 @@ export class CronScheduler {
 
     // Check every minute
     this.checkInterval = setInterval(() => {
-      this.checkJobs(executor, evaluator, contextBuilder);
+      this.checkJobs(executor, evaluator, contextBuilder).catch((err) => {
+        handleError(
+          err instanceof Error ? err : new Error(String(err)),
+          'scheduler',
+          'error',
+          { phase: 'periodic_check' }
+        );
+      });
     }, 60000);
 
     // Initial check
-    this.checkJobs(executor, evaluator, contextBuilder);
+    this.checkJobs(executor, evaluator, contextBuilder).catch((err) => {
+      handleError(
+        err instanceof Error ? err : new Error(String(err)),
+        'scheduler',
+        'error',
+        { phase: 'initial_check' }
+      );
+    });
   }
 
   /**
@@ -144,7 +159,12 @@ export class CronScheduler {
         const normalizedActions = normalizeActions(job.config.actions);
         await executor.executeSequence(normalizedActions, context);
       } catch (err) {
-        console.error(`Cron job "${job.id}" failed:`, err);
+        handleError(
+          err instanceof Error ? err : new Error(String(err)),
+          'scheduler',
+          'error',
+          { jobId: job.id, cron: job.config.cron }
+        );
       }
 
       // Schedule next run
@@ -157,26 +177,112 @@ export class CronScheduler {
 
   /**
    * Get the next run time for a cron expression
+   * Supports standard 5-field cron: minute hour day-of-month month day-of-week
+   * Special values: star (any), star/n (every n), n-m (range), n,m (list)
    */
   private getNextRun(cron: string, _timezone: string): Date {
-    // Simple cron parser (basic implementation)
-    // In production, use a library like cron-parser
-    const parts = cron.split(' ');
+    const parts = cron.split(/\s+/);
 
     if (parts.length < 5) {
-      // Default to running in 1 minute
+      console.warn(`Invalid cron expression "${cron}", defaulting to 1 minute`);
       return new Date(Date.now() + 60000);
     }
+
+    const [minuteSpec, hourSpec, daySpec, monthSpec, dowSpec] = parts;
 
     const now = new Date();
     const next = new Date(now);
     next.setSeconds(0);
     next.setMilliseconds(0);
 
-    // Add 1 minute to ensure we're in the future
+    // Add 1 minute to start searching from next minute
     next.setMinutes(next.getMinutes() + 1);
 
-    return next;
+    // Search up to 1 year ahead
+    const maxIterations = 525600; // ~1 year of minutes
+    for (let i = 0; i < maxIterations; i++) {
+      const minute = next.getMinutes();
+      const hour = next.getHours();
+      const day = next.getDate();
+      const month = next.getMonth() + 1; // 1-12
+      const dow = next.getDay(); // 0-6 (Sunday = 0)
+
+      if (
+        this.matchesCronField(minuteSpec!, minute, 0, 59) &&
+        this.matchesCronField(hourSpec!, hour, 0, 23) &&
+        this.matchesCronField(daySpec!, day, 1, 31) &&
+        this.matchesCronField(monthSpec!, month, 1, 12) &&
+        this.matchesCronField(dowSpec!, dow, 0, 6)
+      ) {
+        return next;
+      }
+
+      // Advance by 1 minute
+      next.setMinutes(next.getMinutes() + 1);
+    }
+
+    // Fallback - should rarely reach here
+    console.warn(`Could not find next run for cron "${cron}", defaulting to 1 hour`);
+    return new Date(Date.now() + 3600000);
+  }
+
+  /**
+   * Check if a value matches a cron field specification
+   */
+  private matchesCronField(spec: string, value: number, min: number, max: number): boolean {
+    // Any value
+    if (spec === '*') {
+      return true;
+    }
+
+    // Step value (*/n or n/m)
+    if (spec.includes('/')) {
+      const [rangeOrStar, stepStr] = spec.split('/');
+      const step = parseInt(stepStr!, 10);
+      if (isNaN(step) || step <= 0) return false;
+
+      let start = min;
+      if (rangeOrStar !== '*') {
+        start = parseInt(rangeOrStar!, 10);
+        if (isNaN(start)) return false;
+      }
+      return (value - start) % step === 0 && value >= start;
+    }
+
+    // List (n,m,o)
+    if (spec.includes(',')) {
+      const values = spec.split(',').map((s) => {
+        // Handle ranges within lists
+        if (s.includes('-')) {
+          const [startStr, endStr] = s.split('-');
+          const start = parseInt(startStr!, 10);
+          const end = parseInt(endStr!, 10);
+          // Cap range size to prevent memory exhaustion (max 100 elements per range)
+          const MAX_RANGE_SIZE = 100;
+          if (isNaN(start) || isNaN(end) || end - start > MAX_RANGE_SIZE) {
+            console.warn(`Cron range too large or invalid: ${s}, capping at ${MAX_RANGE_SIZE}`);
+            return [];
+          }
+          const range: number[] = [];
+          for (let i = start; i <= Math.min(end, start + MAX_RANGE_SIZE); i++) range.push(i);
+          return range;
+        }
+        return [parseInt(s, 10)];
+      });
+      return values.flat().includes(value);
+    }
+
+    // Range (n-m)
+    if (spec.includes('-')) {
+      const [startStr, endStr] = spec.split('-');
+      const start = parseInt(startStr!, 10);
+      const end = parseInt(endStr!, 10);
+      return value >= start && value <= end;
+    }
+
+    // Exact value
+    const exact = parseInt(spec, 10);
+    return value === exact;
   }
 
   /**

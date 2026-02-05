@@ -7,6 +7,7 @@ import type { EventName, RegisteredHandler } from './types.js';
 import type { ActionExecutor } from '../actions/executor.js';
 import type { ActionContext } from '../actions/types.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
+import { handleError } from '../errors/handler.js';
 
 export interface RouterOptions {
   /** Maximum handlers per event */
@@ -74,10 +75,24 @@ export class EventRouter {
     for (const [event, handlers] of this.handlers) {
       const index = handlers.findIndex((h) => h.id === id);
       if (index !== -1) {
+        const removed = handlers[index]!;
         handlers.splice(index, 1);
         if (handlers.length === 0) {
           this.handlers.delete(event);
         }
+
+        // Clean up any pending debounce timer for this handler
+        const debounceKey = `${event}_${removed.id}`;
+        const existingTimer = this.debounceTimers.get(debounceKey);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          this.debounceTimers.delete(debounceKey);
+        }
+
+        // Clean up throttle tracking
+        const throttleKey = `${event}_${removed.id}`;
+        this.throttleTimers.delete(throttleKey);
+
         return true;
       }
     }
@@ -108,9 +123,16 @@ export class EventRouter {
         }
 
         const debounceMs = parseDuration(handler.debounce);
-        const timer = setTimeout(async () => {
+        const timer = setTimeout(() => {
           this.debounceTimers.delete(debounceKey);
-          await this.executeHandler(registered, context, executor, evaluator);
+          this.executeHandler(registered, context, executor, evaluator).catch((err) => {
+            handleError(
+              err instanceof Error ? err : new Error(String(err)),
+              'event',
+              'error',
+              { event, handlerId: registered.id, debounced: true }
+            );
+          });
         }, debounceMs);
 
         this.debounceTimers.set(debounceKey, timer);
@@ -185,8 +207,104 @@ export class EventRouter {
       }
       return evaluator.evaluate<boolean>(condition, context);
     }
+
     // Handle complex condition objects
-    return true;
+    const conditionObj = condition as Record<string, unknown>;
+
+    // Handle { expr: "..." } format
+    if (typeof conditionObj.expr === 'string') {
+      return evaluator.evaluate<boolean>(conditionObj.expr, context);
+    }
+
+    // Handle { all: [...] } - all conditions must be true (AND)
+    if (Array.isArray(conditionObj.all)) {
+      for (const subcondition of conditionObj.all) {
+        const result = await this.evaluateCondition(subcondition, context, evaluator);
+        if (!result) return false;
+      }
+      return true;
+    }
+
+    // Handle { any: [...] } - at least one condition must be true (OR)
+    if (Array.isArray(conditionObj.any)) {
+      for (const subcondition of conditionObj.any) {
+        const result = await this.evaluateCondition(subcondition, context, evaluator);
+        if (result) return true;
+      }
+      return conditionObj.any.length === 0; // Empty array = true
+    }
+
+    // Handle { not: condition } - negate
+    if (conditionObj.not !== undefined && conditionObj.not !== null) {
+      const result = await this.evaluateCondition(conditionObj.not as string | object, context, evaluator);
+      return !result;
+    }
+
+    // Handle comparison operators: { eq, ne, gt, gte, lt, lte }
+    if (conditionObj.eq !== undefined) {
+      const [left, right] = conditionObj.eq as [string, unknown];
+      const leftVal = await evaluator.evaluate(left, context);
+      return leftVal === right;
+    }
+
+    if (conditionObj.ne !== undefined) {
+      const [left, right] = conditionObj.ne as [string, unknown];
+      const leftVal = await evaluator.evaluate(left, context);
+      return leftVal !== right;
+    }
+
+    if (conditionObj.gt !== undefined) {
+      const [left, right] = conditionObj.gt as [string, number];
+      const leftVal = await evaluator.evaluate<number>(left, context);
+      return leftVal > right;
+    }
+
+    if (conditionObj.gte !== undefined) {
+      const [left, right] = conditionObj.gte as [string, number];
+      const leftVal = await evaluator.evaluate<number>(left, context);
+      return leftVal >= right;
+    }
+
+    if (conditionObj.lt !== undefined) {
+      const [left, right] = conditionObj.lt as [string, number];
+      const leftVal = await evaluator.evaluate<number>(left, context);
+      return leftVal < right;
+    }
+
+    if (conditionObj.lte !== undefined) {
+      const [left, right] = conditionObj.lte as [string, number];
+      const leftVal = await evaluator.evaluate<number>(left, context);
+      return leftVal <= right;
+    }
+
+    // Handle { in: [value, array] } - membership check
+    if (conditionObj.in !== undefined) {
+      const [valueExpr, arrayExpr] = conditionObj.in as [string, string];
+      const value = await evaluator.evaluate(valueExpr, context);
+      const array = await evaluator.evaluate<unknown[]>(arrayExpr, context);
+      return Array.isArray(array) && array.includes(value);
+    }
+
+    // Handle { match: [value, regex] } - regex match
+    if (conditionObj.match !== undefined) {
+      const [valueExpr, regexStr] = conditionObj.match as [string, string];
+      const value = await evaluator.evaluate<string>(valueExpr, context);
+      try {
+        // Validate regex to prevent ReDoS attacks
+        if (!isValidRegexPattern(regexStr)) {
+          console.warn(`Blocked potentially dangerous regex pattern in condition: ${regexStr.substring(0, 50)}...`);
+          return false;
+        }
+        const regex = new RegExp(regexStr);
+        return regex.test(String(value));
+      } catch {
+        return false;
+      }
+    }
+
+    // Unknown object format - warn and return false (safer default)
+    console.warn('Unknown condition object format:', condition);
+    return false;
   }
 
   /**
@@ -247,6 +365,34 @@ function normalizeActions(actions: any[]): any[] {
 
     return action;
   });
+}
+
+/**
+ * Validate a regex pattern to prevent ReDoS attacks
+ */
+function isValidRegexPattern(pattern: string): boolean {
+  // Check pattern length
+  if (pattern.length > 500) {
+    return false;
+  }
+  // Check for common ReDoS patterns (nested quantifiers, overlapping alternatives)
+  const dangerousPatterns = [
+    /\([^)]*[+*][^)]*\)[+*]/,  // Nested quantifiers: (a+)+ or (a*)*
+    /\([^)]*\|[^)]*\)[+*]/,    // Overlapping alternatives: (a|a)+
+    /(.+)\1+[+*]/,             // Backreference with quantifier
+  ];
+  for (const dangerous of dangerousPatterns) {
+    if (dangerous.test(pattern)) {
+      return false;
+    }
+  }
+  // Try to compile to catch syntax errors
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

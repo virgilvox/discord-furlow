@@ -65,7 +65,7 @@ commands:
       - reply:
           embeds:
             - title: "Reminder Set"
-              description: "I'll remind you <t:${Math.floor(reminder_time / 1000)}:R>"
+              description: "I'll remind you <t:${floor(reminder_time / 1000)}:R>"
               color: "#5865F2"
               fields:
                 - name: "Message"
@@ -92,7 +92,7 @@ commands:
             - title: "Your Reminders"
               description: |
                 ${user_reminders.map((r, i) =>
-                  `**${i + 1}.** ${r.message}\n   <t:${Math.floor(r.time / 1000)}:R> | ID: \`${r.id.slice(0, 8)}\``
+                  `**${i + 1}.** ${r.message}\n   <t:${floor(r.time / 1000)}:R> | ID: \`${r.id.slice(0, 8)}\``
                 ).join('\n\n')}
               color: "#5865F2"
           ephemeral: true
@@ -264,7 +264,7 @@ commands:
           value: "${options.sides || 6}"
       - set:
           var: result
-          value: "${Math.floor(Math.random() * sides) + 1}"
+          value: "${floor(random * sides) + 1}"
       - reply:
           content: "You rolled a **${result}** (d${sides})"
 
@@ -308,7 +308,7 @@ commands:
                 - name: "Question"
                   value: "${options.question}"
                 - name: "Answer"
-                  value: "${responses[Math.floor(Math.random() * responses.length)]}"
+                  value: "${responses[floor(random * responses.length)]}"
               color: "#5865F2"
 
   - name: calc

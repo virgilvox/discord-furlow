@@ -38,7 +38,7 @@ function createMockVoiceState(options: {
     guild: {
       id: options.guildId,
       channels: {
-        cache: new Map([
+        cache: new Map<string, any>([
           ['voice-123', { name: 'General Voice', isTextBased: () => false }],
           ['text-123', { name: 'General', isTextBased: () => true, send: vi.fn() }],
         ]),

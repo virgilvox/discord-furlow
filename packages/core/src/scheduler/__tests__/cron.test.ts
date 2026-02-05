@@ -485,7 +485,7 @@ describe('CronScheduler', () => {
         name: 'error-job',
         cron: '* * * * *',
         enabled: true,
-        actions: [{ action: 'bad_action' }],
+        actions: [{ action: 'bad_action' } as any],
       });
 
       const job = scheduler.getJob('error-job');
@@ -505,9 +505,11 @@ describe('CronScheduler', () => {
 
       scheduler.stop();
 
+      // Error handler logs in format: [category] message context
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('error-job'),
-        expect.any(Error)
+        '[scheduler]',
+        expect.any(String),
+        expect.stringContaining('error-job')
       );
 
       consoleSpy.mockRestore();

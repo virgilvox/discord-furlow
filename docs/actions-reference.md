@@ -854,7 +854,7 @@ Loop while condition is true.
 
 ```yaml
 - flow_while:
-    while: "${remaining > 0}"
+    while: "remaining > 0"
     max_iterations: 100                # Safety limit
     do:
       - decrement:

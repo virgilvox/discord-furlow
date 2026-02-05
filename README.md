@@ -13,12 +13,12 @@ commands:
     description: Check bot latency
     actions:
       - reply:
-          content: "Pong! ${client.ping}ms"
+          content: "Pong! ${client.ws.ping}ms"
 ```
 
 ## Features
 
-- **84 Actions** — Messages, moderation, voice, channels, and more
+- **85 Actions** — Messages, moderation, voice, channels, and more
 - **71 Expression Functions** — Date, math, string, array manipulation
 - **50 Transforms** — Pipe-based data transformations
 - **76 Events** — Discord gateway + high-level FURLOW events
@@ -67,7 +67,7 @@ commands:
         description: Who to greet
     actions:
       - reply:
-          content: "Hello, ${options.member.display_name || user.username}!"
+          content: "Hello, ${options.user.display_name || options.user.username}!"
 
   - name: roll
     description: Roll a dice
@@ -108,7 +108,7 @@ events:
 | [Installation](docs/guides/installation.md) | Setup and requirements |
 | [Quick Start](docs/guides/quickstart.md) | Your first bot |
 | [Configuration](docs/guides/configuration.md) | YAML specification |
-| [Actions Reference](docs/reference/actions/) | All 84 actions |
+| [Actions Reference](docs/reference/actions/) | All 85 actions |
 | [Expressions Reference](docs/reference/expressions/) | Functions and transforms |
 | [Events Reference](docs/reference/events.md) | Event types |
 | [CLI Reference](docs/reference/cli.md) | Command-line interface |

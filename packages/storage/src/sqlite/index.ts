@@ -12,6 +12,17 @@ export interface SQLiteOptions {
   verbose?: boolean;
 }
 
+/**
+ * Escape a SQLite identifier (table/column name) to prevent SQL injection
+ */
+function escapeIdentifier(name: string): string {
+  // Validate identifier - only allow alphanumeric and underscores
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid SQL identifier: ${name}`);
+  }
+  return `"${name}"`;
+}
+
 export class SQLiteAdapter implements StorageAdapter {
   private db: Database.Database;
   private tables: Set<string> = new Set();
@@ -162,7 +173,8 @@ export class SQLiteAdapter implements StorageAdapter {
           sqlType = 'TEXT';
       }
 
-      let colDef = `${colName} ${sqlType}`;
+      const escapedColName = escapeIdentifier(colName);
+      let colDef = `${escapedColName} ${sqlType}`;
 
       if (col.primary) {
         colDef += ' PRIMARY KEY';
@@ -177,13 +189,27 @@ export class SQLiteAdapter implements StorageAdapter {
       }
 
       if (col.default !== undefined) {
-        colDef += ` DEFAULT ${JSON.stringify(col.default)}`;
+        // Only allow safe primitive types as defaults to prevent SQL injection
+        const defaultType = typeof col.default;
+        if (defaultType === 'string') {
+          // Escape single quotes for SQLite string literals
+          const escaped = String(col.default).replace(/'/g, "''");
+          colDef += ` DEFAULT '${escaped}'`;
+        } else if (defaultType === 'number' && Number.isFinite(col.default)) {
+          colDef += ` DEFAULT ${col.default}`;
+        } else if (defaultType === 'boolean') {
+          colDef += ` DEFAULT ${col.default ? 1 : 0}`;
+        } else if (col.default === null) {
+          colDef += ` DEFAULT NULL`;
+        }
+        // Silently skip complex types (objects, functions) to prevent injection
       }
 
       columns.push(colDef);
 
       if (col.index && !col.primary && !col.unique) {
-        indexes.push(`CREATE INDEX IF NOT EXISTS idx_${name}_${colName} ON ${name}(${colName})`);
+        const escapedTableName = escapeIdentifier(name);
+        indexes.push(`CREATE INDEX IF NOT EXISTS "idx_${name}_${colName}" ON ${escapedTableName}(${escapedColName})`);
       }
     }
 
@@ -191,11 +217,14 @@ export class SQLiteAdapter implements StorageAdapter {
     if (definition.indexes) {
       for (const idx of definition.indexes) {
         const idxName = `idx_${name}_${idx.join('_')}`;
-        indexes.push(`CREATE INDEX IF NOT EXISTS ${idxName} ON ${name}(${idx.join(', ')})`);
+        const escapedTableName = escapeIdentifier(name);
+        const escapedCols = idx.map(c => escapeIdentifier(c)).join(', ');
+        indexes.push(`CREATE INDEX IF NOT EXISTS "${idxName}" ON ${escapedTableName}(${escapedCols})`);
       }
     }
 
-    this.db.exec(`CREATE TABLE IF NOT EXISTS ${name} (${columns.join(', ')})`);
+    const escapedTableName = escapeIdentifier(name);
+    this.db.exec(`CREATE TABLE IF NOT EXISTS ${escapedTableName} (${columns.join(', ')})`);
 
     for (const idx of indexes) {
       this.db.exec(idx);
@@ -205,7 +234,9 @@ export class SQLiteAdapter implements StorageAdapter {
   }
 
   async insert(table: string, data: Record<string, unknown>): Promise<void> {
+    const escapedTable = escapeIdentifier(table);
     const columns = Object.keys(data);
+    const escapedColumns = columns.map(c => escapeIdentifier(c)).join(', ');
     const placeholders = columns.map(() => '?').join(', ');
     const values = columns.map((col) => {
       const val = data[col];
@@ -219,7 +250,7 @@ export class SQLiteAdapter implements StorageAdapter {
     });
 
     this.db
-      .prepare(`INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`)
+      .prepare(`INSERT INTO ${escapedTable} (${escapedColumns}) VALUES (${placeholders})`)
       .run(...values);
   }
 
@@ -228,8 +259,9 @@ export class SQLiteAdapter implements StorageAdapter {
     where: Record<string, unknown>,
     data: Record<string, unknown>
   ): Promise<number> {
-    const setClauses = Object.keys(data).map((col) => `${col} = ?`);
-    const whereClauses = Object.keys(where).map((col) => `${col} = ?`);
+    const escapedTable = escapeIdentifier(table);
+    const setClauses = Object.keys(data).map((col) => `${escapeIdentifier(col)} = ?`);
+    const whereClauses = Object.keys(where).map((col) => `${escapeIdentifier(col)} = ?`);
 
     const values = [
       ...Object.values(data).map((v) =>
@@ -240,44 +272,58 @@ export class SQLiteAdapter implements StorageAdapter {
     ];
 
     const result = this.db
-      .prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`)
+      .prepare(`UPDATE ${escapedTable} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`)
       .run(...values);
 
     return result.changes;
   }
 
   async deleteRows(table: string, where: Record<string, unknown>): Promise<number> {
-    const whereClauses = Object.keys(where).map((col) => `${col} = ?`);
+    const escapedTable = escapeIdentifier(table);
+    const whereClauses = Object.keys(where).map((col) => `${escapeIdentifier(col)} = ?`);
     const values = Object.values(where);
 
     const result = this.db
-      .prepare(`DELETE FROM ${table} WHERE ${whereClauses.join(' AND ')}`)
+      .prepare(`DELETE FROM ${escapedTable} WHERE ${whereClauses.join(' AND ')}`)
       .run(...values);
 
     return result.changes;
   }
 
   async query(table: string, options: QueryOptions): Promise<Record<string, unknown>[]> {
-    const columns = options.select?.join(', ') ?? '*';
-    let query = `SELECT ${columns} FROM ${table}`;
+    const escapedTable = escapeIdentifier(table);
+    const columns = options.select
+      ? options.select.map(c => escapeIdentifier(c)).join(', ')
+      : '*';
+    let query = `SELECT ${columns} FROM ${escapedTable}`;
     const params: unknown[] = [];
 
     if (options.where && Object.keys(options.where).length > 0) {
-      const whereClauses = Object.keys(options.where).map((col) => `${col} = ?`);
+      const whereClauses = Object.keys(options.where).map((col) => `${escapeIdentifier(col)} = ?`);
       query += ` WHERE ${whereClauses.join(' AND ')}`;
       params.push(...Object.values(options.where));
     }
 
     if (options.orderBy) {
-      query += ` ORDER BY ${options.orderBy}`;
+      // Validate and escape orderBy to prevent SQL injection
+      const orderMatch = options.orderBy.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(\s+(ASC|DESC))?$/i);
+      if (orderMatch) {
+        query += ` ORDER BY ${escapeIdentifier(orderMatch[1]!)}${orderMatch[2] ?? ''}`;
+      }
     }
 
     if (options.limit) {
-      query += ` LIMIT ${options.limit}`;
+      // Cap limit to prevent resource exhaustion (max 10000 rows)
+      const MAX_LIMIT = 10000;
+      const limit = Math.min(MAX_LIMIT, Math.max(0, Math.floor(Number(options.limit))));
+      query += ` LIMIT ${limit}`;
     }
 
     if (options.offset) {
-      query += ` OFFSET ${options.offset}`;
+      // Cap offset to prevent extreme pagination (max 1 million)
+      const MAX_OFFSET = 1000000;
+      const offset = Math.min(MAX_OFFSET, Math.max(0, Math.floor(Number(options.offset))));
+      query += ` OFFSET ${offset}`;
     }
 
     return this.db.prepare(query).all(...params) as Record<string, unknown>[];

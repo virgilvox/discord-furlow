@@ -514,9 +514,11 @@ commands:
           context:
             guild: "${guild}"
             memberCount: "${guild.member_count}"
-            onlineCount: "${guild.presences.cache.filter(p => p.status !== 'offline').size}"
-            channelCount: "${guild.channels.cache.size}"
-            roleCount: "${guild.roles.cache.size}"
+            # Note: online/channel/role counts require custom state or external data
+            # These are placeholder values for the example
+            onlineCount: "${floor(guild.member_count * 0.3)}"
+            channelCount: "50"
+            roleCount: "25"
           as: stats_image
 
       - reply:

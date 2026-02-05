@@ -356,7 +356,7 @@ describe('PostgresAdapter', () => {
       it('should generate correct SQL for table creation', async () => {
         let createQuery = '';
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string) => {
-          if (query.includes('CREATE TABLE IF NOT EXISTS users')) {
+          if (query.includes('CREATE TABLE IF NOT EXISTS "users"')) {
             createQuery = query;
           }
           return { rows: [], rowCount: 0 };
@@ -366,10 +366,10 @@ describe('PostgresAdapter', () => {
 
         // Check that SQL contains all expected column definitions
         // Order may vary depending on object key iteration
-        expect(createQuery).toContain('CREATE TABLE IF NOT EXISTS users');
-        expect(createQuery).toContain('id DOUBLE PRECISION PRIMARY KEY');
-        expect(createQuery).toContain('name TEXT');
-        expect(createQuery).toMatch(/email TEXT[^,]*UNIQUE/);
+        expect(createQuery).toContain('CREATE TABLE IF NOT EXISTS "users"');
+        expect(createQuery).toContain('"id" DOUBLE PRECISION PRIMARY KEY');
+        expect(createQuery).toContain('"name" TEXT');
+        expect(createQuery).toMatch(/"email" TEXT[^,]*UNIQUE/);
         expect(createQuery).toContain('BOOLEAN');
         expect(createQuery).toContain('JSONB');
         expect(createQuery).toContain('BIGINT');
@@ -393,7 +393,7 @@ describe('PostgresAdapter', () => {
       it('should not recreate existing table', async () => {
         let createCount = 0;
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string) => {
-          if (query.includes('CREATE TABLE IF NOT EXISTS users')) {
+          if (query.includes('CREATE TABLE IF NOT EXISTS "users"')) {
             createCount++;
           }
           return { rows: [], rowCount: 0 };
@@ -414,7 +414,7 @@ describe('PostgresAdapter', () => {
       it('should insert row with correct parameters', async () => {
         let insertParams: unknown[] = [];
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string, params?: unknown[]) => {
-          if (query.includes('INSERT INTO users')) {
+          if (query.includes('INSERT INTO "users"')) {
             insertParams = params ?? [];
           }
           return { rows: [], rowCount: 1 };
@@ -430,7 +430,7 @@ describe('PostgresAdapter', () => {
       it('should stringify JSON values', async () => {
         let insertParams: unknown[] = [];
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string, params?: unknown[]) => {
-          if (query.includes('INSERT INTO users')) {
+          if (query.includes('INSERT INTO "users"')) {
             insertParams = params ?? [];
           }
           return { rows: [], rowCount: 1 };
@@ -451,7 +451,7 @@ describe('PostgresAdapter', () => {
         let updateQuery = '';
         let updateParams: unknown[] = [];
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string, params?: unknown[]) => {
-          if (query.includes('UPDATE users SET')) {
+          if (query.includes('UPDATE') && query.includes('SET')) {
             updateQuery = query;
             updateParams = params ?? [];
             return { rowCount: 1 };
@@ -462,14 +462,14 @@ describe('PostgresAdapter', () => {
         const count = await adapter.update('users', { id: 1 }, { name: 'Updated' });
 
         expect(count).toBe(1);
-        expect(updateQuery).toContain('name = $1');
-        expect(updateQuery).toContain('id = $2');
+        expect(updateQuery).toContain('"name" = $1');
+        expect(updateQuery).toContain('"id" = $2');
         expect(updateParams).toEqual(['Updated', 1]);
       });
 
       it('should return count of updated rows', async () => {
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string) => {
-          if (query.includes('UPDATE users SET')) {
+          if (query.includes('UPDATE "users" SET')) {
             return { rowCount: 5 };
           }
           return { rows: [], rowCount: 0 };
@@ -488,7 +488,7 @@ describe('PostgresAdapter', () => {
       it('should delete matching rows', async () => {
         let deleteQuery = '';
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string) => {
-          if (query.includes('DELETE FROM users WHERE')) {
+          if (query.includes('DELETE FROM') && query.includes('WHERE')) {
             deleteQuery = query;
             return { rowCount: 2 };
           }
@@ -498,7 +498,7 @@ describe('PostgresAdapter', () => {
         const count = await adapter.deleteRows('users', { active: false });
 
         expect(count).toBe(2);
-        expect(deleteQuery).toContain('active = $1');
+        expect(deleteQuery).toContain('"active" = $1');
       });
 
       it('should return 0 for no matches', async () => {
@@ -518,7 +518,7 @@ describe('PostgresAdapter', () => {
 
       it('should query all rows without options', async () => {
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string) => {
-          if (query.includes('SELECT * FROM users')) {
+          if (query.includes('SELECT * FROM "users"')) {
             return {
               rows: [
                 { id: 1, name: 'Alice' },
@@ -548,7 +548,7 @@ describe('PostgresAdapter', () => {
 
         await adapter.query('users', { where: { id: 1 } });
 
-        expect(queryText).toContain('WHERE id = $1');
+        expect(queryText).toContain('WHERE "id" = $1');
         expect(queryParams).toEqual([1]);
       });
 
@@ -561,7 +561,7 @@ describe('PostgresAdapter', () => {
 
         await adapter.query('users', { select: ['name', 'email'] });
 
-        expect(queryText).toContain('SELECT name, email FROM users');
+        expect(queryText).toContain('SELECT "name", "email" FROM "users"');
       });
 
       it('should order results', async () => {
@@ -573,7 +573,7 @@ describe('PostgresAdapter', () => {
 
         await adapter.query('users', { orderBy: 'name DESC' });
 
-        expect(queryText).toContain('ORDER BY name DESC');
+        expect(queryText).toContain('ORDER BY "name" DESC');
       });
 
       it('should limit results', async () => {
@@ -604,7 +604,7 @@ describe('PostgresAdapter', () => {
         let queryText = '';
         let queryParams: unknown[] = [];
         (mockPool.query as ReturnType<typeof vi.fn>).mockImplementation(async (query: string, params?: unknown[]) => {
-          if (query.includes('SELECT name, email')) {
+          if (query.includes('SELECT "name", "email"')) {
             queryText = query;
             queryParams = params ?? [];
           }
@@ -619,9 +619,9 @@ describe('PostgresAdapter', () => {
           offset: 5,
         });
 
-        expect(queryText).toContain('SELECT name, email FROM users');
-        expect(queryText).toContain('WHERE active = $1');
-        expect(queryText).toContain('ORDER BY name ASC');
+        expect(queryText).toContain('SELECT "name", "email" FROM "users"');
+        expect(queryText).toContain('WHERE "active" = $1');
+        expect(queryText).toContain('ORDER BY "name" ASC');
         expect(queryText).toContain('LIMIT 10');
         expect(queryText).toContain('OFFSET 5');
         expect(queryParams).toEqual([true]);

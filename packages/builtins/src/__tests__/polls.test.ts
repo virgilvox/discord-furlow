@@ -11,6 +11,11 @@ import {
   type PollsConfig,
 } from '../polls/index.js';
 
+// Helper to safely check if condition includes a substring
+const conditionIncludes = (condition: unknown, str: string): boolean => {
+  return typeof condition === 'string' && condition.includes(str);
+};
+
 describe('Polls Builtin', () => {
   describe('Exports', () => {
     it('should export pollsTables object', () => {
@@ -76,7 +81,7 @@ describe('Polls Builtin', () => {
       const handler = pollsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('poll_vote_')
+          conditionIncludes(h.condition, 'poll_vote_')
       );
       expect(handler).toBeDefined();
     });
@@ -95,7 +100,7 @@ describe('Polls Builtin', () => {
       const handler = pollsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('poll_vote_')
+          conditionIncludes(h.condition, 'poll_vote_')
       )!;
 
       it('should check if poll has ended', () => {

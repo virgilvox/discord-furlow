@@ -9,10 +9,22 @@ export interface PostgresOptions extends PoolConfig {
   url?: string;
 }
 
+/**
+ * Escape a PostgreSQL identifier (table/column name) to prevent SQL injection
+ */
+function escapeIdentifier(name: string): string {
+  // Validate identifier - only allow alphanumeric and underscores
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(`Invalid SQL identifier: ${name}`);
+  }
+  return `"${name}"`;
+}
+
 export class PostgresAdapter implements StorageAdapter {
   private pool: Pool;
   private tables: Set<string> = new Set();
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
 
   constructor(options: PostgresOptions = {}) {
     if (options.url) {
@@ -25,24 +37,33 @@ export class PostgresAdapter implements StorageAdapter {
   private async init(): Promise<void> {
     if (this.initialized) return;
 
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS furlow_kv (
-        key TEXT PRIMARY KEY,
-        value JSONB NOT NULL,
-        type TEXT NOT NULL,
-        expires_at BIGINT,
-        created_at BIGINT NOT NULL,
-        updated_at BIGINT NOT NULL
-      )
-    `);
+    // Prevent race condition - use a shared promise for concurrent init calls
+    if (this.initPromise) {
+      return this.initPromise;
+    }
 
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_furlow_kv_expires
-      ON furlow_kv(expires_at)
-      WHERE expires_at IS NOT NULL
-    `);
+    this.initPromise = (async () => {
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS furlow_kv (
+          key TEXT PRIMARY KEY,
+          value JSONB NOT NULL,
+          type TEXT NOT NULL,
+          expires_at BIGINT,
+          created_at BIGINT NOT NULL,
+          updated_at BIGINT NOT NULL
+        )
+      `);
 
-    this.initialized = true;
+      await this.pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_furlow_kv_expires
+        ON furlow_kv(expires_at)
+        WHERE expires_at IS NOT NULL
+      `);
+
+      this.initialized = true;
+    })();
+
+    return this.initPromise;
   }
 
   async get(key: string): Promise<StoredValue | null> {
@@ -167,7 +188,8 @@ export class PostgresAdapter implements StorageAdapter {
           sqlType = 'TEXT';
       }
 
-      let colStr = `${colName} ${sqlType}`;
+      const escapedColName = escapeIdentifier(colName);
+      let colStr = `${escapedColName} ${sqlType}`;
 
       if (col.primary) {
         colStr += ' PRIMARY KEY';
@@ -182,24 +204,40 @@ export class PostgresAdapter implements StorageAdapter {
       }
 
       if (col.default !== undefined) {
-        colStr += ` DEFAULT '${JSON.stringify(col.default)}'`;
+        // Only allow safe primitive types as defaults to prevent SQL injection
+        const defaultType = typeof col.default;
+        if (defaultType === 'string') {
+          // Use dollar quoting for strings to prevent injection
+          colStr += ` DEFAULT $str$${String(col.default)}$str$`;
+        } else if (defaultType === 'number' && Number.isFinite(col.default)) {
+          colStr += ` DEFAULT ${col.default}`;
+        } else if (defaultType === 'boolean') {
+          colStr += ` DEFAULT ${col.default ? 'TRUE' : 'FALSE'}`;
+        } else if (col.default === null) {
+          colStr += ` DEFAULT NULL`;
+        }
+        // Silently skip complex types (objects, functions) to prevent injection
       }
 
       columns.push(colStr);
 
       if (col.index && !col.primary && !col.unique) {
-        indexes.push(`CREATE INDEX IF NOT EXISTS idx_${name}_${colName} ON ${name}(${colName})`);
+        const escapedTableName = escapeIdentifier(name);
+        indexes.push(`CREATE INDEX IF NOT EXISTS "idx_${name}_${colName}" ON ${escapedTableName}(${escapedColName})`);
       }
     }
 
     if (definition.indexes) {
       for (const idx of definition.indexes) {
         const idxName = `idx_${name}_${idx.join('_')}`;
-        indexes.push(`CREATE INDEX IF NOT EXISTS ${idxName} ON ${name}(${idx.join(', ')})`);
+        const escapedTableName = escapeIdentifier(name);
+        const escapedCols = idx.map(c => escapeIdentifier(c)).join(', ');
+        indexes.push(`CREATE INDEX IF NOT EXISTS "${idxName}" ON ${escapedTableName}(${escapedCols})`);
       }
     }
 
-    await this.pool.query(`CREATE TABLE IF NOT EXISTS ${name} (${columns.join(', ')})`);
+    const escapedTableName = escapeIdentifier(name);
+    await this.pool.query(`CREATE TABLE IF NOT EXISTS ${escapedTableName} (${columns.join(', ')})`);
 
     for (const idx of indexes) {
       await this.pool.query(idx);
@@ -209,14 +247,16 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async insert(table: string, data: Record<string, unknown>): Promise<void> {
+    const escapedTable = escapeIdentifier(table);
     const columns = Object.keys(data);
+    const escapedColumns = columns.map(c => escapeIdentifier(c)).join(', ');
     const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
     const values = Object.values(data).map((v) =>
       typeof v === 'object' && v !== null ? JSON.stringify(v) : v
     );
 
     await this.pool.query(
-      `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`,
+      `INSERT INTO ${escapedTable} (${escapedColumns}) VALUES (${placeholders})`,
       values
     );
   }
@@ -226,12 +266,13 @@ export class PostgresAdapter implements StorageAdapter {
     where: Record<string, unknown>,
     data: Record<string, unknown>
   ): Promise<number> {
+    const escapedTable = escapeIdentifier(table);
     const dataEntries = Object.entries(data);
     const whereEntries = Object.entries(where);
 
-    const setClauses = dataEntries.map(([col], i) => `${col} = $${i + 1}`);
+    const setClauses = dataEntries.map(([col], i) => `${escapeIdentifier(col)} = $${i + 1}`);
     const whereClauses = whereEntries.map(
-      ([col], i) => `${col} = $${dataEntries.length + i + 1}`
+      ([col], i) => `${escapeIdentifier(col)} = $${dataEntries.length + i + 1}`
     );
 
     const values = [
@@ -242,7 +283,7 @@ export class PostgresAdapter implements StorageAdapter {
     ];
 
     const result = await this.pool.query(
-      `UPDATE ${table} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`,
+      `UPDATE ${escapedTable} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`,
       values
     );
 
@@ -250,12 +291,13 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async deleteRows(table: string, where: Record<string, unknown>): Promise<number> {
+    const escapedTable = escapeIdentifier(table);
     const whereEntries = Object.entries(where);
-    const whereClauses = whereEntries.map(([col], i) => `${col} = $${i + 1}`);
+    const whereClauses = whereEntries.map(([col], i) => `${escapeIdentifier(col)} = $${i + 1}`);
     const values = whereEntries.map(([, v]) => v);
 
     const result = await this.pool.query(
-      `DELETE FROM ${table} WHERE ${whereClauses.join(' AND ')}`,
+      `DELETE FROM ${escapedTable} WHERE ${whereClauses.join(' AND ')}`,
       values
     );
 
@@ -263,29 +305,42 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async query(table: string, options: QueryOptions): Promise<Record<string, unknown>[]> {
-    const columns = options.select?.join(', ') ?? '*';
-    let query = `SELECT ${columns} FROM ${table}`;
+    const escapedTable = escapeIdentifier(table);
+    const columns = options.select
+      ? options.select.map(c => escapeIdentifier(c)).join(', ')
+      : '*';
+    let query = `SELECT ${columns} FROM ${escapedTable}`;
     const params: unknown[] = [];
     let paramIndex = 1;
 
     if (options.where && Object.keys(options.where).length > 0) {
       const whereClauses = Object.keys(options.where).map(
-        (col) => `${col} = $${paramIndex++}`
+        (col) => `${escapeIdentifier(col)} = $${paramIndex++}`
       );
       query += ` WHERE ${whereClauses.join(' AND ')}`;
       params.push(...Object.values(options.where));
     }
 
     if (options.orderBy) {
-      query += ` ORDER BY ${options.orderBy}`;
+      // Validate and escape orderBy to prevent SQL injection
+      const orderMatch = options.orderBy.match(/^([a-zA-Z_][a-zA-Z0-9_]*)(\s+(ASC|DESC))?$/i);
+      if (orderMatch) {
+        query += ` ORDER BY ${escapeIdentifier(orderMatch[1]!)}${orderMatch[2] ?? ''}`;
+      }
     }
 
     if (options.limit) {
-      query += ` LIMIT ${options.limit}`;
+      // Cap limit to prevent resource exhaustion (max 10000 rows)
+      const MAX_LIMIT = 10000;
+      const limit = Math.min(MAX_LIMIT, Math.max(0, Math.floor(Number(options.limit))));
+      query += ` LIMIT ${limit}`;
     }
 
     if (options.offset) {
-      query += ` OFFSET ${options.offset}`;
+      // Cap offset to prevent extreme pagination (max 1 million)
+      const MAX_OFFSET = 1000000;
+      const offset = Math.min(MAX_OFFSET, Math.max(0, Math.floor(Number(options.offset))));
+      query += ` OFFSET ${offset}`;
     }
 
     const result = await this.pool.query(query, params);

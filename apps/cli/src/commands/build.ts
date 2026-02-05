@@ -2,7 +2,7 @@
  * Build command - bundle for deployment
  */
 
-import { mkdir, copyFile, readFile, writeFile, readdir, stat } from 'node:fs/promises';
+import { mkdir, copyFile, readFile, writeFile, readdir, stat, lstat, realpath } from 'node:fs/promises';
 import { resolve, join, relative, dirname } from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -63,24 +63,37 @@ export async function buildCommand(
       JSON.stringify(buildInfo, null, 2)
     );
 
-    // Copy assets if they exist
+    // Copy assets if they exist (with symlink protection)
     const assetsDir = join(specDir, 'assets');
     try {
-      const assetsStat = await stat(assetsDir);
-      if (assetsStat.isDirectory()) {
-        spinner.text = 'Copying assets...';
-        await copyDir(assetsDir, join(outputDir, 'assets'));
+      // Use lstat to detect symlinks (stat follows symlinks)
+      const assetsStat = await lstat(assetsDir);
+      if (assetsStat.isSymbolicLink()) {
+        console.warn(chalk.yellow('  Warning: Skipping symlinked assets directory'));
+      } else if (assetsStat.isDirectory()) {
+        // Verify directory is within project boundaries
+        const realAssetsPath = await realpath(assetsDir);
+        const realSpecDir = await realpath(specDir);
+        if (!realAssetsPath.startsWith(realSpecDir)) {
+          console.warn(chalk.yellow('  Warning: Assets directory outside project boundary, skipping'));
+        } else {
+          spinner.text = 'Copying assets...';
+          await copyDir(assetsDir, join(outputDir, 'assets'), realSpecDir);
+        }
       }
     } catch {
       // Assets directory doesn't exist, skip
     }
 
-    // Copy .env.example if it exists
+    // Copy .env.example if it exists (with symlink protection)
     try {
-      await copyFile(
-        join(specDir, '.env.example'),
-        join(outputDir, '.env.example')
-      );
+      const envExamplePath = join(specDir, '.env.example');
+      const envStat = await lstat(envExamplePath);
+      if (envStat.isSymbolicLink()) {
+        console.warn(chalk.yellow('  Warning: Skipping symlinked .env.example'));
+      } else {
+        await copyFile(envExamplePath, join(outputDir, '.env.example'));
+      }
     } catch {
       // No .env.example, skip
     }
@@ -148,7 +161,7 @@ CMD ["npm", "start"]
   }
 }
 
-async function copyDir(src: string, dest: string): Promise<void> {
+async function copyDir(src: string, dest: string, projectRoot?: string): Promise<void> {
   await mkdir(dest, { recursive: true });
 
   const entries = await readdir(src, { withFileTypes: true });
@@ -157,8 +170,24 @@ async function copyDir(src: string, dest: string): Promise<void> {
     const srcPath = join(src, entry.name);
     const destPath = join(dest, entry.name);
 
+    // Check for symlinks to prevent directory traversal attacks
+    const entryStat = await lstat(srcPath);
+    if (entryStat.isSymbolicLink()) {
+      console.warn(`  Warning: Skipping symlink: ${srcPath}`);
+      continue;
+    }
+
+    // Verify path stays within project boundary if root is specified
+    if (projectRoot) {
+      const realPath = await realpath(srcPath);
+      if (!realPath.startsWith(projectRoot)) {
+        console.warn(`  Warning: Skipping path outside project: ${srcPath}`);
+        continue;
+      }
+    }
+
     if (entry.isDirectory()) {
-      await copyDir(srcPath, destPath);
+      await copyDir(srcPath, destPath, projectRoot);
     } else {
       await copyFile(srcPath, destPath);
     }

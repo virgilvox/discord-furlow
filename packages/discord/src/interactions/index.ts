@@ -14,6 +14,7 @@ import {
   type ModalSubmitInteraction,
   type UserContextMenuCommandInteraction,
   type MessageContextMenuCommandInteraction,
+  type AutocompleteInteraction,
   SlashCommandBuilder,
   ContextMenuCommandBuilder,
   ApplicationCommandType,
@@ -45,6 +46,7 @@ export class InteractionHandler {
   private modalHandlers: Map<string, InteractionCallback<ModalSubmitInteraction>> = new Map();
   private userContextHandlers: Map<string, InteractionCallback<UserContextMenuCommandInteraction>> = new Map();
   private messageContextHandlers: Map<string, InteractionCallback<MessageContextMenuCommandInteraction>> = new Map();
+  private autocompleteHandlers: Map<string, InteractionCallback<AutocompleteInteraction>> = new Map();
 
   constructor(options: InteractionHandlerOptions) {
     this.client = options.client;
@@ -69,7 +71,10 @@ export class InteractionHandler {
           await interaction.reply({
             content: 'An error occurred while processing this interaction.',
             flags: MessageFlags.Ephemeral,
-          }).catch(() => {});
+          }).catch((replyError) => {
+            // Log if the error reply itself fails (e.g., interaction timed out)
+            console.warn('Failed to send error reply to interaction:', replyError instanceof Error ? replyError.message : String(replyError));
+          });
         }
       }
     });
@@ -113,6 +118,17 @@ export class InteractionHandler {
       }
     } else if (interaction.isMessageContextMenuCommand()) {
       const handler = this.messageContextHandlers.get(interaction.commandName);
+      if (handler) {
+        await handler(interaction);
+      }
+    } else if (interaction.isAutocomplete()) {
+      // Try command-specific handler first (command:option format)
+      const focusedOption = interaction.options.getFocused(true);
+      const specificKey = `${interaction.commandName}:${focusedOption.name}`;
+      const handler =
+        this.autocompleteHandlers.get(specificKey) ??
+        this.autocompleteHandlers.get(interaction.commandName) ??
+        this.findPrefixHandler(this.autocompleteHandlers, specificKey);
       if (handler) {
         await handler(interaction);
       }
@@ -192,6 +208,18 @@ export class InteractionHandler {
     handler: InteractionCallback<MessageContextMenuCommandInteraction>
   ): void {
     this.messageContextHandlers.set(name, handler);
+  }
+
+  /**
+   * Register an autocomplete handler
+   * @param nameOrKey Command name, or "command:option" for option-specific handler
+   * @param handler The autocomplete handler
+   */
+  onAutocomplete(
+    nameOrKey: string,
+    handler: InteractionCallback<AutocompleteInteraction>
+  ): void {
+    this.autocompleteHandlers.set(nameOrKey, handler);
   }
 
   /**
@@ -291,8 +319,11 @@ export class InteractionHandler {
     const addMethod = `add${this.getOptionMethodName(opt.type)}Option`;
 
     if (typeof builder[addMethod] !== 'function') {
-      console.warn(`Unknown option type: ${opt.type}`);
-      return;
+      const validTypes = ['string', 'integer', 'number', 'boolean', 'user', 'channel', 'role', 'mentionable', 'attachment'];
+      throw new Error(
+        `Unknown command option type: "${opt.type}" for option "${opt.name}". ` +
+        `Valid types are: ${validTypes.join(', ')}`
+      );
     }
 
     builder[addMethod]((optBuilder: any) => {

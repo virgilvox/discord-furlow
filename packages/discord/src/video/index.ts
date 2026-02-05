@@ -50,7 +50,9 @@ export class VideoManager {
    */
   private setupListener(): void {
     this.client.on('voiceStateUpdate', (oldState, newState) => {
-      this.handleVoiceStateUpdate(oldState, newState);
+      this.handleVoiceStateUpdate(oldState, newState).catch((err) => {
+        console.error('Error handling voice state update for stream detection:', err);
+      });
     });
   }
 

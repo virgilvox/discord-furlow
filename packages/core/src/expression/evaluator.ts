@@ -6,6 +6,7 @@ import Jexl from 'jexl';
 import { ExpressionSyntaxError, UndefinedVariableError } from '../errors/index.js';
 import { registerFunctions } from './functions.js';
 import { registerTransforms } from './transforms.js';
+import type { StateManager } from '../state/manager.js';
 
 export interface EvaluatorOptions {
   /** Maximum expression evaluation time in milliseconds */
@@ -159,19 +160,22 @@ export class ExpressionEvaluator {
   ): Promise<T> {
     this.stats.evaluations++;
 
+    // Track timeout for cleanup
+    let timeoutId: NodeJS.Timeout | undefined;
+
     try {
       // Get compiled expression from cache
       const compiled = this.getCompiledExpression(expression);
 
-      // Wrap evaluation with timeout
+      // Wrap evaluation with timeout (and proper cleanup)
       const result = await Promise.race([
         compiled.eval(context),
-        new Promise((_, reject) =>
-          setTimeout(
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(
             () => reject(new Error('Expression evaluation timeout')),
             this.options.timeout
-          )
-        ),
+          );
+        }),
       ]);
 
       return result as T;
@@ -186,7 +190,43 @@ export class ExpressionEvaluator {
         throw new ExpressionSyntaxError(expression, err.message);
       }
       throw err;
+    } finally {
+      // Always clean up the timeout to prevent memory leaks
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
     }
+  }
+
+  /**
+   * Evaluate an expression with state variables loaded from StateManager.
+   * This allows expressions to reference state variables directly by name.
+   */
+  async evaluateWithState<T = unknown>(
+    expression: string,
+    context: Record<string, unknown>,
+    stateManager: StateManager,
+    scopeContext: { guildId?: string; channelId?: string; userId?: string }
+  ): Promise<T> {
+    // Load all registered state variables into context
+    const stateVars = await this.loadStateVariables(stateManager, scopeContext);
+    const enrichedContext = { ...context, ...stateVars };
+    return this.evaluate<T>(expression, enrichedContext);
+  }
+
+  /**
+   * Load all registered state variables from StateManager
+   */
+  private async loadStateVariables(
+    stateManager: StateManager,
+    scopeContext: { guildId?: string; channelId?: string; userId?: string }
+  ): Promise<Record<string, unknown>> {
+    const vars: Record<string, unknown> = {};
+    const variableNames = stateManager.getVariableNames();
+    for (const name of variableNames) {
+      vars[name] = await stateManager.get(name, scopeContext);
+    }
+    return vars;
   }
 
   /**
@@ -248,6 +288,32 @@ export class ExpressionEvaluator {
       const value = this.evaluateSync(expression.trim(), context);
       return String(value ?? '');
     });
+  }
+
+  /**
+   * Evaluate a template, preserving non-string types when the template
+   * is exactly "${expression}". For mixed templates, interpolates as string.
+   *
+   * This is critical for file attachments where Buffer values must not
+   * be converted to "[object Buffer]".
+   */
+  async evaluateTemplate(
+    template: unknown,
+    context: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    // Pass through non-strings directly (Buffer, number, object, etc.)
+    if (typeof template !== 'string') {
+      return template;
+    }
+
+    // Check if template is exactly "${expression}" (no other text)
+    const exactMatch = template.match(/^\$\{([^}]+)\}$/);
+    if (exactMatch) {
+      // Return raw value without string conversion
+      return this.evaluate(exactMatch[1]!.trim(), context);
+    }
+    // Otherwise, interpolate as string (mixed content)
+    return this.interpolate(template, context);
   }
 
   /**

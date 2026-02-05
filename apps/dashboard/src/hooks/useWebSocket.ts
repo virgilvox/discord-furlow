@@ -200,6 +200,7 @@ export function useGuildWebSocket(guildId: string | undefined) {
       ws.subscribeToGuild(guildId);
       return () => ws.unsubscribeFromGuild(guildId);
     }
+    return undefined;
   }, [guildId, ws]);
 
   return {

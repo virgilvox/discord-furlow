@@ -22,6 +22,7 @@ export class TcpPipe implements Pipe {
   private connected = false;
   private reconnectAttempts = 0;
   private reconnecting = false;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private dataHandlers: TcpDataHandler[] = [];
   private eventHandlers: Map<string, TcpEventHandler[]> = new Map();
 
@@ -121,6 +122,12 @@ export class TcpPipe implements Pipe {
   async disconnect(): Promise<void> {
     this.reconnecting = false;
 
+    // Clear any pending reconnect timer to prevent memory leaks
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     return new Promise((resolve) => {
       if (this.socket) {
         this.socket.end(() => {
@@ -181,14 +188,24 @@ export class TcpPipe implements Pipe {
     }
 
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
+      let resolved = false;
+
+      const cleanup = () => {
         this.offData(handler);
+      };
+
+      const timer = setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+        cleanup();
         resolve({ success: false, error: 'Request timeout' });
       }, timeout);
 
       const handler = (response: Buffer | string) => {
+        if (resolved) return;
+        resolved = true;
         clearTimeout(timer);
-        this.offData(handler);
+        cleanup();
         resolve({ success: true, data: response as T });
       };
 
@@ -241,7 +258,13 @@ export class TcpPipe implements Pipe {
     const handlers = this.eventHandlers.get(event) ?? [];
     for (const handler of handlers) {
       try {
-        handler(data);
+        const result = handler(data);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error(`TCP async handler error for "${event}":`, error);
+          });
+        }
       } catch (error) {
         console.error(`TCP handler error for "${event}":`, error);
       }
@@ -254,7 +277,13 @@ export class TcpPipe implements Pipe {
   private handleData(data: Buffer | string): void {
     for (const handler of this.dataHandlers) {
       try {
-        handler(data);
+        const result = handler(data);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error('TCP async data handler error:', error);
+          });
+        }
       } catch (error) {
         console.error('TCP data handler error:', error);
       }
@@ -281,14 +310,17 @@ export class TcpPipe implements Pipe {
     this.reconnecting = true;
     this.reconnectAttempts++;
 
-    setTimeout(async () => {
-      try {
-        await this.connect();
-        this.emit('reconnected', { attempts: this.reconnectAttempts });
-      } catch {
-        this.reconnecting = false;
-        this.handleDisconnect();
-      }
+    // Track the timer so it can be cleared on disconnect
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect()
+        .then(() => {
+          this.emit('reconnected', { attempts: this.reconnectAttempts });
+        })
+        .catch(() => {
+          this.reconnecting = false;
+          this.handleDisconnect();
+        });
     }, delay);
   }
 

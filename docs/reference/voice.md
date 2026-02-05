@@ -308,7 +308,7 @@ Get the bot's voice state in a guild.
 ```javascript
 {
   connected: true,
-  channelId: "123456789",
+  channel_id: "123456789",
   playing: true,
   paused: false,
   volume: 50,

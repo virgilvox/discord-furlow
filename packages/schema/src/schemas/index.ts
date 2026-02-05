@@ -327,7 +327,7 @@ export const furlowSchema = {
         type: { type: 'string', enum: ['slash', 'user', 'message'] },
         options: { type: 'array', items: { $ref: '#/$defs/commandOption' } },
         subcommands: { type: 'array', items: { $ref: '#/$defs/subcommand' } },
-        subcommand_groups: { type: 'array' },
+        subcommand_groups: { type: 'array', items: { $ref: '#/$defs/subcommandGroup' } },
         actions: { type: 'array', items: { $ref: '#/$defs/action' } },
         access: { $ref: '#/$defs/accessRule' },
         cooldown: { type: 'object' },
@@ -355,6 +355,13 @@ export const furlowSchema = {
         min_length: { type: 'number' },
         max_length: { type: 'number' },
         autocomplete: { type: 'boolean' },
+        channel_types: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['text', 'voice', 'category', 'announcement', 'stage', 'forum'],
+          },
+        },
       },
       required: ['name', 'description', 'type'],
     },
@@ -368,6 +375,15 @@ export const furlowSchema = {
         access: { $ref: '#/$defs/accessRule' },
       },
       required: ['name', 'description', 'actions'],
+    },
+    subcommandGroup: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        subcommands: { type: 'array', items: { $ref: '#/$defs/subcommand' } },
+      },
+      required: ['name', 'description', 'subcommands'],
     },
     contextMenu: {
       type: 'object',

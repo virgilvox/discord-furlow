@@ -1,6 +1,6 @@
 {
   "name": "@furlow/cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Declarative Discord Bot Framework - Build bots with YAML, no code required",
   "keywords": ["furlow", "discord", "bot", "cli", "yaml", "declarative", "framework"],
   "homepage": "https://github.com/virgilvox/discord-furlow",
@@ -42,6 +42,7 @@
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.11.0",
+    "discord.js": "^14.14.0",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"

@@ -27,11 +27,11 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
   const response = await fetch(`${API_BASE}${endpoint}`, config);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string };
+    throw new Error(errorData.error || `HTTP ${response.status}`);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 // User API

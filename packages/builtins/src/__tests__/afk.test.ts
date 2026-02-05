@@ -11,6 +11,11 @@ import {
   type AfkConfig,
 } from '../afk/index.js';
 
+// Helper to safely check if condition includes a substring
+const conditionIncludes = (condition: unknown, str: string): boolean => {
+  return typeof condition === 'string' && condition.includes(str);
+};
+
 describe('AFK Builtin', () => {
   describe('Exports', () => {
     it('should export afkTables object', () => {
@@ -102,7 +107,7 @@ describe('AFK Builtin', () => {
       const handler = afkEventHandlers.find(
         (h) =>
           h.event === 'message' &&
-          h.condition?.includes('mentions.users.size')
+          conditionIncludes(h.condition, 'mentions.users.size')
       )!;
 
       it('should check for mentions', () => {

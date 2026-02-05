@@ -166,11 +166,13 @@ commands:
         required: false
     actions:
       - flow_if:
-          condition: "options.action == 'lock'"
+          if: "options.action == 'lock'"
           then:
-            - lock_channel:
+            - set_channel_permissions:
                 channel: "${options.channel?.id ?? channel.id}"
-                reason: "${options.reason ?? 'Lockdown initiated'}"
+                role: "${guild.id}"
+                deny:
+                  - "SendMessages"
             - send_message:
                 channel: "${options.channel?.id ?? channel.id}"
                 embeds:
@@ -186,9 +188,11 @@ commands:
                 content: "Channel locked!"
                 ephemeral: true
           else:
-            - unlock_channel:
+            - set_channel_permissions:
                 channel: "${options.channel?.id ?? channel.id}"
-                reason: "${options.reason ?? 'Lockdown ended'}"
+                role: "${guild.id}"
+                allow:
+                  - "SendMessages"
             - send_message:
                 channel: "${options.channel?.id ?? channel.id}"
                 embeds:
@@ -222,8 +226,8 @@ commands:
             - ban:
                 user: "${user_id}"
                 reason: "${options.reason} (Mass ban by ${user.username})"
-                delete_days: 1
-      - followup:
+                delete_message_days: 1
+      - reply:
           content: "Banned ${length(split(options.users, ' '))} users."
 
 # Event handlers
@@ -310,7 +314,7 @@ flows:
     actions:
       - db_insert:
           table: "mod_cases"
-          values:
+          data:
             guild_id: "${guild.id}"
             user_id: "${user_id}"
             moderator_id: "${moderator.id}"

@@ -1,6 +1,6 @@
 {
   "name": "@furlow/pipes",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "External integration pipes for FURLOW bot framework",
   "keywords": [
     "furlow",

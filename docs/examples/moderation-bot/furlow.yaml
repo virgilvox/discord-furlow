@@ -166,7 +166,7 @@ commands:
                     color: "${theme.warning}"
                     description: |
                       ${target_warnings.map((w, i) =>
-                        `**${i + 1}.** ${w.reason}\n   <t:${Math.floor(w.date / 1000)}:R> by <@${w.moderator}>`
+                        `**${i + 1}.** ${w.reason}\n   <t:${floor(w.date / 1000)}:R> by <@${w.moderator}>`
                       ).join('\n\n')}
                     footer:
                       text: "Total: ${target_warnings.length} warnings"

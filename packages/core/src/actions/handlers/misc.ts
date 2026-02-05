@@ -5,6 +5,7 @@
 import type { ActionRegistry } from '../registry.js';
 import type { ActionHandler, ActionContext, ActionResult } from '../types.js';
 import type { HandlerDependencies } from './index.js';
+import { handleError } from '../../errors/handler.js';
 import type {
   PipeRequestAction,
   PipeSendAction,
@@ -103,11 +104,18 @@ const pipeRequestHandler: ActionHandler<PipeRequestAction> = {
     }
 
     try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
       const response = await fetch(url, {
         method: config.method || 'GET',
         headers,
         body: config.method !== 'GET' ? body : undefined,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       const data = await response.json().catch(() => response.text());
 
@@ -234,11 +242,18 @@ const webhookSendHandler: ActionHandler<WebhookSendAction> = {
     }
 
     try {
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       return { success: response.ok };
     } catch (err) {
@@ -270,12 +285,19 @@ const createTimerHandler: ActionHandler<CreateTimerAction> = {
     const timers = ((context as any)._timers = (context as any)._timers || {});
     const eventRouter = (context as any)._eventRouter;
 
-    const timerId = setTimeout(async () => {
+    const timerId = setTimeout(() => {
       delete timers[config.id];
 
-      // Emit the event
+      // Emit the event with proper error handling
       if (eventRouter && typeof eventRouter.emit === 'function') {
-        await eventRouter.emit(config.event, { ...context, ...data });
+        Promise.resolve(eventRouter.emit(config.event, { ...context, ...data })).catch((err) => {
+          handleError(
+            err instanceof Error ? err : new Error(String(err)),
+            'scheduler',
+            'error',
+            { timerId: config.id, event: config.event }
+          );
+        });
       }
     }, durationMs);
 

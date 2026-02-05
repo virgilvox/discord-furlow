@@ -359,7 +359,7 @@ commands:
               footer:
                 text: "Hosted by ${user.username}"
               timestamp: true
-          store_as: giveaway_message
+          as: giveaway_message
       - add_reaction:
           channel: "${channel.id}"
           message: "${giveaway_message.id}"

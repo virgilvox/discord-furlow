@@ -144,11 +144,13 @@ describe('Tickets Builtin', () => {
       it('should have action row with control buttons', () => {
         expect(ticketControlComponents).toHaveLength(1);
         expect(ticketControlComponents[0].type).toBe('action_row');
-        expect(ticketControlComponents[0].components.length).toBeGreaterThanOrEqual(3);
+        const actionRow = ticketControlComponents[0] as { type: string; components: { custom_id?: string; style?: string }[] };
+        expect(actionRow.components.length).toBeGreaterThanOrEqual(3);
       });
 
       it('should have claim button', () => {
-        const claimBtn = ticketControlComponents[0].components.find(
+        const actionRow = ticketControlComponents[0] as { type: string; components: { custom_id?: string; style?: string }[] };
+        const claimBtn = actionRow.components.find(
           (c) => c.custom_id === 'ticket_claim'
         );
         expect(claimBtn).toBeDefined();
@@ -156,7 +158,8 @@ describe('Tickets Builtin', () => {
       });
 
       it('should have close button', () => {
-        const closeBtn = ticketControlComponents[0].components.find(
+        const actionRow = ticketControlComponents[0] as { type: string; components: { custom_id?: string; style?: string }[] };
+        const closeBtn = actionRow.components.find(
           (c) => c.custom_id === 'ticket_close'
         );
         expect(closeBtn).toBeDefined();
@@ -164,7 +167,8 @@ describe('Tickets Builtin', () => {
       });
 
       it('should have transcript button', () => {
-        const transcriptBtn = ticketControlComponents[0].components.find(
+        const actionRow = ticketControlComponents[0] as { type: string; components: { custom_id?: string; style?: string }[] };
+        const transcriptBtn = actionRow.components.find(
           (c) => c.custom_id === 'ticket_transcript'
         );
         expect(transcriptBtn).toBeDefined();
@@ -173,11 +177,16 @@ describe('Tickets Builtin', () => {
   });
 
   describe('Event Handlers', () => {
+    // Helper to check if condition string includes a substring
+    const conditionIncludes = (condition: unknown, str: string): boolean => {
+      return typeof condition === 'string' && condition.includes(str);
+    };
+
     it('should handle ticket_create button click', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('ticket_create')
+          conditionIncludes(h.condition, 'ticket_create')
       );
       expect(handler).toBeDefined();
     });
@@ -186,7 +195,7 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'select_menu' &&
-          h.condition?.includes('ticket_category_select')
+          conditionIncludes(h.condition, 'ticket_category_select')
       );
       expect(handler).toBeDefined();
     });
@@ -197,7 +206,7 @@ describe('Tickets Builtin', () => {
       );
       expect(handler).toBeDefined();
 
-      const createChannelAction = handler!.actions.find((a) => a.action === 'create_channel');
+      const createChannelAction = handler!.actions!.find((a) => a.action === 'create_channel');
       expect(createChannelAction).toBeDefined();
     });
 
@@ -205,7 +214,7 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('ticket_claim')
+          conditionIncludes(h.condition, 'ticket_claim')
       );
       expect(handler).toBeDefined();
     });
@@ -214,7 +223,7 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('ticket_close"')
+          conditionIncludes(h.condition, 'ticket_close"')
       );
       expect(handler).toBeDefined();
     });
@@ -223,15 +232,15 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('ticket_close_confirm')
+          conditionIncludes(h.condition, 'ticket_close_confirm')
       );
       expect(handler).toBeDefined();
 
       // Should delete channel after delay
-      const waitAction = handler!.actions.find((a) => a.action === 'wait');
+      const waitAction = handler!.actions!.find((a) => a.action === 'wait');
       expect(waitAction).toBeDefined();
 
-      const deleteAction = handler!.actions.find((a) => a.action === 'delete_channel');
+      const deleteAction = handler!.actions!.find((a) => a.action === 'delete_channel');
       expect(deleteAction).toBeDefined();
     });
 
@@ -239,7 +248,7 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('ticket_transcript')
+          conditionIncludes(h.condition, 'ticket_transcript')
       );
       expect(handler).toBeDefined();
     });
@@ -248,7 +257,7 @@ describe('Tickets Builtin', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
           h.event === 'message' &&
-          h.condition?.includes('parentId')
+          conditionIncludes(h.condition, 'parentId')
       );
       expect(handler).toBeDefined();
     });

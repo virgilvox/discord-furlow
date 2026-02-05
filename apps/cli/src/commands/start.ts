@@ -256,256 +256,403 @@ export async function startCommand(
     // Wire Discord events to event router
     const discordClient = client.getClient();
 
+    // Ready event handler function
+    const handleReadyEvent = async () => {
+      try {
+        const context = buildActionContext({
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+
+        await eventRouter.emit('ready', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in ready event:'), err);
+      }
+    };
+
+    // Client is already ready after client.start() returns, so invoke immediately
+    // Also register for future ready events (reconnections)
+    if (discordClient.isReady()) {
+      // Invoke in next tick to ensure all event handlers are registered
+      setImmediate(handleReadyEvent);
+    }
+    discordClient.on('ready', handleReadyEvent);
+
     // Message events
     discordClient.on('messageCreate', async (message) => {
       if (message.author.bot) return;
 
-      const context = buildActionContext({
-        message,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          message,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('message_create', context, actionExecutor, evaluator);
+        await eventRouter.emit('message_create', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in messageCreate event:'), err);
+      }
     });
 
     discordClient.on('messageDelete', async (message) => {
-      const context = buildActionContext({
-        message,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          message,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('message_delete', context, actionExecutor, evaluator);
+        await eventRouter.emit('message_delete', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in messageDelete event:'), err);
+      }
     });
 
     discordClient.on('messageUpdate', async (oldMessage, newMessage) => {
-      const context = buildActionContext({
-        message: newMessage,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
-      (context as any).old_message = oldMessage;
+      try {
+        const context = buildActionContext({
+          message: newMessage,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+        (context as any).old_message = oldMessage;
 
-      await eventRouter.emit('message_update', context, actionExecutor, evaluator);
+        await eventRouter.emit('message_update', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in messageUpdate event:'), err);
+      }
     });
 
     // Member events
     discordClient.on('guildMemberAdd', async (member) => {
-      const context = buildActionContext({
-        member,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          member,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('member_join', context, actionExecutor, evaluator);
+        await eventRouter.emit('member_join', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in guildMemberAdd event:'), err);
+      }
     });
 
     discordClient.on('guildMemberRemove', async (member) => {
-      const context = buildActionContext({
-        member,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          member,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('member_leave', context, actionExecutor, evaluator);
+        await eventRouter.emit('member_leave', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in guildMemberRemove event:'), err);
+      }
     });
 
     discordClient.on('guildMemberUpdate', async (oldMember, newMember) => {
-      const context = buildActionContext({
-        member: newMember,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
-      (context as any).old_member = oldMember;
+      try {
+        const context = buildActionContext({
+          member: newMember,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+        (context as any).old_member = oldMember;
 
-      await eventRouter.emit('member_update', context, actionExecutor, evaluator);
+        await eventRouter.emit('member_update', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in guildMemberUpdate event:'), err);
+      }
     });
 
     // Reaction events
     discordClient.on('messageReactionAdd', async (reaction, user) => {
       if (user.bot) return;
 
-      const context = buildActionContext({
-        reaction,
-        user,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          reaction,
+          user,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('reaction_add', context, actionExecutor, evaluator);
+        await eventRouter.emit('reaction_add', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in messageReactionAdd event:'), err);
+      }
     });
 
     discordClient.on('messageReactionRemove', async (reaction, user) => {
       if (user.bot) return;
 
-      const context = buildActionContext({
-        reaction,
-        user,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          reaction,
+          user,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('reaction_remove', context, actionExecutor, evaluator);
+        await eventRouter.emit('reaction_remove', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in messageReactionRemove event:'), err);
+      }
     });
 
     // Voice state events
     discordClient.on('voiceStateUpdate', async (oldState, newState) => {
-      const context = buildActionContext({
-        member: newState.member,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
-      (context as any).old_voice_state = oldState;
-      (context as any).new_voice_state = newState;
+      try {
+        const context = buildActionContext({
+          member: newState.member,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+        (context as any).old_voice_state = oldState;
+        (context as any).new_voice_state = newState;
 
-      // Determine event type
-      if (!oldState.channel && newState.channel) {
-        await eventRouter.emit('voice_join', context, actionExecutor, evaluator);
-      } else if (oldState.channel && !newState.channel) {
-        await eventRouter.emit('voice_leave', context, actionExecutor, evaluator);
-      } else if (oldState.channel?.id !== newState.channel?.id) {
-        await eventRouter.emit('voice_move', context, actionExecutor, evaluator);
+        // Determine event type
+        if (!oldState.channel && newState.channel) {
+          await eventRouter.emit('voice_join', context, actionExecutor, evaluator);
+        } else if (oldState.channel && !newState.channel) {
+          await eventRouter.emit('voice_leave', context, actionExecutor, evaluator);
+        } else if (oldState.channel?.id !== newState.channel?.id) {
+          await eventRouter.emit('voice_move', context, actionExecutor, evaluator);
+        }
+
+        await eventRouter.emit('voice_state_update', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in voiceStateUpdate event:'), err);
       }
-
-      await eventRouter.emit('voice_state_update', context, actionExecutor, evaluator);
     });
 
     // Role events
     discordClient.on('roleCreate', async (role) => {
-      const context = buildActionContext({
-        role,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          role,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('role_create', context, actionExecutor, evaluator);
+        await eventRouter.emit('role_create', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in roleCreate event:'), err);
+      }
     });
 
     discordClient.on('roleDelete', async (role) => {
-      const context = buildActionContext({
-        role,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          role,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('role_delete', context, actionExecutor, evaluator);
+        await eventRouter.emit('role_delete', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in roleDelete event:'), err);
+      }
     });
 
     // Channel events
     discordClient.on('channelCreate', async (channel) => {
-      const context = buildActionContext({
-        channel,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          channel,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('channel_create', context, actionExecutor, evaluator);
+        await eventRouter.emit('channel_create', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in channelCreate event:'), err);
+      }
     });
 
     discordClient.on('channelDelete', async (channel) => {
-      const context = buildActionContext({
-        channel,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          channel,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('channel_delete', context, actionExecutor, evaluator);
+        await eventRouter.emit('channel_delete', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in channelDelete event:'), err);
+      }
     });
 
     // Thread events
     discordClient.on('threadCreate', async (thread) => {
-      const context = buildActionContext({
-        thread,
-        client: discordClient,
-        evaluator,
-        stateManager,
-        flowEngine,
-        voiceManager,
-        actionExecutor,
-        eventRouter,
-        spec,
-      });
+      try {
+        const context = buildActionContext({
+          thread,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
 
-      await eventRouter.emit('thread_create', context, actionExecutor, evaluator);
+        await eventRouter.emit('thread_create', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in threadCreate event:'), err);
+      }
+    });
+
+    // Component interaction events (buttons, select menus, modals)
+    // These are forwarded to the EventRouter for YAML-defined handlers
+    discordClient.on('interactionCreate', async (interaction) => {
+      // Skip command interactions (handled by interactionHandler)
+      if (interaction.isChatInputCommand()) return;
+      if (interaction.isUserContextMenuCommand()) return;
+      if (interaction.isMessageContextMenuCommand()) return;
+      if (interaction.isAutocomplete()) return;
+
+      try {
+        const context = buildActionContext({
+          interaction,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+
+        // Add component-specific context
+        if ('customId' in interaction) {
+          (context as any).custom_id = interaction.customId;
+          (context as any).customId = interaction.customId;
+        }
+
+        // Determine event type and emit
+        if (interaction.isButton()) {
+          (context as any).component_type = 'button';
+          await eventRouter.emit('button_click', context, actionExecutor, evaluator);
+        } else if (interaction.isStringSelectMenu()) {
+          (context as any).component_type = 'select_menu';
+          (context as any).values = interaction.values;
+          (context as any).selected = interaction.values;
+          await eventRouter.emit('select_menu', context, actionExecutor, evaluator);
+        } else if (interaction.isModalSubmit()) {
+          (context as any).component_type = 'modal';
+          // Extract modal field values
+          const fields: Record<string, string> = {};
+          for (const [key, component] of interaction.fields.fields) {
+            // Only TextInputModalData has a value property
+            if ('value' in component) {
+              fields[key] = component.value;
+            }
+          }
+          (context as any).fields = fields;
+          (context as any).modal_values = fields;
+          await eventRouter.emit('modal_submit', context, actionExecutor, evaluator);
+        }
+      } catch (err) {
+        console.error(chalk.red('Error in interactionCreate event:'), err);
+        // Try to respond with error if possible
+        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: 'An error occurred while processing this interaction.',
+            ephemeral: true,
+          }).catch(() => {});
+        }
+      }
     });
 
     console.log('\n' + chalk.green('  Bot is running!'));
@@ -572,10 +719,13 @@ function buildActionContext(options: {
   eventRouter: any;
   spec: any;
 }): any {
+  // Create shared options object - args is an alias for options (used by builtins)
+  const commandOptions: Record<string, unknown> = {};
   const context: any = {
     now: new Date(),
     random: Math.random(),
-    options: {},
+    options: commandOptions,
+    args: commandOptions,  // Alias for options - used by builtins
     state: {},
 
     // Store dependencies for handlers

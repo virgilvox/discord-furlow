@@ -8,6 +8,34 @@ import type { ActionContext } from '../actions/types.js';
 import type { ActionExecutor } from '../actions/executor.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
 
+/**
+ * Validate regex pattern for ReDoS vulnerabilities
+ */
+function isValidRegexPattern(pattern: string): boolean {
+  // Check pattern length
+  if (pattern.length > 500) {
+    return false;
+  }
+  // Check for dangerous patterns (nested quantifiers, overlapping alternatives)
+  const dangerousPatterns = [
+    /\([^)]*[+*][^)]*\)[+*]/,  // Nested quantifiers: (a+)+ or (a*)*
+    /\([^)]*\|[^)]*\)[+*]/,    // Overlapping alternatives: (a|a)+
+    /(.+)\1+[+*]/,             // Backreference with quantifier
+  ];
+  for (const dangerous of dangerousPatterns) {
+    if (dangerous.test(pattern)) {
+      return false;
+    }
+  }
+  // Try to compile to catch syntax errors
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export class AutomodEngine {
   private rules: AutomodRule[] = [];
   private enabled = true;
@@ -159,6 +187,11 @@ export class AutomodEngine {
       case 'regex':
         if (trigger.regex) {
           for (const pattern of trigger.regex) {
+            // Validate pattern for ReDoS before compiling
+            if (!isValidRegexPattern(pattern)) {
+              console.warn(`Skipping potentially dangerous regex pattern: ${pattern.substring(0, 50)}...`);
+              continue;
+            }
             try {
               const regex = new RegExp(pattern, 'gi');
               const found = content.match(regex);

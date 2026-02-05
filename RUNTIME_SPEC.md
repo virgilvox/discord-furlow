@@ -808,7 +808,7 @@ function executeAction(action, context):
 
 ### 5.3 Action Categories
 
-FURLOW defines 84 actions in 9 categories:
+FURLOW defines 85 actions in 9 categories:
 
 | Category | Count | Description |
 |----------|-------|-------------|

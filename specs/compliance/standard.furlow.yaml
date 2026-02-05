@@ -283,7 +283,7 @@ flows:
       - ban:
           user: "${config.testUserId}"
           reason: "Test ban"
-          deleteMessageDays: 1
+          delete_message_days: 1
           when: "false"
 
       # unban
@@ -405,7 +405,7 @@ flows:
       - create_thread:
           channel: "${config.testChannelId}"
           name: "Test Thread"
-          autoArchiveDuration: 1440
+          auto_archive_duration: 1440
           reason: "Compliance test"
           as: newThread
           when: "false"
@@ -430,15 +430,12 @@ flows:
       # set_channel_permissions
       - set_channel_permissions:
           channel: "${config.testChannelId}"
-          overwrites:
-            - id: "${config.testRoleId}"
-              type: "role"
-              allow:
-                - "ViewChannel"
-                - "SendMessages"
-              deny:
-                - "MentionEveryone"
-          reason: "Permission test"
+          role: "${config.testRoleId}"
+          allow:
+            - "ViewChannel"
+            - "SendMessages"
+          deny:
+            - "MentionEveryone"
           when: "false"
 
       - return:
@@ -494,21 +491,28 @@ flows:
           level: info
 
       - show_modal:
-          customId: "compliance_test_modal"
-          title: "Test Modal"
-          fields:
-            - customId: "test_input"
-              label: "Test Input"
-              style: "short"
-              placeholder: "Enter test value"
-              required: true
-              minLength: 1
-              maxLength: 100
-            - customId: "test_paragraph"
-              label: "Detailed Input"
-              style: "paragraph"
-              placeholder: "Enter detailed information"
-              required: false
+          modal:
+            custom_id: "compliance_test_modal"
+            title: "Test Modal"
+            components:
+              - type: action_row
+                components:
+                  - type: text_input
+                    custom_id: "test_input"
+                    label: "Test Input"
+                    style: 1
+                    placeholder: "Enter test value"
+                    required: true
+                    min_length: 1
+                    max_length: 100
+              - type: action_row
+                components:
+                  - type: text_input
+                    custom_id: "test_paragraph"
+                    label: "Detailed Input"
+                    style: 2
+                    placeholder: "Enter detailed information"
+                    required: false
           when: "false"
 
       - return:

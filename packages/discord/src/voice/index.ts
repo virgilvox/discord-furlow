@@ -10,11 +10,13 @@ import {
   VoiceConnectionStatus,
   entersState,
   getVoiceConnection,
+  StreamType,
   type VoiceConnection,
   type AudioPlayer,
   type AudioResource,
   type DiscordGatewayAdapterCreator,
 } from '@discordjs/voice';
+import { FFmpeg } from 'prism-media';
 import type { VoiceChannel, StageChannel, Guild } from 'discord.js';
 
 /** Voice configuration */
@@ -125,20 +127,30 @@ export class VoiceManager {
       selfMute: options.selfMute ?? this.config.connection?.self_mute ?? false,
     });
 
-    // Wait for connection to be ready
-    await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+    // Wait for connection to be ready with error handling
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, 30000);
+    } catch (err) {
+      // Clean up failed connection
+      connection.destroy();
+      throw new Error(`Failed to connect to voice channel: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // Create audio player
     const player = createAudioPlayer();
 
-    // Set up player events
+    // Set up player events with proper error handling
     player.on(AudioPlayerStatus.Idle, () => {
-      this.handleTrackEnd(guildId);
+      this.handleTrackEnd(guildId).catch((err) => {
+        console.error(`Error handling track end in ${guildId}:`, err);
+      });
     });
 
     player.on('error', (error) => {
       console.error(`Audio player error in ${guildId}:`, error);
-      this.handleTrackEnd(guildId);
+      this.handleTrackEnd(guildId).catch((err) => {
+        console.error(`Error handling track end after player error in ${guildId}:`, err);
+      });
     });
 
     // Subscribe connection to player
@@ -189,25 +201,55 @@ export class VoiceManager {
       throw new Error('Not connected to voice in this guild');
     }
 
-    // Build FFmpeg args for filters and seeking
-    const ffmpegArgs: string[] = ['-analyzeduration', '0'];
+    const hasFilters = state.filters.size > 0;
+    const hasSeek = options.seek && options.seek > 0;
 
-    // Add seek if specified
-    if (options.seek && options.seek > 0) {
-      ffmpegArgs.push('-ss', String(options.seek / 1000)); // Convert ms to seconds
+    let resource: AudioResource;
+
+    // If we have filters or seeking, use FFmpeg to process the stream
+    if (hasFilters || hasSeek) {
+      // Build FFmpeg args
+      const ffmpegArgs: string[] = [
+        '-analyzeduration', '0',
+        '-loglevel', '0',
+        '-i', source,
+      ];
+
+      // Add seek if specified (before input for faster seeking)
+      if (hasSeek) {
+        // Insert -ss before -i for input seeking
+        const inputIndex = ffmpegArgs.indexOf('-i');
+        ffmpegArgs.splice(inputIndex, 0, '-ss', String(options.seek! / 1000));
+      }
+
+      // Add filters if any are active
+      if (hasFilters) {
+        const filterArgs = this.buildFilterArgs(state.filters);
+        ffmpegArgs.push(...filterArgs);
+      }
+
+      // Output format args for raw PCM that discord.js voice expects
+      ffmpegArgs.push(
+        '-f', 's16le',
+        '-ar', '48000',
+        '-ac', '2',
+        'pipe:1'
+      );
+
+      // Create FFmpeg stream with custom args
+      const ffmpegStream = new FFmpeg({ args: ffmpegArgs });
+
+      // Create audio resource from FFmpeg stream
+      resource = createAudioResource(ffmpegStream, {
+        inputType: StreamType.Raw,
+        inlineVolume: true,
+      });
+    } else {
+      // No filters or seeking - use simple resource creation
+      resource = createAudioResource(source, {
+        inlineVolume: true,
+      });
     }
-
-    // Add filters if any are active
-    if (state.filters.size > 0) {
-      const filterArgs = this.buildFilterArgs(state.filters);
-      ffmpegArgs.push(...filterArgs);
-    }
-
-    // Create audio resource with FFmpeg args if needed
-    const resource = createAudioResource(source, {
-      inlineVolume: true,
-      inputType: ffmpegArgs.length > 2 ? undefined : undefined,
-    });
 
     // Set volume
     const volume = options.volume ?? state.volume;

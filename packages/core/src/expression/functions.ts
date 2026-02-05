@@ -126,7 +126,15 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
     return String(s ?? '').padEnd(len, char);
   });
   jexl.addFunction('replace', (s: string, search: string, replace: string) => {
-    return s?.replace(new RegExp(search, 'g'), replace) ?? '';
+    if (!s) return '';
+    // Validate regex pattern to prevent ReDoS attacks
+    const validatedPattern = validateRegexPattern(search);
+    if (!validatedPattern.valid) {
+      console.warn(`Invalid regex pattern in replace(): ${validatedPattern.error}`);
+      // Fall back to literal string replacement
+      return s.split(search).join(replace);
+    }
+    return s.replace(new RegExp(search, 'g'), replace);
   });
   jexl.addFunction('split', (s: string, delimiter: string) => {
     return s?.split(delimiter) ?? [];
@@ -145,6 +153,12 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
   });
   jexl.addFunction('match', (s: string, pattern: string) => {
     if (!s) return false;
+    // Validate regex pattern to prevent ReDoS attacks
+    const validatedPattern = validateRegexPattern(pattern);
+    if (!validatedPattern.valid) {
+      console.warn(`Invalid regex pattern in match(): ${validatedPattern.error}`);
+      return false;
+    }
     return new RegExp(pattern).test(s);
   });
 
@@ -188,8 +202,16 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
     return copy;
   });
   jexl.addFunction('range', (start: number, end: number, step = 1) => {
+    // Prevent unbounded memory allocation - cap at 10000 elements
+    const MAX_RANGE_SIZE = 10000;
+    const estimatedSize = Math.abs(Math.ceil((end - start) / (step || 1)));
+    if (estimatedSize > MAX_RANGE_SIZE) {
+      console.warn(`range() limited to ${MAX_RANGE_SIZE} elements (requested ~${estimatedSize})`);
+    }
     const result: number[] = [];
+    let iterations = 0;
     for (let i = start; step > 0 ? i < end : i > end; i += step) {
+      if (iterations++ >= MAX_RANGE_SIZE) break;
       result.push(i);
     }
     return result;
@@ -209,7 +231,15 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
   jexl.addFunction('entries', (obj: Record<string, unknown>) => Object.entries(obj ?? {}));
   jexl.addFunction('get', (obj: Record<string, unknown>, path: string, defaultValue?: unknown) => {
     if (!obj) return defaultValue;
+    // Block prototype pollution paths
+    const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
     const parts = path.split('.');
+    for (const part of parts) {
+      if (DANGEROUS_KEYS.has(part)) {
+        console.warn(`Blocked access to dangerous key: ${part}`);
+        return defaultValue;
+      }
+    }
     let current: unknown = obj;
     for (const part of parts) {
       if (current === null || current === undefined) return defaultValue;
@@ -218,10 +248,27 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
     return current ?? defaultValue;
   });
   jexl.addFunction('has', (obj: Record<string, unknown>, key: string) => {
-    return obj != null && key in obj;
+    // Block prototype pollution - use hasOwnProperty instead of 'in' operator
+    const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+    if (DANGEROUS_KEYS.has(key)) {
+      return false;
+    }
+    return obj != null && Object.prototype.hasOwnProperty.call(obj, key);
   });
   jexl.addFunction('merge', (...objs: Record<string, unknown>[]) => {
-    return Object.assign({}, ...objs);
+    // Block prototype pollution by filtering dangerous keys
+    const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+    const result: Record<string, unknown> = {};
+    for (const obj of objs) {
+      if (obj && typeof obj === 'object') {
+        for (const key of Object.keys(obj)) {
+          if (!DANGEROUS_KEYS.has(key)) {
+            result[key] = obj[key];
+          }
+        }
+      }
+    }
+    return result;
   });
 
   // Type functions
@@ -254,7 +301,7 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
     return isNaN(n) ? 0 : n;
   });
   jexl.addFunction('boolean', (value: unknown) => Boolean(value));
-  jexl.addFunction('json', (value: unknown) => JSON.stringify(value));
+  jexl.addFunction('json', (value: unknown) => safeJsonStringify(value));
   jexl.addFunction('parseJson', (s: string) => {
     try {
       return JSON.parse(s);
@@ -323,6 +370,61 @@ export function registerFunctions(jexl: Jexl.Jexl): void {
       hash = hash & hash;
     }
     return Math.abs(hash).toString(16);
+  });
+}
+
+/**
+ * Validate a regex pattern to prevent ReDoS attacks
+ * Checks for patterns known to cause exponential backtracking
+ */
+function validateRegexPattern(pattern: string): { valid: boolean; error?: string } {
+  // Check pattern length
+  if (pattern.length > 500) {
+    return { valid: false, error: 'Pattern too long (max 500 characters)' };
+  }
+
+  // Check for common ReDoS patterns:
+  // - Nested quantifiers: (a+)+, (a*)*
+  // - Overlapping alternatives: (a|a)+
+  const dangerousPatterns = [
+    /\([^)]*[+*][^)]*\)[+*]/, // Nested quantifiers like (a+)+
+    /\([^)]*\|[^)]*\)[+*]/, // Alternation with quantifier like (a|b)+
+    /(.+)\1+[+*]/, // Backreference with quantifier
+  ];
+
+  for (const dangerous of dangerousPatterns) {
+    if (dangerous.test(pattern)) {
+      return { valid: false, error: 'Pattern contains potentially dangerous constructs' };
+    }
+  }
+
+  // Try to compile the regex to catch syntax errors
+  try {
+    new RegExp(pattern);
+  } catch (e) {
+    return { valid: false, error: e instanceof Error ? e.message : 'Invalid regex syntax' };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Safely stringify a value, handling circular references
+ */
+function safeJsonStringify(value: unknown): string {
+  const seen = new WeakSet();
+  return JSON.stringify(value, (_key, val) => {
+    if (typeof val === 'object' && val !== null) {
+      if (seen.has(val)) {
+        return '[Circular]';
+      }
+      seen.add(val);
+    }
+    // Handle BigInt
+    if (typeof val === 'bigint') {
+      return val.toString();
+    }
+    return val;
   });
 }
 

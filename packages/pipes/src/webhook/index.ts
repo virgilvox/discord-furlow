@@ -125,13 +125,19 @@ export class WebhookPipe implements Pipe {
       }
 
       case 'signature': {
-        // Custom signature verification
-        // This would depend on the specific service
-        return true;
+        // Custom signature verification - fail closed by default
+        // Requires both a header configuration and a secret to be provided
+        const signatureValue = headers[signatureHeader.toLowerCase()];
+        if (!signatureValue) {
+          return false;
+        }
+        // Compare the provided signature with the secret using timing-safe comparison
+        return this.timingSafeEqual(signatureValue, secret);
       }
 
       default:
-        return true;
+        // Unknown verification type - fail closed for security
+        return false;
     }
   }
 

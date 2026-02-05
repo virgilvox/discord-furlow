@@ -11,6 +11,11 @@ import {
   type GiveawaysConfig,
 } from '../giveaways/index.js';
 
+// Helper to safely check if condition includes a substring
+const conditionIncludes = (condition: unknown, str: string): boolean => {
+  return typeof condition === 'string' && condition.includes(str);
+};
+
 describe('Giveaways Builtin', () => {
   describe('Exports', () => {
     it('should export giveawaysTables object', () => {
@@ -76,7 +81,7 @@ describe('Giveaways Builtin', () => {
       const handler = giveawaysEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('giveaway_enter_')
+          conditionIncludes(h.condition, 'giveaway_enter_')
       );
       expect(handler).toBeDefined();
     });
@@ -95,7 +100,7 @@ describe('Giveaways Builtin', () => {
       const handler = giveawaysEventHandlers.find(
         (h) =>
           h.event === 'button_click' &&
-          h.condition?.includes('giveaway_enter_')
+          conditionIncludes(h.condition, 'giveaway_enter_')
       )!;
 
       it('should check if giveaway has ended', () => {

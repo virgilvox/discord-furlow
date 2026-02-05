@@ -19,6 +19,7 @@ export class WebSocketPipe implements Pipe {
   private config: WebSocketPipeConfig;
   private reconnectAttempts = 0;
   private reconnecting = false;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private messageHandlers: Map<string, WebSocketMessageHandler[]> = new Map();
   private connected = false;
@@ -75,6 +76,12 @@ export class WebSocketPipe implements Pipe {
     this.stopHeartbeat();
     this.reconnecting = false;
 
+    // Clear any pending reconnect timer to prevent memory leaks
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -117,14 +124,24 @@ export class WebSocketPipe implements Pipe {
     }
 
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
+      let resolved = false;
+
+      const cleanup = () => {
         this.off(responseEvent, handler);
+      };
+
+      const timer = setTimeout(() => {
+        if (resolved) return;
+        resolved = true;
+        cleanup();
         resolve({ success: false, error: 'Request timeout' });
       }, timeout);
 
       const handler = (response: unknown) => {
+        if (resolved) return;
+        resolved = true;
         clearTimeout(timer);
-        this.off(responseEvent, handler);
+        cleanup();
         resolve({ success: true, data: response as T });
       };
 
@@ -160,7 +177,13 @@ export class WebSocketPipe implements Pipe {
     const handlers = this.messageHandlers.get(event) ?? [];
     for (const handler of handlers) {
       try {
-        handler(data);
+        const result = handler(data);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error(`WebSocket async handler error for "${event}":`, error);
+          });
+        }
       } catch (error) {
         console.error(`WebSocket handler error for "${event}":`, error);
       }
@@ -209,14 +232,17 @@ export class WebSocketPipe implements Pipe {
     this.reconnecting = true;
     this.reconnectAttempts++;
 
-    setTimeout(async () => {
-      try {
-        await this.connect();
-        this.emit('reconnected', { attempts: this.reconnectAttempts });
-      } catch {
-        this.reconnecting = false;
-        this.handleDisconnect();
-      }
+    // Track the timer so it can be cleared on disconnect
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect()
+        .then(() => {
+          this.emit('reconnected', { attempts: this.reconnectAttempts });
+        })
+        .catch(() => {
+          this.reconnecting = false;
+          this.handleDisconnect();
+        });
     }, delay);
   }
 

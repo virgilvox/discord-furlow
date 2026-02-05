@@ -392,8 +392,8 @@ describe('Command Registration', () => {
     await handler.registerCommands(
       [],
       [
-        { name: 'Get Info', type: 'user' },
-        { name: 'Report', type: 'message' },
+        { name: 'Get Info', type: 'user', actions: [] },
+        { name: 'Report', type: 'message', actions: [] },
       ]
     );
   });

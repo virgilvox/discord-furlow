@@ -1,6 +1,6 @@
 # FURLOW Full Compliance Test Suite
-# Tests: All Standard (63) + Voice (17) + Canvas/Metrics (4)
-# Total Actions: 84
+# Tests: All Standard (63) + Voice (17) + Canvas/Metrics (5)
+# Total Actions: 85
 
 version: "1"
 name: "full-compliance-test"
@@ -32,6 +32,51 @@ state:
         position: 0
         loop: "off"
       persist: false
+
+# Canvas generator definitions (for canvas_render tests)
+canvas:
+  generators:
+    welcome:
+      width: 800
+      height: 400
+      background: "#5865F2"
+      layers:
+        - type: text
+          x: 400
+          y: 200
+          text: "Welcome ${username}!"
+          font: "bold 48px Arial"
+          fill: "#FFFFFF"
+          align: center
+    rank:
+      width: 800
+      height: 200
+      background: "#2C2F33"
+      layers:
+        - type: text
+          x: 100
+          y: 100
+          text: "Level ${level}"
+          font: "bold 36px Arial"
+          fill: "#FFFFFF"
+    custom:
+      width: 800
+      height: 400
+      background: "#2C2F33"
+      layers:
+        - type: rect
+          x: 0
+          y: 0
+          width: 800
+          height: 400
+          fill: "#2C2F33"
+        - type: text
+          x: 400
+          y: 200
+          text: "Custom Canvas"
+          font: "bold 48px Arial"
+          fill: "#FFFFFF"
+          align: center
 
 # Test flows
 flows:
@@ -250,33 +295,21 @@ flows:
           message: "Testing queue_add action..."
           level: info
 
-      # Add to end
+      # Add to end (default)
       - queue_add:
-          tracks:
-            - url: "https://example.com/track1.mp3"
-              title: "Track 1"
-              duration: 180000
-            - url: "https://example.com/track2.mp3"
-              title: "Track 2"
-              duration: 240000
-          position: "end"
+          source: "https://example.com/track1.mp3"
+          position: "last"
           when: "false"
 
       # Add as next
       - queue_add:
-          tracks:
-            - url: "https://example.com/urgent.mp3"
-              title: "Urgent Track"
-              duration: 120000
+          source: "https://example.com/urgent.mp3"
           position: "next"
           when: "false"
 
       # Add at specific position
       - queue_add:
-          tracks:
-            - url: "https://example.com/inserted.mp3"
-              title: "Inserted Track"
-              duration: 150000
+          source: "https://example.com/inserted.mp3"
           position: 2
           when: "false"
 
@@ -361,67 +394,52 @@ flows:
           message: "Testing canvas_render action..."
           level: info
 
-      # Welcome card
+      # Welcome card - references generator defined in canvas.generators
       - canvas_render:
-          type: "welcome"
-          options:
-            background: "#5865F2"
-            backgroundImage: "https://example.com/bg.png"
-            avatar: "${config.testUserId}"
+          generator: "welcome"
+          context:
             username: "TestUser"
-            discriminator: "0001"
-            message: "Welcome to the server!"
-            memberCount: 1000
-            font: "Arial"
-            textColor: "#FFFFFF"
-            accentColor: "#FF5733"
-          channel: "${config.welcomeChannel}"
-          as: welcomeMessage
+          as: welcomeImage
           when: "false"
 
-      # Rank card
+      # Rank card - references generator defined in canvas.generators
       - canvas_render:
-          type: "rank"
-          options:
-            background: "#2C2F33"
-            avatar: "${config.testUserId}"
-            username: "TestUser"
-            level: 25
-            xp: 15000
-            xpNeeded: 20000
-            rank: 5
-            progressColor: "#5865F2"
-            textColor: "#FFFFFF"
-          channel: "${config.testChannelId}"
-          as: rankMessage
+          generator: "rank"
+          context:
+            level: "25"
+          as: rankImage
           when: "false"
 
-      # Custom canvas
+      # Custom canvas - references generator defined in canvas.generators
       - canvas_render:
-          type: "custom"
-          options:
-            width: 800
-            height: 400
-            layers:
-              - type: "rect"
-                x: 0
-                y: 0
-                width: 800
-                height: 400
-                fill: "#2C2F33"
-              - type: "text"
-                x: 400
-                y: 200
-                text: "Custom Canvas"
-                font: "bold 48px Arial"
-                fill: "#FFFFFF"
-                align: "center"
-              - type: "circle"
-                x: 100
-                y: 200
-                radius: 50
-                fill: "#5865F2"
-          channel: "${config.testChannelId}"
+          generator: "custom"
+          as: customImage
+          when: "false"
+
+      # Use render_layers for inline layer definitions
+      - render_layers:
+          width: 800
+          height: 400
+          background: "#2C2F33"
+          layers:
+            - type: rect
+              x: 0
+              y: 0
+              width: 800
+              height: 400
+              fill: "#2C2F33"
+            - type: text
+              x: 400
+              y: 200
+              text: "Inline Layers Test"
+              font: "bold 48px Arial"
+              fill: "#FFFFFF"
+              align: center
+            - type: circle_image
+              x: 100
+              y: 200
+              radius: 50
+              src: "https://example.com/avatar.png"
           as: customMessage
           when: "false"
 
@@ -537,10 +555,10 @@ flows:
           as: searchResults
           when: "false"
 
-      # 3. Add to queue
+      # 3. Add to queue (first result)
       - queue_add:
-          tracks: "${searchResults}"
-          position: "end"
+          track: "${first(searchResults)}"
+          position: "last"
           when: "false"
 
       # 4. Start playback
@@ -845,7 +863,7 @@ flows:
           message: ""
           level: info
       - log:
-          message: "This suite tests all 84 actions:"
+          message: "This suite tests all 85 actions:"
           level: info
       - log:
           message: "- State Actions: 7"

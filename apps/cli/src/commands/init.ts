@@ -36,6 +36,7 @@ export async function initCommand(
   console.log(chalk.bold.cyan('\n  FURLOW Bot Generator\n'));
 
   // Prompt for name if not provided
+  let projectName: string;
   if (!name) {
     const answers = await inquirer.prompt([
       {
@@ -51,10 +52,12 @@ export async function initCommand(
         },
       },
     ]);
-    name = answers.name ?? 'my-furlow-bot';
+    projectName = answers.name ?? 'my-furlow-bot';
+  } else {
+    projectName = name;
   }
 
-  const projectDir = join(process.cwd(), name!);
+  const projectDir = join(process.cwd(), projectName);
 
   const spinner = ora('Creating project structure...').start();
 
@@ -68,7 +71,7 @@ export async function initCommand(
     // Create main spec file
     await writeFile(
       join(projectDir, 'furlow.yaml'),
-      generateMainSpec(name, options.template)
+      generateMainSpec(projectName, options.template)
     );
 
     // Create .env.example
@@ -156,7 +159,7 @@ dist/
 
     console.log('\n' + chalk.green('  Project created successfully!') + '\n');
     console.log('  Next steps:');
-    console.log(chalk.dim(`    cd ${name}`));
+    console.log(chalk.dim(`    cd ${projectName}`));
     console.log(chalk.dim('    cp .env.example .env'));
     console.log(chalk.dim('    # Edit .env with your bot token'));
     console.log(chalk.dim('    npm run dev'));
@@ -203,7 +206,7 @@ commands:
     description: Check if the bot is responsive
     actions:
       - action: reply
-        content: "Pong! Latency: \${client.ping}ms"
+        content: "Pong! Latency: \${client.ws.ping}ms"
         ephemeral: true
 `;
 }

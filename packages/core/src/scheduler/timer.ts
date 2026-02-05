@@ -36,7 +36,7 @@ export class TimerManager {
 
     const expiresAt = Date.now() + durationMs;
 
-    const timeout = setTimeout(async () => {
+    const timeout = setTimeout(() => {
       this.timers.delete(id);
 
       const context = {
@@ -44,21 +44,27 @@ export class TimerManager {
         timer: { id, event, data, expiresAt },
       };
 
-      // Emit the timer event
-      await eventRouter.emit(
-        event,
-        context as ActionContext,
-        executor,
-        evaluator
-      );
+      // Emit the timer event with proper error handling
+      (async () => {
+        try {
+          await eventRouter.emit(
+            event,
+            context as ActionContext,
+            executor,
+            evaluator
+          );
 
-      // Also emit generic timer_fire event
-      await eventRouter.emit(
-        'timer_fire',
-        context as ActionContext,
-        executor,
-        evaluator
-      );
+          // Also emit generic timer_fire event
+          await eventRouter.emit(
+            'timer_fire',
+            context as ActionContext,
+            executor,
+            evaluator
+          );
+        } catch (err) {
+          console.error(`Timer "${id}" event emission error:`, err);
+        }
+      })();
     }, durationMs);
 
     this.timers.set(id, {

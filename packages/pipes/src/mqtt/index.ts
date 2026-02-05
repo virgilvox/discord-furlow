@@ -244,7 +244,13 @@ export class MqttPipe implements Pipe {
     const handlers = this.messageHandlers.get(event) ?? [];
     for (const handler of handlers) {
       try {
-        handler(event, data as Buffer, {});
+        const result = handler(event, data as Buffer, {});
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error(`MQTT async handler error for "${event}":`, error);
+          });
+        }
       } catch (error) {
         console.error(`MQTT handler error for "${event}":`, error);
       }
@@ -268,7 +274,13 @@ export class MqttPipe implements Pipe {
     const exactHandlers = this.messageHandlers.get(topic) ?? [];
     for (const handler of exactHandlers) {
       try {
-        handler(topic, parsedPayload, packet);
+        const result = handler(topic, parsedPayload, packet);
+        // Handle async handlers properly
+        if (result instanceof Promise) {
+          result.catch((error) => {
+            console.error(`MQTT async handler error for topic "${topic}":`, error);
+          });
+        }
       } catch (error) {
         console.error(`MQTT handler error for topic "${topic}":`, error);
       }
@@ -279,7 +291,13 @@ export class MqttPipe implements Pipe {
       if (this.topicMatches(pattern, topic)) {
         for (const handler of handlers) {
           try {
-            handler(topic, parsedPayload, packet);
+            const result = handler(topic, parsedPayload, packet);
+            // Handle async handlers properly
+            if (result instanceof Promise) {
+              result.catch((error) => {
+                console.error(`MQTT async wildcard handler error for pattern "${pattern}":`, error);
+              });
+            }
           } catch (error) {
             console.error(`MQTT wildcard handler error for pattern "${pattern}":`, error);
           }

@@ -24,6 +24,7 @@ export interface Histogram {
   values: number[];
   sum: number;
   count: number;
+  maxValues: number; // Maximum values to keep in memory
 }
 
 export class MetricsCollector {
@@ -86,8 +87,9 @@ export class MetricsCollector {
 
   /**
    * Record a histogram value
+   * Keeps only the most recent values in memory (sliding window)
    */
-  recordHistogram(name: string, value: number): void {
+  recordHistogram(name: string, value: number, maxValues = 10000): void {
     if (!this.enabled) return;
 
     let histogram = this.histograms.get(name);
@@ -98,13 +100,24 @@ export class MetricsCollector {
         values: [],
         sum: 0,
         count: 0,
+        maxValues,
       };
       this.histograms.set(name, histogram);
     }
 
+    // Add new value
     histogram.values.push(value);
     histogram.sum += value;
     histogram.count++;
+
+    // Evict old values if over limit to prevent memory leak
+    while (histogram.values.length > histogram.maxValues) {
+      const evicted = histogram.values.shift();
+      if (evicted !== undefined) {
+        histogram.sum -= evicted;
+        // Note: count represents total recorded, not current window size
+      }
+    }
   }
 
   /**
@@ -189,6 +202,7 @@ export class MetricsCollector {
       histogram.values = [];
       histogram.sum = 0;
       histogram.count = 0;
+      // Keep maxValues setting
     }
   }
 

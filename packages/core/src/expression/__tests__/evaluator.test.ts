@@ -90,6 +90,59 @@ describe('ExpressionEvaluator', () => {
     });
   });
 
+  describe('evaluateTemplate', () => {
+    it('should pass through non-string values directly', async () => {
+      const buffer = Buffer.from('test data');
+      expect(await evaluator.evaluateTemplate(buffer, {})).toBe(buffer);
+
+      const number = 42;
+      expect(await evaluator.evaluateTemplate(number, {})).toBe(42);
+
+      const obj = { foo: 'bar' };
+      expect(await evaluator.evaluateTemplate(obj, {})).toBe(obj);
+
+      expect(await evaluator.evaluateTemplate(null, {})).toBe(null);
+      expect(await evaluator.evaluateTemplate(undefined, {})).toBe(undefined);
+    });
+
+    it('should return raw value for exact ${expr} match', async () => {
+      const buffer = Buffer.from('test data');
+      const context = { myBuffer: buffer, myNum: 123 };
+
+      // Should return the actual Buffer, not "[object Buffer]"
+      const result = await evaluator.evaluateTemplate('${myBuffer}', context);
+      expect(result).toBe(buffer);
+      expect(Buffer.isBuffer(result)).toBe(true);
+
+      // Should return number, not string "123"
+      const numResult = await evaluator.evaluateTemplate('${myNum}', context);
+      expect(numResult).toBe(123);
+      expect(typeof numResult).toBe('number');
+    });
+
+    it('should handle whitespace in exact expressions', async () => {
+      const context = { value: { nested: 'data' } };
+      const result = await evaluator.evaluateTemplate('${ value.nested }', context);
+      expect(result).toBe('data');
+    });
+
+    it('should interpolate as string for mixed templates', async () => {
+      const context = { name: 'Alice', age: 30 };
+
+      const result = await evaluator.evaluateTemplate('Hello ${name}!', context);
+      expect(result).toBe('Hello Alice!');
+      expect(typeof result).toBe('string');
+
+      const multi = await evaluator.evaluateTemplate('${name} is ${age}', context);
+      expect(multi).toBe('Alice is 30');
+    });
+
+    it('should return plain string as-is when no expressions', async () => {
+      const result = await evaluator.evaluateTemplate('Just a string', {});
+      expect(result).toBe('Just a string');
+    });
+  });
+
   describe('custom functions and transforms', () => {
     it('should allow adding custom functions', async () => {
       evaluator.addFunction('double', (n: number) => n * 2);
@@ -554,6 +607,301 @@ describe('ExpressionEvaluator', () => {
       const result = await evaluator.evaluate<string>('hash("test")');
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
+    });
+  });
+
+  // =====================================
+  // Error Handling & Edge Cases
+  // =====================================
+  describe('error handling', () => {
+    it('should throw on syntax errors', async () => {
+      await expect(evaluator.evaluate('1 +')).rejects.toThrow();
+      await expect(evaluator.evaluate('(()')).rejects.toThrow();
+      await expect(evaluator.evaluate('foo(')).rejects.toThrow();
+    });
+
+    it('should throw on unclosed strings', async () => {
+      await expect(evaluator.evaluate('"unclosed')).rejects.toThrow();
+      await expect(evaluator.evaluate("'unclosed")).rejects.toThrow();
+    });
+
+    it('should throw on invalid operators', async () => {
+      await expect(evaluator.evaluate('1 <> 2')).rejects.toThrow();
+    });
+
+    it('should handle division by zero gracefully', async () => {
+      // JavaScript returns Infinity, not an error
+      const result = await evaluator.evaluate('10 / 0');
+      expect(result).toBe(Infinity);
+    });
+
+    it('should handle modulo by zero', async () => {
+      const result = await evaluator.evaluate('10 % 0');
+      expect(Number.isNaN(result)).toBe(true);
+    });
+
+    it('should handle calling undefined functions', async () => {
+      await expect(evaluator.evaluate('nonexistentFunction()')).rejects.toThrow();
+    });
+
+    it('should handle accessing properties on null', async () => {
+      const context = { nullValue: null };
+      // Jexl typically returns undefined for property access on null
+      const result = await evaluator.evaluate('nullValue.prop', context);
+      expect(result).toBeUndefined();
+    });
+
+    it('should handle accessing properties on undefined', async () => {
+      const result = await evaluator.evaluate('missing.nested.path', {});
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('type coercion edge cases', () => {
+    it('should handle string to number coercion in comparisons', async () => {
+      expect(await evaluator.evaluate('"5" == 5')).toBe(true);
+      expect(await evaluator.evaluate('"5" < 10')).toBe(true);
+    });
+
+    it('should handle boolean coercion', async () => {
+      expect(await evaluator.evaluate('!"" == true')).toBe(true);
+      expect(await evaluator.evaluate('!0 == true')).toBe(true);
+      expect(await evaluator.evaluate('!null == true')).toBe(true);
+    });
+
+    it('should handle NaN comparisons', async () => {
+      // NaN is never equal to itself in standard JS, but Jexl uses loose comparison
+      // which returns true for NaN == NaN (consistent with Jexl's behavior)
+      const result = await evaluator.evaluate('number("invalid") == number("invalid")');
+      // Jexl treats NaN == NaN as true in its comparison semantics
+      expect(result).toBe(true);
+    });
+
+    it('should handle Infinity', async () => {
+      const context = { inf: Infinity };
+      expect(await evaluator.evaluate('inf > 999999999', context)).toBe(true);
+      expect(await evaluator.evaluate('inf == inf', context)).toBe(true);
+    });
+
+    it('should handle empty array truthiness', async () => {
+      expect(await evaluator.evaluate('[] ? "yes" : "no"')).toBe('yes'); // Arrays are truthy
+      expect(await evaluator.evaluate('length([]) == 0')).toBe(true);
+    });
+
+    it('should handle empty object truthiness', async () => {
+      expect(await evaluator.evaluate('{} ? "yes" : "no"')).toBe('yes'); // Objects are truthy
+    });
+  });
+
+  describe('deeply nested expressions', () => {
+    it('should handle deeply nested ternaries', async () => {
+      const expr = 'a ? (b ? (c ? 1 : 2) : 3) : 4';
+      expect(await evaluator.evaluate(expr, { a: true, b: true, c: true })).toBe(1);
+      expect(await evaluator.evaluate(expr, { a: true, b: true, c: false })).toBe(2);
+      expect(await evaluator.evaluate(expr, { a: true, b: false })).toBe(3);
+      expect(await evaluator.evaluate(expr, { a: false })).toBe(4);
+    });
+
+    it('should handle deeply nested arithmetic', async () => {
+      const result = await evaluator.evaluate('((((1 + 2) * 3) - 4) / 5)');
+      expect(result).toBe(1); // ((3 * 3) - 4) / 5 = 5 / 5 = 1
+    });
+
+    it('should handle deeply nested property access', async () => {
+      const context = {
+        a: { b: { c: { d: { e: { value: 42 } } } } },
+      };
+      expect(await evaluator.evaluate('a.b.c.d.e.value', context)).toBe(42);
+    });
+
+    it('should handle nested function calls', async () => {
+      expect(await evaluator.evaluate('upper(lower(upper("HeLLo")))')).toBe('HELLO');
+      expect(await evaluator.evaluate('abs(floor(ceil(-1.5)))')).toBe(1);
+    });
+  });
+
+  describe('unicode and special characters', () => {
+    it('should handle unicode in strings', async () => {
+      expect(await evaluator.evaluate('"Hello 世界"')).toBe('Hello 世界');
+      expect(await evaluator.evaluate('"🎉🚀✨"')).toBe('🎉🚀✨');
+    });
+
+    it('should handle unicode in interpolation', async () => {
+      const context = { emoji: '🎮', name: '用户' };
+      const result = await evaluator.interpolate('Hello ${name} ${emoji}!', context);
+      expect(result).toBe('Hello 用户 🎮!');
+    });
+
+    it('should handle newlines in strings', async () => {
+      const context = { multiline: 'line1\nline2\nline3' };
+      expect(await evaluator.evaluate('multiline', context)).toBe('line1\nline2\nline3');
+    });
+
+    it('should handle tabs in strings', async () => {
+      const context = { tabbed: 'col1\tcol2\tcol3' };
+      expect(await evaluator.evaluate('tabbed', context)).toBe('col1\tcol2\tcol3');
+    });
+  });
+
+  describe('array edge cases', () => {
+    it('should handle empty arrays', async () => {
+      expect(await evaluator.evaluate('length([])')).toBe(0);
+      expect(await evaluator.evaluate('first([])')).toBeUndefined();
+      expect(await evaluator.evaluate('last([])')).toBeUndefined();
+    });
+
+    it('should handle single element arrays', async () => {
+      expect(await evaluator.evaluate('first([42])')).toBe(42);
+      expect(await evaluator.evaluate('last([42])')).toBe(42);
+    });
+
+    it('should handle arrays with mixed types', async () => {
+      const context = { mixed: [1, 'two', true, null, { nested: 'obj' }] };
+      expect(await evaluator.evaluate('length(mixed)', context)).toBe(5);
+      expect(await evaluator.evaluate('mixed[0]', context)).toBe(1);
+      expect(await evaluator.evaluate('mixed[1]', context)).toBe('two');
+      expect(await evaluator.evaluate('mixed[4].nested', context)).toBe('obj');
+    });
+
+    it('should handle negative array indices gracefully', async () => {
+      const context = { arr: [1, 2, 3] };
+      // Negative indices don't work in Jexl like they do in Python
+      const result = await evaluator.evaluate('arr[-1]', context);
+      expect(result).toBeUndefined();
+    });
+
+    it('should handle out of bounds array access', async () => {
+      const context = { arr: [1, 2, 3] };
+      expect(await evaluator.evaluate('arr[100]', context)).toBeUndefined();
+    });
+
+    it('should handle sparse arrays', async () => {
+      const context = { sparse: [1, , , 4] }; // eslint-disable-line no-sparse-arrays
+      expect(await evaluator.evaluate('sparse[2]', context)).toBeUndefined();
+      expect(await evaluator.evaluate('sparse[3]', context)).toBe(4);
+    });
+  });
+
+  describe('object edge cases', () => {
+    it('should handle empty objects', async () => {
+      expect(await evaluator.evaluate('keys({})')).toEqual([]);
+      expect(await evaluator.evaluate('values({})')).toEqual([]);
+    });
+
+    it('should handle objects with special key names', async () => {
+      const context = {
+        obj: {
+          'key-with-dashes': 'value1',
+          'normalKey': 'value2',
+        },
+      };
+      // get() uses dot notation for nested paths, so dashes work but dots don't
+      expect(await evaluator.evaluate('get(obj, "key-with-dashes")', context)).toBe('value1');
+      expect(await evaluator.evaluate('get(obj, "normalKey")', context)).toBe('value2');
+    });
+
+    it('should handle prototype-polluted objects safely', async () => {
+      const context = { obj: Object.create(null) };
+      context.obj.value = 'safe';
+      // Should not expose prototype methods
+      expect(await evaluator.evaluate('obj.value', context)).toBe('safe');
+    });
+  });
+
+  describe('caching behavior', () => {
+    it('should use cached compiled expressions', async () => {
+      // Evaluate same expression multiple times
+      for (let i = 0; i < 100; i++) {
+        await evaluator.evaluate('1 + 2 + 3');
+      }
+
+      const stats = evaluator.getStats();
+      expect(stats.evaluations).toBe(100);
+      expect(stats.cacheHits).toBe(99); // First one is a miss, rest are hits
+      expect(stats.cacheMisses).toBe(1);
+    });
+
+    it('should clear cache', async () => {
+      await evaluator.evaluate('1 + 2');
+      evaluator.clearCache();
+
+      const stats = evaluator.getStats();
+      expect(stats.evaluations).toBe(0);
+      expect(stats.cacheHits).toBe(0);
+      expect(stats.cacheMisses).toBe(0);
+    });
+  });
+
+  describe('interpolation edge cases', () => {
+    it('should handle escaped dollar signs', async () => {
+      // Note: This depends on how the evaluator handles escaping
+      const result = await evaluator.interpolate('Price: $100', {});
+      expect(result).toBe('Price: $100');
+    });
+
+    it('should handle adjacent expressions', async () => {
+      const result = await evaluator.interpolate('${a}${b}${c}', { a: 1, b: 2, c: 3 });
+      expect(result).toBe('123');
+    });
+
+    it('should handle expressions with braces', async () => {
+      const context = { obj: { a: 1, b: 2 } };
+      const result = await evaluator.interpolate('Value: ${obj.a}', context);
+      expect(result).toBe('Value: 1');
+    });
+
+    it('should handle empty expression', async () => {
+      // Empty expression in interpolation
+      const result = await evaluator.interpolate('Hello ${}!', {});
+      // Should return string as-is or handle gracefully
+      expect(result).toBeDefined();
+    });
+
+    it('should handle whitespace in expressions', async () => {
+      const result = await evaluator.interpolate('${  x  }', { x: 42 });
+      expect(result).toBe('42');
+    });
+  });
+
+  describe('security considerations', () => {
+    it('should not allow constructor access', async () => {
+      const context = { obj: {} };
+      // Attempting to access constructor should throw an error
+      // Jexl does not expose constructor - accessing it throws
+      await expect(
+        evaluator.evaluate('obj.constructor', context)
+      ).rejects.toThrow();
+    });
+
+    it('should not allow __proto__ access', async () => {
+      const context = { obj: {} };
+      // Attempting to access __proto__ should throw an error
+      await expect(
+        evaluator.evaluate('obj.__proto__', context)
+      ).rejects.toThrow();
+    });
+
+    it('should handle very long strings', async () => {
+      const longString = 'a'.repeat(10000);
+      const context = { long: longString };
+      const result = await evaluator.evaluate('length(long)', context);
+      expect(result).toBe(10000);
+    });
+
+    it('should handle very large numbers', async () => {
+      const result = await evaluator.evaluate('9999999999999999999999999999');
+      // JavaScript will represent this as Infinity or a large number
+      expect(typeof result).toBe('number');
+    });
+  });
+
+  describe('compile method', () => {
+    it('should compile expression for repeated evaluation', () => {
+      const compiled = evaluator.compile('x * 2 + y');
+
+      // Compiled expressions can be evaluated synchronously multiple times
+      expect(compiled.evalSync({ x: 5, y: 3 })).toBe(13);
+      expect(compiled.evalSync({ x: 10, y: 1 })).toBe(21);
     });
   });
 });

@@ -199,6 +199,9 @@ function mergeSpecs(base: FurlowSpec, imported: FurlowSpec): FurlowSpec {
   };
 }
 
+// Maximum import depth to prevent stack overflow
+const MAX_IMPORT_DEPTH = 50;
+
 async function loadWithImports(
   filePath: string,
   options: LoaderOptions,
@@ -206,6 +209,14 @@ async function loadWithImports(
   importStack: string[]
 ): Promise<{ spec: FurlowSpec; files: string[] }> {
   const resolvedPath = resolve(filePath);
+
+  // Check for excessive import depth (prevents stack overflow)
+  if (importStack.length >= MAX_IMPORT_DEPTH) {
+    throw new Error(
+      `Maximum import depth (${MAX_IMPORT_DEPTH}) exceeded. ` +
+      `Import chain: ${importStack.slice(-5).join(' -> ')} -> ${resolvedPath}`
+    );
+  }
 
   // Check for circular imports
   if (visited.has(resolvedPath)) {
