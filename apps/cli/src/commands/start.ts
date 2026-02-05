@@ -409,6 +409,14 @@ export async function startCommand(
           spec,
         });
 
+        // Add attachments for automod
+        (context as any).attachments = message.attachments?.map(a => ({
+          name: a.name,
+          size: a.size,
+          contentType: a.contentType,
+          url: a.url,
+        })) ?? [];
+
         await eventRouter.emit('message_create', context, actionExecutor, evaluator);
       } catch (err) {
         console.error(chalk.red('Error in messageCreate event:'), err);
@@ -513,8 +521,66 @@ export async function startCommand(
         (context as any).old_member = oldMember;
 
         await eventRouter.emit('member_update', context, actionExecutor, evaluator);
+
+        // Detect boost changes
+        const wasBooster = !!oldMember.premiumSince;
+        const isBooster = !!newMember.premiumSince;
+
+        if (!wasBooster && isBooster) {
+          (context as any).boost_since = newMember.premiumSince;
+          await eventRouter.emit('member_boost', context, actionExecutor, evaluator);
+        } else if (wasBooster && !isBooster) {
+          (context as any).boost_ended = oldMember.premiumSince;
+          await eventRouter.emit('member_unboost', context, actionExecutor, evaluator);
+        }
       } catch (err) {
         console.error(chalk.red('Error in guildMemberUpdate event:'), err);
+      }
+    });
+
+    // Ban events
+    discordClient.on('guildBanAdd', async (ban) => {
+      try {
+        const context = buildActionContext({
+          user: ban.user,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+        (context as any).guild = wrapDiscordObject(ban.guild);
+        context.guildId = ban.guild?.id;
+        (context as any).reason = ban.reason;
+
+        await eventRouter.emit('member_ban', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in guildBanAdd event:'), err);
+      }
+    });
+
+    discordClient.on('guildBanRemove', async (ban) => {
+      try {
+        const context = buildActionContext({
+          user: ban.user,
+          client: discordClient,
+          evaluator,
+          stateManager,
+          flowEngine,
+          voiceManager,
+          actionExecutor,
+          eventRouter,
+          spec,
+        });
+        (context as any).guild = wrapDiscordObject(ban.guild);
+        context.guildId = ban.guild?.id;
+
+        await eventRouter.emit('member_unban', context, actionExecutor, evaluator);
+      } catch (err) {
+        console.error(chalk.red('Error in guildBanRemove event:'), err);
       }
     });
 
@@ -589,6 +655,19 @@ export async function startCommand(
           await eventRouter.emit('voice_leave', context, actionExecutor, evaluator);
         } else if (oldState.channel?.id !== newState.channel?.id) {
           await eventRouter.emit('voice_move', context, actionExecutor, evaluator);
+        }
+
+        // Detect streaming changes
+        const wasStreaming = oldState.streaming;
+        const isStreaming = newState.streaming;
+
+        if (!wasStreaming && isStreaming) {
+          (context as any).streaming = true;
+          (context as any).voice_channel = wrapDiscordObject(newState.channel);
+          await eventRouter.emit('voice_stream_start', context, actionExecutor, evaluator);
+        } else if (wasStreaming && !isStreaming) {
+          (context as any).streaming = false;
+          await eventRouter.emit('voice_stream_stop', context, actionExecutor, evaluator);
         }
 
         await eventRouter.emit('voice_state_update', context, actionExecutor, evaluator);

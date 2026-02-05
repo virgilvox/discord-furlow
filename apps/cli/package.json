@@ -1,6 +1,6 @@
 {
   "name": "@furlow/cli",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Declarative Discord Bot Framework - Build bots with YAML, no code required",
   "keywords": [
     "furlow",

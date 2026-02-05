@@ -39,6 +39,7 @@ function isValidRegexPattern(pattern: string): boolean {
 export class AutomodEngine {
   private rules: AutomodRule[] = [];
   private enabled = true;
+  private messageHistory: Map<string, { content: string; timestamp: number }[]> = new Map();
 
   /**
    * Configure the automod engine
@@ -83,7 +84,7 @@ export class AutomodEngine {
       // Check triggers
       const triggers = Array.isArray(rule.trigger) ? rule.trigger : [rule.trigger];
       for (const trigger of triggers) {
-        const matched = this.checkTrigger(trigger, content);
+        const matched = this.checkTrigger(trigger, content, context);
         if (matched.length > 0) {
           matches.push({
             rule,
@@ -167,7 +168,7 @@ export class AutomodEngine {
   /**
    * Check a trigger against content
    */
-  private checkTrigger(trigger: AutomodTrigger, content: string): string[] {
+  private checkTrigger(trigger: AutomodTrigger, content: string, context: ActionContext): string[] {
     const matches: string[] = [];
     const lowerContent = content.toLowerCase();
 
@@ -256,6 +257,95 @@ export class AutomodEngine {
           matches.push(`${newlines} newlines`);
         }
         break;
+
+      case 'attachment':
+        // Check message context for attachments
+        // Note: Attachments passed via context, not content string
+        const attachments = (context as any).attachments ?? [];
+        const attachmentCount = Array.isArray(attachments) ? attachments.length : 0;
+
+        if (attachmentCount > 0) {
+          const threshold = trigger.threshold ?? 1;
+          if (attachmentCount >= threshold) {
+            // Check blocked extensions if specified
+            if (trigger.blocked?.length) {
+              for (const att of attachments) {
+                const ext = att.name?.split('.').pop()?.toLowerCase();
+                if (ext && trigger.blocked.includes(ext)) {
+                  matches.push(`blocked attachment: ${att.name}`);
+                }
+              }
+            } else if (trigger.allowed?.length) {
+              // Whitelist mode - block anything not in allowed
+              for (const att of attachments) {
+                const ext = att.name?.split('.').pop()?.toLowerCase();
+                if (!ext || !trigger.allowed.includes(ext)) {
+                  matches.push(`disallowed attachment: ${att.name}`);
+                }
+              }
+            } else {
+              // No filter - just count
+              matches.push(`${attachmentCount} attachments`);
+            }
+          }
+        }
+        break;
+
+      case 'spam':
+        // Rate limiting - count messages in window
+        const userId = (context as any).userId ?? (context as any).user?.id;
+        const channelId = (context as any).channelId ?? (context as any).channel?.id;
+        if (userId && channelId) {
+          const historyKey = `spam_${userId}_${channelId}`;
+
+          const spamThreshold = trigger.threshold ?? 5;
+          const windowMs = parseDuration(trigger.window ?? '10s');
+          const now = Date.now();
+
+          // Get history and filter to window
+          let history = this.messageHistory.get(historyKey) ?? [];
+          history = history.filter(h => now - h.timestamp < windowMs);
+
+          // Add current message
+          history.push({ content, timestamp: now });
+          this.messageHistory.set(historyKey, history);
+
+          // Check threshold
+          if (history.length >= spamThreshold) {
+            matches.push(`${history.length} messages in ${trigger.window ?? '10s'}`);
+          }
+        }
+        break;
+
+      case 'duplicate':
+        // Detect repeated identical messages
+        const dupUserId = (context as any).userId ?? (context as any).user?.id;
+        const dupChannelId = (context as any).channelId ?? (context as any).channel?.id;
+        if (dupUserId && dupChannelId) {
+          const dupKey = `dup_${dupUserId}_${dupChannelId}`;
+
+          const dupThreshold = trigger.threshold ?? 3;
+          const dupWindowMs = parseDuration(trigger.window ?? '1m');
+          const dupNow = Date.now();
+
+          // Get history and filter to window
+          let dupHistory = this.messageHistory.get(dupKey) ?? [];
+          dupHistory = dupHistory.filter(h => dupNow - h.timestamp < dupWindowMs);
+
+          // Count duplicates of current content
+          const contentLower = content.toLowerCase().trim();
+          const duplicates = dupHistory.filter(h => h.content.toLowerCase().trim() === contentLower);
+
+          // Add current message
+          dupHistory.push({ content, timestamp: dupNow });
+          this.messageHistory.set(dupKey, dupHistory);
+
+          // Check threshold (including current message)
+          if (duplicates.length + 1 >= dupThreshold) {
+            matches.push(`${duplicates.length + 1} duplicate messages`);
+          }
+        }
+        break;
     }
 
     return matches;
@@ -314,6 +404,36 @@ function normalizeActions(actions: any[]): any[] {
 
     return action;
   });
+}
+
+/**
+ * Parse a duration string or number to milliseconds
+ */
+function parseDuration(duration: string | number): number {
+  if (typeof duration === 'number') {
+    return duration;
+  }
+
+  const match = duration.match(/^(\d+)(ms|s|m|h|d)?$/);
+  if (!match) return 0;
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2] ?? 'ms';
+
+  switch (unit) {
+    case 'ms':
+      return value;
+    case 's':
+      return value * 1000;
+    case 'm':
+      return value * 60 * 1000;
+    case 'h':
+      return value * 60 * 60 * 1000;
+    case 'd':
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      return value;
+  }
 }
 
 /**

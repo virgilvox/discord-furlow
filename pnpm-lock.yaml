@@ -45,22 +45,22 @@ importers:
   apps/cli:
     dependencies:
       '@furlow/builtins':
-        specifier: workspace:*
+        specifier: ^1.0.4
         version: link:../../packages/builtins
       '@furlow/core':
-        specifier: workspace:*
+        specifier: ^1.0.8
         version: link:../../packages/core
       '@furlow/discord':
-        specifier: workspace:*
+        specifier: ^1.0.4
         version: link:../../packages/discord
       '@furlow/pipes':
-        specifier: workspace:*
+        specifier: ^1.0.4
         version: link:../../packages/pipes
       '@furlow/schema':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../../packages/schema
       '@furlow/storage':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../../packages/storage
       chalk:
         specifier: ^5.3.0
@@ -68,6 +68,9 @@ importers:
       commander:
         specifier: ^12.0.0
         version: 12.1.0
+      discord.js:
+        specifier: ^14.14.0
+        version: 14.25.1
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1
@@ -77,6 +80,25 @@ importers:
       ora:
         specifier: ^8.0.0
         version: 8.2.0
+    optionalDependencies:
+      '@discordjs/opus':
+        specifier: ^0.9.0
+        version: 0.9.0
+      better-sqlite3:
+        specifier: ^9.3.0
+        version: 9.6.0
+      canvas:
+        specifier: ^2.11.0
+        version: 2.11.2
+      pg:
+        specifier: ^8.11.0
+        version: 8.18.0
+      prism-media:
+        specifier: ^1.3.5
+        version: 1.3.5(@discordjs/opus@0.9.0)
+      sodium-native:
+        specifier: ^4.0.0
+        version: 4.3.3
     devDependencies:
       '@types/inquirer':
         specifier: ^9.0.7
@@ -84,9 +106,6 @@ importers:
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.31
-      discord.js:
-        specifier: ^14.14.0
-        version: 14.25.1
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(typescript@5.3.3)(yaml@2.8.2)
@@ -255,13 +274,13 @@ importers:
   packages/builtins:
     dependencies:
       '@furlow/core':
-        specifier: workspace:*
+        specifier: ^1.0.8
         version: link:../core
       '@furlow/discord':
-        specifier: workspace:*
+        specifier: ^1.0.4
         version: link:../discord
       '@furlow/schema':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../schema
     devDependencies:
       '@types/node':
@@ -280,10 +299,10 @@ importers:
   packages/core:
     dependencies:
       '@furlow/schema':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../schema
       '@furlow/storage':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../storage
       canvas:
         specifier: ^2.11.0
@@ -323,10 +342,10 @@ importers:
         specifier: ^0.17.0
         version: 0.17.0(@discordjs/opus@0.9.0)
       '@furlow/core':
-        specifier: workspace:*
+        specifier: ^1.0.8
         version: link:../core
       '@furlow/schema':
-        specifier: workspace:*
+        specifier: ^1.0.3
         version: link:../schema
       discord.js:
         specifier: ^14.14.0
@@ -357,7 +376,7 @@ importers:
   packages/pipes:
     dependencies:
       '@furlow/core':
-        specifier: workspace:*
+        specifier: ^1.0.8
         version: link:../core
       axios:
         specifier: ^1.6.0
@@ -3011,6 +3030,20 @@ packages:
   /balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
+  /bare-addon-resolve@1.9.7:
+    resolution: {integrity: sha512-cIo93Y4Maw8ZNrfq5qlvRBqCHUyeSzMyFBqJRNi91SOspeWiFq3ixiq0ExYWmtOBauIkCLod2Mng73xr7fmkXA==}
+    requiresBuild: true
+    peerDependencies:
+      bare-url: '*'
+    peerDependenciesMeta:
+      bare-url:
+        optional: true
+    dependencies:
+      bare-module-resolve: 1.12.1
+      bare-semver: 1.0.2
+    dev: false
+    optional: true
+
   /bare-events@2.8.2:
     resolution: {integrity: sha512-riJjyv1/mHLIPX4RwiK+oW9/4c3TEUeORHKefKAKnZ5kyslbN+HXowtbaVEqt4IMUB7OXlfixcs6gsFeo/jhiQ==}
     peerDependencies:
@@ -3041,6 +3074,19 @@ packages:
     dev: true
     optional: true
 
+  /bare-module-resolve@1.12.1:
+    resolution: {integrity: sha512-hbmAPyFpEq8FoZMd5sFO3u6MC5feluWoGE8YKlA8fCrl6mNtx68Wjg4DTiDJcqRJaovTvOYKfYngoBUnbaT7eg==}
+    requiresBuild: true
+    peerDependencies:
+      bare-url: '*'
+    peerDependenciesMeta:
+      bare-url:
+        optional: true
+    dependencies:
+      bare-semver: 1.0.2
+    dev: false
+    optional: true
+
   /bare-os@3.6.2:
     resolution: {integrity: sha512-T+V1+1srU2qYNBmJCXZkUY5vQ0B4FSlL3QDROnKQYOqeiQR8UbjNHlPa+TIbM4cuidiN9GaTaOZgSEgsvPbh5A==}
     engines: {bare: '>=1.14.0'}
@@ -3054,6 +3100,12 @@ packages:
     dependencies:
       bare-os: 3.6.2
     dev: true
+    optional: true
+
+  /bare-semver@1.0.2:
+    resolution: {integrity: sha512-ESVaN2nzWhcI5tf3Zzcq9aqCZ676VWzqw07eEZ0qxAcEOAFYBa0pWq8sK34OQeHLY3JsfKXZS9mDyzyxGjeLzA==}
+    requiresBuild: true
+    dev: false
     optional: true
 
   /bare-stream@2.7.0(bare-events@2.8.2):
@@ -5909,6 +5961,17 @@ packages:
       regex-utilities: 2.3.0
     dev: false
 
+  /require-addon@1.2.0:
+    resolution: {integrity: sha512-VNPDZlYgIYQwWp9jMTzljx+k0ZtatKlcvOhktZ/anNPI3dQ9NXk7cq2U4iJ1wd9IrytRnYhyEocFWbkdPb+MYA==}
+    engines: {bare: '>=1.10.0'}
+    requiresBuild: true
+    dependencies:
+      bare-addon-resolve: 1.9.7
+    transitivePeerDependencies:
+      - bare-url
+    dev: false
+    optional: true
+
   /require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -6234,6 +6297,16 @@ packages:
       ip-address: 10.1.0
       smart-buffer: 4.2.0
     dev: false
+
+  /sodium-native@4.3.3:
+    resolution: {integrity: sha512-OnxSlN3uyY8D0EsLHpmm2HOFmKddQVvEMmsakCrXUzSd8kjjbzL413t4ZNF3n0UxSwNgwTyUvkmZHTfuCeiYSw==}
+    requiresBuild: true
+    dependencies:
+      require-addon: 1.2.0
+    transitivePeerDependencies:
+      - bare-url
+    dev: false
+    optional: true
 
   /source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}

@@ -1,6 +1,6 @@
 {
   "name": "@furlow/core",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Core runtime engine for FURLOW Discord bot framework",
   "keywords": [
     "furlow",

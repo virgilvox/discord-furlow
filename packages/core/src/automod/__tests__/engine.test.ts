@@ -778,6 +778,226 @@ describe('AutomodEngine', () => {
       expect(engine.isEnabled()).toBe(false);
     });
   });
+
+  describe('attachment trigger', () => {
+    it('should detect attachments', async () => {
+      engine.configure({
+        rules: [{ name: 'no-files', trigger: { type: 'attachment' }, actions: [] }],
+      });
+      const contextWithAttachments = {
+        ...mockContext,
+        attachments: [{ name: 'file.txt', size: 100 }],
+      };
+      const result = await engine.check('check this file', contextWithAttachments as any, mockEvaluator);
+      expect(result.passed).toBe(false);
+      expect(result.matches[0].matched[0]).toMatch(/1 attachment/);
+    });
+
+    it('should block specific file extensions', async () => {
+      engine.configure({
+        rules: [{ name: 'no-exe', trigger: { type: 'attachment', blocked: ['exe', 'dll'] }, actions: [] }],
+      });
+      const contextWithExe = {
+        ...mockContext,
+        attachments: [{ name: 'virus.exe', size: 100 }],
+      };
+      const result = await engine.check('', contextWithExe as any, mockEvaluator);
+      expect(result.passed).toBe(false);
+      expect(result.matches[0].matched[0]).toMatch(/blocked attachment.*virus\.exe/);
+    });
+
+    it('should allow safe extensions in whitelist mode', async () => {
+      engine.configure({
+        rules: [{ name: 'images-only', trigger: { type: 'attachment', allowed: ['png', 'jpg'] }, actions: [] }],
+      });
+      const contextWithPng = {
+        ...mockContext,
+        attachments: [{ name: 'image.png', size: 100 }],
+      };
+      const result = await engine.check('', contextWithPng as any, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+
+    it('should block non-whitelisted extensions in whitelist mode', async () => {
+      engine.configure({
+        rules: [{ name: 'images-only', trigger: { type: 'attachment', allowed: ['png', 'jpg'] }, actions: [] }],
+      });
+      const contextWithExe = {
+        ...mockContext,
+        attachments: [{ name: 'file.exe', size: 100 }],
+      };
+      const result = await engine.check('', contextWithExe as any, mockEvaluator);
+      expect(result.passed).toBe(false);
+      expect(result.matches[0].matched[0]).toMatch(/disallowed attachment.*file\.exe/);
+    });
+
+    it('should pass when no attachments present', async () => {
+      engine.configure({
+        rules: [{ name: 'no-files', trigger: { type: 'attachment' }, actions: [] }],
+      });
+      const result = await engine.check('just text', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+
+    it('should respect threshold for attachment count', async () => {
+      engine.configure({
+        rules: [{ name: 'max-files', trigger: { type: 'attachment', threshold: 3 }, actions: [] }],
+      });
+      const contextWith2Files = {
+        ...mockContext,
+        attachments: [{ name: 'file1.txt' }, { name: 'file2.txt' }],
+      };
+      const result = await engine.check('', contextWith2Files as any, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('spam trigger', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should detect rapid message spam', async () => {
+      // Create fresh engine for this test to avoid shared state
+      const spamEngine = createAutomodEngine();
+      spamEngine.configure({
+        rules: [{ name: 'spam', trigger: { type: 'spam', threshold: 3, window: '10s' }, actions: [] }],
+      });
+
+      // First two messages - OK
+      let result = await spamEngine.check('message 1', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+      result = await spamEngine.check('message 2', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+
+      // Third message triggers spam detection
+      result = await spamEngine.check('message 3', mockContext, mockEvaluator);
+      expect(result.passed).toBe(false);
+      expect(result.matches[0].matched[0]).toMatch(/3 messages in 10s/);
+    });
+
+    it('should reset after window expires', async () => {
+      const spamEngine = createAutomodEngine();
+      spamEngine.configure({
+        rules: [{ name: 'spam', trigger: { type: 'spam', threshold: 3, window: '5s' }, actions: [] }],
+      });
+
+      await spamEngine.check('msg 1', mockContext, mockEvaluator);
+      await spamEngine.check('msg 2', mockContext, mockEvaluator);
+
+      // Advance time past window
+      vi.advanceTimersByTime(6000);
+
+      // Should not trigger (history expired)
+      const result = await spamEngine.check('msg 3', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+
+    it('should track separate users independently', async () => {
+      const spamEngine = createAutomodEngine();
+      spamEngine.configure({
+        rules: [{ name: 'spam', trigger: { type: 'spam', threshold: 2, window: '10s' }, actions: [] }],
+      });
+
+      const user1Context = { ...mockContext, userId: 'user-1', channelId: 'channel-1' };
+      const user2Context = { ...mockContext, userId: 'user-2', channelId: 'channel-1' };
+
+      // User 1 sends 2 messages - triggers spam
+      await spamEngine.check('msg', user1Context as any, mockEvaluator);
+      const result1 = await spamEngine.check('msg', user1Context as any, mockEvaluator);
+      expect(result1.passed).toBe(false);
+
+      // User 2 sends 1 message - should be OK
+      const result2 = await spamEngine.check('msg', user2Context as any, mockEvaluator);
+      expect(result2.passed).toBe(true);
+    });
+  });
+
+  describe('duplicate trigger', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should detect duplicate messages', async () => {
+      const dupEngine = createAutomodEngine();
+      dupEngine.configure({
+        rules: [{ name: 'dupe', trigger: { type: 'duplicate', threshold: 3, window: '1m' }, actions: [] }],
+      });
+
+      let result = await dupEngine.check('same message', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+      result = await dupEngine.check('same message', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+      result = await dupEngine.check('same message', mockContext, mockEvaluator);
+      expect(result.passed).toBe(false);
+      expect(result.matches[0].matched[0]).toMatch(/3 duplicate/);
+    });
+
+    it('should ignore case when comparing', async () => {
+      const dupEngine = createAutomodEngine();
+      dupEngine.configure({
+        rules: [{ name: 'dupe', trigger: { type: 'duplicate', threshold: 2 }, actions: [] }],
+      });
+
+      await dupEngine.check('HELLO WORLD', mockContext, mockEvaluator);
+      const result = await dupEngine.check('hello world', mockContext, mockEvaluator);
+      expect(result.passed).toBe(false);
+    });
+
+    it('should not trigger for different messages', async () => {
+      const dupEngine = createAutomodEngine();
+      dupEngine.configure({
+        rules: [{ name: 'dupe', trigger: { type: 'duplicate', threshold: 2 }, actions: [] }],
+      });
+
+      await dupEngine.check('message one', mockContext, mockEvaluator);
+      const result = await dupEngine.check('message two', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+
+    it('should reset after window expires', async () => {
+      const dupEngine = createAutomodEngine();
+      dupEngine.configure({
+        rules: [{ name: 'dupe', trigger: { type: 'duplicate', threshold: 2, window: '5s' }, actions: [] }],
+      });
+
+      await dupEngine.check('same', mockContext, mockEvaluator);
+
+      // Advance time past window
+      vi.advanceTimersByTime(6000);
+
+      // Should not trigger (history expired)
+      const result = await dupEngine.check('same', mockContext, mockEvaluator);
+      expect(result.passed).toBe(true);
+    });
+
+    it('should track separate users independently', async () => {
+      const dupEngine = createAutomodEngine();
+      dupEngine.configure({
+        rules: [{ name: 'dupe', trigger: { type: 'duplicate', threshold: 2 }, actions: [] }],
+      });
+
+      const user1Context = { ...mockContext, userId: 'user-1', channelId: 'channel-1' };
+      const user2Context = { ...mockContext, userId: 'user-2', channelId: 'channel-1' };
+
+      // User 1 sends same message twice - triggers duplicate
+      await dupEngine.check('repeat', user1Context as any, mockEvaluator);
+      const result1 = await dupEngine.check('repeat', user1Context as any, mockEvaluator);
+      expect(result1.passed).toBe(false);
+
+      // User 2 sends same message once - should be OK
+      const result2 = await dupEngine.check('repeat', user2Context as any, mockEvaluator);
+      expect(result2.passed).toBe(true);
+    });
+  });
 });
 
 describe('createAutomodEngine', () => {

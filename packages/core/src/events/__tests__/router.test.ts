@@ -651,3 +651,181 @@ describe('createEventRouter', () => {
     expect(router).toBeInstanceOf(EventRouter);
   });
 });
+
+describe('High-level Events', () => {
+  let router: EventRouter;
+  let mockExecutor: ActionExecutor;
+  let mockEvaluator: ExpressionEvaluator;
+  let mockContext: ActionContext;
+
+  beforeEach(() => {
+    router = createEventRouter();
+
+    mockExecutor = {
+      executeOne: vi.fn().mockResolvedValue({ success: true }),
+      executeAll: vi.fn().mockResolvedValue([]),
+      executeSequence: vi.fn().mockResolvedValue([]),
+    } as unknown as ActionExecutor;
+
+    mockEvaluator = {
+      evaluate: vi.fn().mockResolvedValue(true),
+      interpolate: vi.fn().mockImplementation(async (s) => s),
+    } as unknown as ExpressionEvaluator;
+
+    mockContext = {
+      guildId: 'guild-123',
+      channelId: 'channel-123',
+      userId: 'user-123',
+      client: {},
+      stateManager: {},
+      evaluator: mockEvaluator,
+      flowExecutor: {},
+    } as ActionContext;
+  });
+
+  afterEach(() => {
+    router.clear();
+  });
+
+  describe('member ban events', () => {
+    it('should emit member_ban event', async () => {
+      router.register({
+        event: 'member_ban',
+        actions: [{ action: 'log', message: 'User banned' }],
+      });
+
+      const banContext = {
+        ...mockContext,
+        user: { id: 'banned-user', username: 'BadUser' },
+        reason: 'Violation of rules',
+      };
+
+      await router.emit('member_ban', banContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should emit member_unban event', async () => {
+      router.register({
+        event: 'member_unban',
+        actions: [{ action: 'log', message: 'User unbanned' }],
+      });
+
+      await router.emit('member_unban', mockContext, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should provide ban reason in context', async () => {
+      router.register({
+        event: 'member_ban',
+        actions: [{ action: 'log', message: 'banned' }],
+      });
+
+      const banContext = {
+        ...mockContext,
+        reason: 'Spamming',
+      };
+
+      await router.emit('member_ban', banContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({ reason: 'Spamming' })
+      );
+    });
+  });
+
+  describe('member boost events', () => {
+    it('should emit member_boost when user starts boosting', async () => {
+      router.register({
+        event: 'member_boost',
+        actions: [{ action: 'reply', content: 'Thanks for boosting!' }],
+      });
+
+      const boostContext = {
+        ...mockContext,
+        boost_since: new Date(),
+      };
+
+      await router.emit('member_boost', boostContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should emit member_unboost when user stops boosting', async () => {
+      router.register({
+        event: 'member_unboost',
+        actions: [{ action: 'log', message: 'Boost ended' }],
+      });
+
+      await router.emit('member_unboost', mockContext, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should provide boost_since in context', async () => {
+      router.register({
+        event: 'member_boost',
+        actions: [{ action: 'log', message: 'boosted' }],
+      });
+
+      const boostDate = new Date('2024-01-15');
+      const boostContext = {
+        ...mockContext,
+        boost_since: boostDate,
+      };
+
+      await router.emit('member_boost', boostContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({ boost_since: boostDate })
+      );
+    });
+  });
+
+  describe('voice streaming events', () => {
+    it('should emit voice_stream_start when user starts streaming', async () => {
+      router.register({
+        event: 'voice_stream_start',
+        actions: [{ action: 'log', message: 'Stream started' }],
+      });
+
+      const streamContext = {
+        ...mockContext,
+        streaming: true,
+        voice_channel: { id: 'vc-123', name: 'General' },
+      };
+
+      await router.emit('voice_stream_start', streamContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should emit voice_stream_stop when user stops streaming', async () => {
+      router.register({
+        event: 'voice_stream_stop',
+        actions: [{ action: 'log', message: 'Stream ended' }],
+      });
+
+      await router.emit('voice_stream_stop', mockContext, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalled();
+    });
+
+    it('should provide streaming status and voice_channel in context', async () => {
+      router.register({
+        event: 'voice_stream_start',
+        actions: [{ action: 'log', message: 'streaming' }],
+      });
+
+      const streamContext = {
+        ...mockContext,
+        streaming: true,
+        voice_channel: { id: 'vc-123', name: 'Gaming' },
+      };
+
+      await router.emit('voice_stream_start', streamContext as any, mockExecutor, mockEvaluator);
+      expect(mockExecutor.executeSequence).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({
+          streaming: true,
+          voice_channel: { id: 'vc-123', name: 'Gaming' },
+        })
+      );
+    });
+  });
+});

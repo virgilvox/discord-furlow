@@ -618,47 +618,45 @@ automod:
   enabled: true
   log_channel: "${env.MOD_LOG_CHANNEL}"
   rules:
-    - name: spam
+    - name: bad_words
       trigger:
-        type: spam         # keyword | regex | spam | mention_spam | link | invite | caps | emoji_spam | newline_spam | duplicate | attachment | mass_ping
-        threshold: 5
-        window: 10s
+        type: keyword      # keyword | regex | link | invite | caps | emoji_spam | mention_spam | newline_spam
+        keywords:
+          - "badword1"
+          - "badword2"
       exempt:
         roles:
           - "mod_role_id"
         channels:
           - "spam_channel_id"
       actions:
-        - timeout:
-            user: "${user.id}"
-            duration: "5m"
-            reason: "Spam detection"
-    - name: bad_words
-      trigger:
-        type: keyword
-        keywords:
-          - "badword1"
-          - "badword2"
-      actions:
         - delete_message: {}
         - send_dm:
             user: "${user.id}"
             content: "Your message was removed for containing prohibited content."
+    - name: too_many_mentions
+      trigger:
+        type: mention_spam
+        threshold: 5       # trigger if 5+ mentions
+      actions:
+        - timeout:
+            user: "${user.id}"
+            duration: "5m"
+            reason: "Mention spam"
 ```
 
 **Automod Trigger Types:**
-- `keyword` - Match specific words (keywords array)
+- `keyword` - Match specific words (keywords array, optional allowed array)
 - `regex` - Match regex patterns (regex array)
-- `spam` - Detect message spam (threshold, window)
-- `mention_spam` - Too many mentions (threshold)
-- `link` - Block links (allowed/blocked domains)
+- `link` - Block links (optional allowed/blocked domain arrays)
 - `invite` - Block Discord invites
-- `caps` - Excessive caps (threshold %)
-- `emoji_spam` - Too many emojis (threshold)
-- `newline_spam` - Excessive newlines
-- `duplicate` - Repeated messages
-- `attachment` - Block attachments
-- `mass_ping` - Block mass mentions
+- `caps` - Excessive caps (threshold % default 70)
+- `emoji_spam` - Too many emojis (threshold default 10)
+- `mention_spam` - Too many mentions (threshold default 5)
+- `newline_spam` - Excessive newlines (threshold default 10)
+- `attachment` - Block attachments (threshold count, blocked/allowed extensions)
+- `spam` - Message rate limiting (threshold count, window duration e.g. "10s")
+- `duplicate` - Repeated message detection (threshold count, window duration e.g. "1m")
 
 ### Scheduler
 
@@ -856,12 +854,16 @@ Both formats work identically. The shorthand format is normalized internally bef
 - kick:
     user: "${user.id}"
     reason: "Violation"
+    dm_user: true                    # Optional: DM user before kicking
+    dm_message: "You were kicked."   # Optional: Message to send
 
 # ban
 - ban:
     user: "${user.id}"
     reason: "Repeated violations"
     delete_message_days: 7
+    dm_user: true                    # Optional: DM user before banning
+    dm_message: "You were banned."   # Optional: Message to send
 
 # unban
 - unban:
@@ -873,6 +875,8 @@ Both formats work identically. The shorthand format is normalized internally bef
     user: "${user.id}"
     duration: "1h"
     reason: "Cool down"
+    dm_user: true                    # Optional: DM user when timed out
+    dm_message: "You were timed out for 1h."  # Optional: Message to send
 
 # remove_timeout
 - remove_timeout:
@@ -1268,6 +1272,7 @@ Both formats work identically. The shorthand format is normalized internally bef
       id: "${user.id}"
     data:
       name: "${options.name}"
+    upsert: true   # Optional: insert if not exists, update if exists
 
 # db_delete
 - db_delete:
@@ -1386,12 +1391,49 @@ Both formats work identically. The shorthand format is normalized internally bef
 ```
 
 **Canvas Layer Types:**
-- `rect` - Rectangle (width, height, color, radius)
-- `text` - Text (text, font, size, color, align)
-- `image` - Image (src, width, height, opacity)
-- `circle_image` - Circular image for avatars (src/url, radius, border)
-- `progress_bar` - Progress bar (progress/value 0-1, background, fill/color)
-- `gradient` - Gradient fill (direction, stops)
+- `rect` - Rectangle
+  - `x`, `y`, `width`, `height` - Position and size
+  - `color` - Fill color
+  - `radius` - Corner radius (optional)
+  - `stroke` - Border { color, width } (optional)
+
+- `text` - Text
+  - `x`, `y` - Position
+  - `text` - Text content (expressions supported)
+  - `font` - Font family (default: sans-serif)
+  - `size` - Font size in pixels (default: 16)
+  - `color` - Text color
+  - `align` - left | center | right (default: left)
+  - `baseline` - top | middle | bottom | alphabetic (default: top)
+  - `max_width` - Maximum text width (optional)
+  - `stroke` - Text stroke { color, width } (optional)
+
+- `image` - Image
+  - `x`, `y` - Position
+  - `src` - Image URL
+  - `width`, `height` - Size (optional, uses image dimensions)
+  - `opacity` - 0-1 (optional)
+
+- `circle_image` - Circular image (for avatars)
+  - `x`, `y` - Position (top-left of bounding box)
+  - `src` or `url` - Image URL
+  - `radius` - Circle radius
+  - `border` - Border { color, width } (optional)
+
+- `progress_bar` - Progress bar
+  - `x`, `y`, `width`, `height` - Position and size
+  - `progress` or `value` - Progress value 0-1 (or raw value if `max` specified)
+  - `max` - Maximum value (optional, makes progress/value a raw number)
+  - `background` - Background color
+  - `fill` or `color` - Fill color
+  - `radius` - Corner radius (optional)
+  - `direction` - horizontal | vertical (default: horizontal)
+
+- `gradient` - Gradient fill
+  - `x`, `y`, `width`, `height` - Position and size
+  - `direction` - horizontal | vertical | diagonal (default: horizontal)
+  - `stops` - Array of { offset: 0-1, color }
+  - `radius` - Corner radius (optional)
 
 ---
 
@@ -1424,7 +1466,7 @@ Expressions use `${}` syntax:
 ```yaml
 content: "Hello, ${user.username}!"
 content: "Result: ${1 + 2 * 3}"
-content: "Today: ${now() | formatDate}"
+content: "Time: ${timestamp(now(), 'relative')}"
 ```
 
 ### Context Variables
@@ -1507,10 +1549,10 @@ The following Discord.js methods are automatically called when accessed as prope
 **Date/Time (5)**
 | Function | Example |
 |----------|---------|
-| `now()` | Current timestamp (ms) |
-| `timestamp(date)` | Convert to timestamp |
+| `now()` | Current Date object |
+| `timestamp(date?, format?)` | Unix timestamp or Discord timestamp format (formats: relative, short_time, long_time, short_date, long_date, short_datetime, long_datetime) |
 | `date(ts)` | Timestamp to Date |
-| `dateAdd(date, amount, unit)` | `dateAdd(now(), 1, 'day')` |
+| `dateAdd(date, amount, unit)` | `dateAdd(now(), 1, 'day')` (units: seconds, minutes, hours, days, weeks, months, years) |
 | `addDuration(date, duration)` | `addDuration(now(), '1h')` |
 
 **Math (9)**
@@ -1598,7 +1640,7 @@ The following Discord.js methods are automatically called when accessed as prope
 | Function | Example |
 |----------|---------|
 | `mention(type, id)` | `mention("user", id)` |
-| `formatNumber(n)` | Format with commas |
+| `formatNumber(n, locale?)` | `formatNumber(1234)` -> "1,234" (locale default: "en-US") |
 | `ordinal(n)` | `ordinal(1)` -> "1st" |
 | `pluralize(n, singular, plural?)` | `pluralize(5, "item")` |
 | `duration(ms)` | Format duration |
@@ -1609,7 +1651,7 @@ The following Discord.js methods are automatically called when accessed as prope
 | `default(val, def)` | Default value |
 | `coalesce(...vals)` | First non-null |
 | `uuid()` | Generate UUID |
-| `hash(val, algo?)` | Hash string |
+| `hash(s)` | Simple hash of string (returns number) |
 
 ### Transforms (50)
 
@@ -1637,90 +1679,63 @@ content: "${name | upper | truncate(20)}"
 `default(val)`, `length`, `size`
 
 **Date Transforms**
-`timestamp`, `duration`, `formatDate`
+`timestamp`, `duration`
 
 **Discord Transforms**
 `mention`, `pluralize(singular, plural?)`
 
 ---
 
-## Events Reference (76 Events)
+## Events Reference
 
-### Discord Gateway Events (57)
+### CLI-Supported Events (Primary)
 
-**Guild Events**
-`guild_create`, `guild_update`, `guild_delete`, `guild_available`, `guild_unavailable`
-
-**Channel Events**
-`channel_create`, `channel_update`, `channel_delete`, `channel_pins_update`
-
-**Thread Events**
-`thread_create`, `thread_update`, `thread_delete`, `thread_list_sync`, `thread_member_update`, `thread_members_update`
-
-**Member Events**
-`guild_member_add`, `guild_member_update`, `guild_member_remove`, `guild_members_chunk`
-
-**Role Events**
-`guild_role_create`, `guild_role_update`, `guild_role_delete`
-
-**Emoji/Sticker Events**
-`guild_emojis_update`, `guild_stickers_update`
-
-**Ban Events**
-`guild_ban_add`, `guild_ban_remove`
+These are the events emitted by the FURLOW CLI. Use these event names in your YAML:
 
 **Message Events**
-`message_create`, `message_update`, `message_delete`, `message_delete_bulk`
+- `message_create` - New message sent
+- `message_delete` - Message deleted
+- `message_update` - Message edited (context includes `old_message`)
+
+**Member Events**
+- `member_join` - Member joined server (maps from Discord's guildMemberAdd)
+- `member_leave` - Member left server (maps from Discord's guildMemberRemove)
+- `member_update` - Member updated (context includes `old_member`)
+- `member_ban` - Member was banned (context: `user`, `guild`, `reason`)
+- `member_unban` - Member was unbanned (context: `user`, `guild`)
+- `member_boost` - Member started boosting (context: `member`, `boost_since`)
+- `member_unboost` - Member stopped boosting (context: `member`, `boost_ended`)
 
 **Reaction Events**
-`message_reaction_add`, `message_reaction_remove`, `message_reaction_remove_all`, `message_reaction_remove_emoji`
-
-**Presence Events**
-`presence_update`, `typing_start`
+- `reaction_add` - Reaction added (context: `reaction`, `user`)
+- `reaction_remove` - Reaction removed (context: `reaction`, `user`)
 
 **Voice Events**
-`voice_state_update`, `voice_server_update`
+- `voice_join` - User joined voice channel
+- `voice_leave` - User left voice channel
+- `voice_move` - User moved between voice channels
+- `voice_state_update` - Any voice state change (context includes `old_voice_state`, `new_voice_state`)
+- `voice_stream_start` - User started streaming (context: `member`, `voice_channel`, `streaming`)
+- `voice_stream_stop` - User stopped streaming (context: `member`, `streaming`)
 
-**Interaction Events**
-`interaction_create`
+**Lifecycle Events**
+- `ready` - Bot is ready
+- `timer_fire` - Timer event (from create_timer action)
+- `custom` - Custom event (from emit action)
 
-**Invite Events**
-`invite_create`, `invite_delete`
+### Gateway Events (Advanced)
 
-**Integration Events**
-`integration_create`, `integration_update`, `integration_delete`
+For advanced use cases, you can also listen to raw Discord.js gateway events. These require proper intents configuration:
 
-**Webhook Events**
-`webhooks_update`
+**Guild:** `guild_create`, `guild_update`, `guild_delete`
+**Channel:** `channel_create`, `channel_update`, `channel_delete`
+**Thread:** `thread_create`, `thread_update`, `thread_delete`
+**Role:** `guild_role_create`, `guild_role_update`, `guild_role_delete`
+**Ban:** `guild_ban_add`, `guild_ban_remove`
+**Presence:** `presence_update`, `typing_start`
+**Invite:** `invite_create`, `invite_delete`
 
-**Stage Events**
-`stage_instance_create`, `stage_instance_update`, `stage_instance_delete`
-
-**Scheduled Event Events**
-`guild_scheduled_event_create`, `guild_scheduled_event_update`, `guild_scheduled_event_delete`, `guild_scheduled_event_user_add`, `guild_scheduled_event_user_remove`
-
-**Automod Events**
-`auto_moderation_rule_create`, `auto_moderation_rule_update`, `auto_moderation_rule_delete`, `auto_moderation_action_execution`
-
-### FURLOW High-Level Events (19)
-
-**Lifecycle**
-`ready`, `error`, `warn`
-
-**Member Lifecycle**
-`member_join`, `member_leave`, `member_ban`, `member_unban`, `member_boost`, `member_unboost`
-
-**Message Convenience**
-`message` (alias for message_create), `message_edit`, `message_delete`
-
-**Voice Convenience**
-`voice_join`, `voice_leave`, `voice_move`, `voice_stream_start`, `voice_stream_stop`
-
-**Timer**
-`timer_fire`
-
-**Custom**
-`custom` (from emit action)
+**Note:** When using gateway events, the context variables depend on what Discord.js provides for that event.
 
 ### Event Context Variables
 

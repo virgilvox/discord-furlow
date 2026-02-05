@@ -4,9 +4,20 @@
 
 FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is a declarative Discord bot framework that allows building bots using YAML specifications. The project is a TypeScript monorepo using pnpm workspaces and Turborepo.
 
-## Current State: v1.0.3 - FEATURE COMPLETE + SECURITY HARDENED + TEST SUITE OVERHAULED
+## Current State: v1.0.4 - FEATURE COMPLETE + SECURITY HARDENED + TEST SUITE OVERHAULED
 
-As of 2026-02-04, all 9 packages are published to npm. **All code features are 100% implemented.** Super Deep Security Audit #10 completed with 67+ vulnerabilities discovered and 20 critical/high fixes applied.
+As of 2026-02-05, all 9 packages are published to npm. **All code features are 100% implemented.** Super Deep Security Audit #10 completed with 67+ vulnerabilities discovered and 20 critical/high fixes applied.
+
+**✅ NEW AUTOMOD TRIGGERS AND HIGH-LEVEL EVENTS (2026-02-05):**
+- **New Automod Triggers:**
+  - `attachment` - Detect file attachments with optional blocked/allowed extensions
+  - `spam` - Message rate limiting with configurable threshold and time window
+  - `duplicate` - Repeated message detection with configurable threshold and window
+- **New High-Level Events:**
+  - `member_ban` / `member_unban` - Member ban and unban events
+  - `member_boost` / `member_unboost` - Nitro boost start/stop events
+  - `voice_stream_start` / `voice_stream_stop` - Screen sharing/streaming events
+- Comprehensive behavioral tests added for all new features
 
 **✅ TEST SUITE OVERHAUL COMPLETED (2026-02-04):** Major test coverage improvements:
 - **Core Package:** 1308 tests - Added tests for executor, parser/loader, components, embeds, locale, analytics, context
@@ -33,6 +44,17 @@ As of 2026-02-04, all 9 packages are published to npm. **All code features are 1
 - ✅ Added automod trigger types list
 - ✅ Added Discord permissions reference
 - ✅ Fixed function count (69 not 71)
+
+**✅ Maximum Depth Verification Pass (2026-02-05):** Additional fixes after cross-referencing with implementations:
+- ✅ **Automod triggers:** Removed undocumented triggers (spam, duplicate, attachment, mass_ping) - only 8 triggers are actually implemented
+- ✅ **hash() function:** Removed non-existent `algo` parameter - function only takes string input
+- ✅ **formatNumber():** Added locale parameter documentation (default: 'en-US')
+- ✅ **timestamp():** Added format parameter documentation (relative, short_time, etc.)
+- ✅ **Events section:** Rewrote to show actual CLI event names (member_join not guild_member_add)
+- ✅ **kick/ban/timeout:** Added dm_user and dm_message optional fields
+- ✅ **db_update:** Added upsert field documentation
+- ✅ **Canvas layers:** Added comprehensive property documentation (baseline, direction, stroke, max_width, etc.)
+- ✅ **Removed formatDate transform:** It was documented but doesn't exist
 
 **Critical Implementation Fix Pass (2026-02-04):** Deep audit revealed hidden implementation gaps that have been fixed:
 - ✅ Voice FFmpeg filters now work (were silently ignored before)
