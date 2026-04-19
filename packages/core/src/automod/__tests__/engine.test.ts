@@ -441,6 +441,49 @@ describe('AutomodEngine', () => {
       });
     });
 
+    describe('mass_ping trigger', () => {
+      it('matches @everyone', async () => {
+        engine.configure({
+          rules: [
+            { name: 'mass', trigger: { type: 'mass_ping' }, actions: [] },
+          ],
+        });
+        const result = await engine.check('hey @everyone check this', mockContext, mockEvaluator);
+        expect(result.passed).toBe(false);
+        expect(result.matches[0]!.matched[0]).toMatch(/mass mention/);
+      });
+
+      it('matches @here', async () => {
+        engine.configure({
+          rules: [
+            { name: 'mass', trigger: { type: 'mass_ping' }, actions: [] },
+          ],
+        });
+        const result = await engine.check('@here available?', mockContext, mockEvaluator);
+        expect(result.passed).toBe(false);
+      });
+
+      it('passes when threshold not reached', async () => {
+        engine.configure({
+          rules: [
+            { name: 'mass', trigger: { type: 'mass_ping', threshold: 2 }, actions: [] },
+          ],
+        });
+        const result = await engine.check('hey @everyone only once', mockContext, mockEvaluator);
+        expect(result.passed).toBe(true);
+      });
+
+      it('passes ordinary text without mass pings', async () => {
+        engine.configure({
+          rules: [
+            { name: 'mass', trigger: { type: 'mass_ping' }, actions: [] },
+          ],
+        });
+        const result = await engine.check('nothing abusive here', mockContext, mockEvaluator);
+        expect(result.passed).toBe(true);
+      });
+    });
+
     describe('newline_spam trigger', () => {
       it('should detect newline spam', async () => {
         engine.configure({

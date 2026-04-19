@@ -296,8 +296,8 @@ This checks for:
 
 ## Next Steps
 
-- Read the [CLI Reference](./cli-reference.md) for all commands
-- Learn the [Expression Language](./expression-language.md)
-- Browse the [Actions Reference](./actions-reference.md)
-- Check out the [Events Reference](./events-reference.md)
+- Read the [CLI Reference](./reference/cli.md) for all commands
+- Learn the [Expression Language](./reference/expressions/_index.md)
+- Browse the [Actions Reference](./reference/actions/_index.md)
+- Check out the [Events Reference](./reference/events.md)
 - Explore the [Builtins](./builtins/) documentation

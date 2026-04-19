@@ -82,7 +82,7 @@ describe('Music Builtin', () => {
       });
 
       it('should check voice channel membership', () => {
-        const voiceCheck = cmd.actions.find(
+        const voiceCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('voice.channel')
@@ -91,9 +91,9 @@ describe('Music Builtin', () => {
       });
 
       it('should join voice and search', () => {
-        expect(cmd.actions.find((a) => a.action === 'voice_join')).toBeDefined();
-        expect(cmd.actions.find((a) => a.action === 'voice_search')).toBeDefined();
-        expect(cmd.actions.find((a) => a.action === 'queue_add')).toBeDefined();
+        expect(cmd.actions!.find((a) => a.action === 'voice_join')).toBeDefined();
+        expect(cmd.actions!.find((a) => a.action === 'voice_search')).toBeDefined();
+        expect(cmd.actions!.find((a) => a.action === 'queue_add')).toBeDefined();
       });
     });
 
@@ -101,7 +101,7 @@ describe('Music Builtin', () => {
       const cmd = musicCommands.find((c) => c.name === 'volume')!;
 
       it('should validate volume range', () => {
-        const rangeCheck = cmd.actions.find(
+        const rangeCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('args.level < 0')
@@ -130,7 +130,7 @@ describe('Music Builtin', () => {
       });
 
       it('should check config for filter permission', () => {
-        const permCheck = cmd.actions.find(
+        const permCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('allowFilters')

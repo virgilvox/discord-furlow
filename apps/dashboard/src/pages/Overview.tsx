@@ -72,25 +72,25 @@ export function Overview() {
           <StatCard
             label="Members"
             value={memberCount.toLocaleString()}
-            icon="👥"
+            icon=""
             trend={null}
           />
           <StatCard
             label="Online"
             value={onlineCount.toLocaleString()}
-            icon="🟢"
+            icon=""
             trend={null}
           />
           <StatCard
             label="Messages (24h)"
             value={(stats?.messageCount24h ?? 0).toLocaleString()}
-            icon="💬"
+            icon=""
             trend={null}
           />
           <StatCard
             label="Commands (24h)"
             value={(stats?.commandsUsed24h ?? 0).toLocaleString()}
-            icon="⚡"
+            icon=""
             trend={null}
           />
         </div>

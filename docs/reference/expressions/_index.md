@@ -9,7 +9,7 @@ Expressions are wrapped in `${}`:
 ```yaml
 content: "Hello, ${user.username}!"
 content: "Result: ${1 + 2 * 3}"
-content: "Today: ${now() | formatDate}"
+content: "Today: ${timestamp(now(), 'R')}"
 ```
 
 ## Context Variables
@@ -54,7 +54,7 @@ These variables are available in expressions:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `now()` | Current timestamp (ms) | `now()` |
+| `now()` | Current `Date` object | `now()` |
 | `timestamp(date)` | Convert to timestamp | `timestamp(date)` |
 | `date(ts)` | Convert timestamp to Date | `date(1234567890)` |
 | `dateAdd(date, amount, unit)` | Add to date | `dateAdd(now(), 1, 'day')` |
@@ -64,8 +64,8 @@ These variables are available in expressions:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `random(min, max)` | Random integer | `random(1, 100)` |
-| `randomFloat(min, max)` | Random float | `randomFloat(0, 1)` |
+| `random(min, max)` | Random integer (defaults `min=0`, `max=1`) | `random(1, 100)` |
+| `randomFloat(min, max)` | Random float in `[min, max)` (defaults `0`, `1`) | `randomFloat(0, 1)` |
 | `round(n, decimals?)` | Round number | `round(3.14159, 2)` |
 | `floor(n)` | Round down | `floor(3.7)` |
 | `ceil(n)` | Round up | `ceil(3.2)` |
@@ -107,7 +107,7 @@ These variables are available in expressions:
 | `sort(arr, key?)` | Sort array | `sort(arr, "name")` |
 | `unique(arr)` | Remove duplicates | `unique(arr)` |
 | `flatten(arr)` | Flatten nested | `flatten([[1], [2]])` |
-| `pick(arr, keys)` | Pick properties | `pick(obj, ["a", "b"])` |
+| `pick(arr)` | Pick a random element from an array | `pick(["a", "b", "c"])` |
 | `shuffle(arr)` | Shuffle array | `shuffle(arr)` |
 | `range(start, end, step?)` | Number range | `range(1, 10)` |
 | `chunk(arr, size)` | Split into chunks | `chunk(arr, 3)` |
@@ -164,7 +164,7 @@ These variables are available in expressions:
 | `default(val, def)` | Default value | `default(x, "none")` |
 | `coalesce(...vals)` | First non-null | `coalesce(a, b, c)` |
 | `uuid()` | Generate UUID | `uuid()` |
-| `hash(val, algo?)` | Hash string | `hash(s, "sha256")` |
+| `hash(val)` | Fast DJB2 hash (not cryptographic) | `hash("foo")` |
 
 ---
 
@@ -208,8 +208,8 @@ content: "${items | sort('name') | first}"
 | `sort(key?)` | Sort | `arr \| sort("name")` |
 | `unique` | Remove duplicates | `arr \| unique` |
 | `flatten` | Flatten nested | `arr \| flatten` |
-| `filter(expr)` | Filter items | `arr \| filter(x > 5)` |
-| `map(expr)` | Map items | `arr \| map(x * 2)` |
+| `filter(key, value)` | Keep array items where `item[key] === value` | `items \| filter('type', 'admin')` |
+| `map(key)` | Project `item[key]` from each array item | `users \| map('id')` |
 | `pluck(key)` | Extract property | `users \| pluck("name")` |
 | `pick(keys)` | Pick properties | `obj \| pick(["a"])` |
 | `shuffle` | Shuffle | `arr \| shuffle` |
@@ -259,7 +259,6 @@ content: "${items | sort('name') | first}"
 |-----------|-------------|---------|
 | `timestamp` | To timestamp | `date \| timestamp` |
 | `duration` | Format duration | `ms \| duration` |
-| `formatDate` | Format date | `date \| formatDate` |
 
 ### Discord Transforms
 
@@ -294,7 +293,7 @@ content: "Top users: ${leaderboard | slice(0, 5) | pluck('name') | join(', ')}"
 ### Date Formatting
 
 ```yaml
-content: "Account created: ${user.created_at | formatDate}"
+content: "Account created: ${timestamp(user.created_at, 'R')}"
 content: "Uptime: ${client.uptime | duration}"
 ```
 

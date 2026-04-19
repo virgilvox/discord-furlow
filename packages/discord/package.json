@@ -1,6 +1,6 @@
 {
   "name": "@furlow/discord",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Discord.js adapter for FURLOW bot framework",
   "keywords": [
     "furlow",
@@ -40,6 +40,10 @@
     "./video": {
       "types": "./dist/video/index.d.ts",
       "import": "./dist/video/index.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js"
     }
   },
   "main": "./dist/index.js",

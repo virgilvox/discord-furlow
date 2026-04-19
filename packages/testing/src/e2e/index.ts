@@ -7,6 +7,7 @@
 
 export {
   createE2ERuntime,
+  createE2ERuntimeFromSpec,
   type E2ETestRuntime,
   type E2ETestRuntimeOptions,
   // Mock Discord classes for E2E testing (prefixed to avoid collision with mocks/index.ts)

@@ -8,9 +8,9 @@
 - [Configuration](guides/configuration)
 
 ## Reference
-- [Actions](reference/actions/_index) (84)
+- [Actions](reference/actions/_index) (85)
 - [Expressions](reference/expressions/_index) (71 functions, 50 transforms)
-- [Events](reference/events) (76)
+- [Events](reference/events) (59)
 - [CLI](reference/cli)
 
 ## Examples

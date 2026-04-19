@@ -118,7 +118,7 @@ FURLOW provides 85 actions across 9 categories.
 | [`db_delete`](#db_delete) | Delete records |
 | [`db_query`](#db_query) | Query records |
 
-## Integration Actions (8)
+## Integration Actions (9)
 
 | Action | Description |
 |--------|-------------|
@@ -288,13 +288,13 @@ Clear reactions from a message.
 
 ### bulk_delete
 
-Delete multiple messages.
+Delete the most recent messages in a channel. Up to `count` messages (max 100) are removed via Discord's bulk delete API. Messages older than 14 days are ignored by Discord. Pass `user` to restrict deletion to one author.
 
 ```yaml
 - bulk_delete:
     channel: "${channel.id}"
     count: 10
-    filter: "${msg.author.bot}"
+    user: "${args.target.id}"   # optional, delete only this user's recent messages
 ```
 
 ### assign_role
@@ -904,7 +904,7 @@ Apply audio filter.
     enabled: true
 ```
 
-Available filters: `bassboost`, `nightcore`, `vaporwave`, `karaoke`, `tremolo`, `vibrato`, `reverse`, `treble`, `surrounding`, `earrape`
+Available filters: `bassboost`, `nightcore`, `vaporwave`, `8d`, `treble`, `normalizer`, `karaoke`, `tremolo`, `vibrato`, `reverse`.
 
 ### voice_search
 

@@ -157,7 +157,7 @@ describe('AFK Builtin', () => {
       });
 
       it('should truncate reason to max length', () => {
-        const truncateAction = cmd.actions.find(
+        const truncateAction = cmd.actions!.find(
           (a) =>
             a.action === 'set' &&
             (a as { value?: string }).value?.includes('truncate')
@@ -166,7 +166,7 @@ describe('AFK Builtin', () => {
       });
 
       it('should handle existing AFK status', () => {
-        const existingCheck = cmd.actions.find(
+        const existingCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('existing.length > 0')
@@ -175,7 +175,7 @@ describe('AFK Builtin', () => {
       });
 
       it('should add nickname prefix if configured', () => {
-        const nicknameCheck = cmd.actions.find(
+        const nicknameCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('nicknamePrefix')

@@ -196,7 +196,7 @@ export const moderationCommands: CommandDefinition[] = [
         action: 'bulk_delete',
         channel: '${channel.id}',
         count: '${args.count}' as unknown as number,
-        filter: '${args.user ? "message.author.id == \\"" + args.user.id + "\\"" : null}',
+        user: '${args.user ? args.user.id : null}',
       },
       {
         action: 'reply',

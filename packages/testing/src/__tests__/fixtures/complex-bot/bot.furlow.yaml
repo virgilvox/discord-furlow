@@ -1,0 +1,608 @@
+# Maximally-complex FURLOW bot fixture.
+#
+# This spec exercises nearly every FURLOW subsystem in one place so the
+# `complex-bot.e2e.test.ts` integration test can prove the runtime actually
+# handles real-world spec complexity:
+#
+#   - multi-file imports (./imports/flows.yaml, ./imports/commands.yaml)
+#   - identity, presence, intents
+#   - storage config, variables across all 5 scopes, tables with indexes
+#   - commands with every option type, subcommand groups, and autocomplete
+#   - events with debounce, throttle, once, and `when` conditions
+#   - flows with parameters, nested flow control, error handling, emit
+#   - button, select menu, and modal component handlers
+#   - embeds with fields/author/footer/image
+#   - automod covering every trigger type including mass_ping
+#   - scheduler with cron tasks and timers
+#   - pipes declarations (HTTP, webhook, websocket)
+#   - canvas generators (welcome, rank, custom layers)
+#   - voice configuration and filters
+#   - locale strings
+
+version: "0.1"
+
+imports:
+  - ./imports/flows.yaml
+  - ./imports/commands.yaml
+
+identity:
+  name: "Megabot"
+  description: "Community bot exercising every FURLOW capability"
+  avatar: "https://cdn.example.com/avatar.png"
+
+presence:
+  status: online
+  activity:
+    type: watching
+    text: "the community"
+
+intents:
+  auto: true
+
+state:
+  storage:
+    type: memory
+
+  variables:
+    uptime_started_at:
+      scope: global
+      type: number
+      default: 0
+      persist: false
+
+    guild_join_count:
+      scope: guild
+      type: number
+      default: 0
+      persist: true
+
+    channel_message_rate:
+      scope: channel
+      type: number
+      default: 0
+      persist: false
+
+    user_warnings:
+      scope: user
+      type: number
+      default: 0
+      persist: true
+
+    member_xp:
+      scope: member
+      type: number
+      default: 0
+      persist: true
+
+    favorite_tags:
+      scope: member
+      type: array
+      default: []
+      persist: true
+
+    preferences:
+      scope: user
+      type: object
+      default:
+        notifications: true
+        language: en
+      persist: true
+
+  tables:
+    warnings:
+      columns:
+        id: { type: number, primary: true }
+        user_id: { type: string, index: true }
+        moderator_id: { type: string }
+        guild_id: { type: string, index: true }
+        reason: { type: string }
+        created_at: { type: timestamp }
+      indexes:
+        - [guild_id, user_id]
+
+    levels:
+      columns:
+        user_id: { type: string, primary: true }
+        guild_id: { type: string, index: true }
+        xp: { type: number, default: 0 }
+        level: { type: number, default: 0 }
+        last_message_at: { type: timestamp }
+
+    tickets:
+      columns:
+        id: { type: number, primary: true }
+        channel_id: { type: string, unique: true }
+        opened_by: { type: string, index: true }
+        status: { type: string, default: open }
+        opened_at: { type: timestamp }
+        closed_at: { type: timestamp }
+
+events:
+  - event: ready
+    once: true
+    actions:
+      - log:
+          message: "Bot ready at ${now()}"
+      - set:
+          var: uptime_started_at
+          value: "${timestamp(now())}"
+          scope: global
+
+  - event: member_join
+    throttle: 10s
+    actions:
+      - increment:
+          var: guild_join_count
+          scope: guild
+      - call_flow:
+          flow: welcome_new_member
+          args:
+            member_id: "member.id"
+            member_name: "member.display_name || user.username"
+
+  - event: message_create
+    when: "!message.author.bot"
+    debounce: 1s
+    actions:
+      - increment:
+          var: channel_message_rate
+          scope: channel
+      - call_flow:
+          flow: award_message_xp
+
+  - event: message_reaction_add
+    when: "reaction.emoji.name == 'star'"
+    actions:
+      - log:
+          message: "Star reaction from ${user.username}"
+
+  - event: button_click
+    when: "custom_id == 'noop'"
+    actions:
+      - log:
+          message: "Button noop clicked"
+
+flows:
+  - name: award_message_xp
+    parameters: []
+    actions:
+      - try:
+          do:
+            - increment:
+                var: member_xp
+                scope: member
+                by: 5
+            - flow_if:
+                if: "state.member.member_xp > 0 && state.member.member_xp % 100 == 0"
+                then:
+                  - call_flow:
+                      flow: level_up_member
+                      args:
+                        member_id: "${user.id}"
+                        new_xp: "${state.member.member_xp}"
+          catch:
+            - log:
+                message: "Failed to award XP: ${error.message}"
+                level: warn
+
+  - name: level_up_member
+    parameters:
+      - name: member_id
+        type: string
+        required: true
+      - name: new_xp
+        type: number
+        required: true
+    actions:
+      - log:
+          message: "Level up: ${args.member_id} at ${args.new_xp} XP"
+      - emit:
+          event: member_leveled_up
+          data:
+            member_id: "${args.member_id}"
+            xp: "${args.new_xp}"
+
+  - name: complex_nested_flow
+    description: "Exercises deep nesting of flow primitives."
+    parameters:
+      - name: target_count
+        type: number
+        required: true
+    actions:
+      - set:
+          var: _iterations
+          value: 0
+          scope: global
+      - flow_while:
+          while: "state.global._iterations < args.target_count"
+          max_iterations: 25
+          do:
+            - increment:
+                var: _iterations
+                scope: global
+            - parallel:
+                actions:
+                  - log:
+                      message: "parallel A ${state.global._iterations}"
+                  - log:
+                      message: "parallel B ${state.global._iterations}"
+            - flow_switch:
+                value: "state.global._iterations % 3"
+                cases:
+                  "0":
+                    - log:
+                        message: "div by 3"
+                  "1":
+                    - log:
+                        message: "remainder 1"
+                  "2":
+                    - log:
+                        message: "remainder 2"
+                default:
+                  - log:
+                      message: "unreachable"
+            - try:
+                do:
+                  - flow_if:
+                      if: "state.global._iterations == 5"
+                      then:
+                        - throw_error:
+                            message: "simulated failure at 5"
+                catch:
+                  - log:
+                      message: "caught"
+                finally:
+                  - log:
+                      message: "finally"
+      - batch:
+          items: "range(1, 4)"
+          as: i
+          each:
+            - log:
+                message: "batch item ${i}"
+      - repeat:
+          times: 3
+          do:
+            - log:
+                message: "repeat iteration"
+      - return:
+          value: "${state.global._iterations}"
+
+components:
+  buttons:
+    confirm:
+      label: "Confirm"
+      style: primary
+      actions:
+        - reply:
+            content: "You confirmed"
+            ephemeral: true
+    cancel:
+      label: "Cancel"
+      style: secondary
+      actions:
+        - reply:
+            content: "You cancelled"
+            ephemeral: true
+    noop:
+      label: "No-op"
+      style: secondary
+      actions:
+        - log:
+            message: "noop button"
+
+  selects:
+    topic_picker:
+      placeholder: "Pick a topic"
+      options:
+        - label: "Gaming"
+          value: gaming
+        - label: "Art"
+          value: art
+        - label: "Music"
+          value: music
+      actions:
+        - reply:
+            content: "Picked: ${values}"
+            ephemeral: true
+
+  modals:
+    feedback:
+      title: "Send feedback"
+      components:
+        - type: action_row
+          components:
+            - type: text_input
+              custom_id: subject
+              label: Subject
+              style: short
+              required: true
+            - type: text_input
+              custom_id: body
+              label: Details
+              style: paragraph
+              required: true
+      actions:
+        - reply:
+            content: "Thanks for the feedback: ${fields.subject}"
+            ephemeral: true
+
+embeds:
+  templates:
+    info:
+      color: "#5865F2"
+      author:
+        name: "Megabot"
+        icon_url: "https://cdn.example.com/icon.png"
+      footer:
+        text: "Community bot"
+
+automod:
+  enabled: true
+  rules:
+    - name: block_keywords
+      trigger:
+        type: keyword
+        keywords: [scam, phishing]
+      actions:
+        - delete_message:
+            message: "${message.id}"
+        - timeout:
+            user: "${user.id}"
+            duration: 10m
+            reason: "Triggered keyword automod"
+
+    - name: block_links
+      trigger:
+        type: link
+        allowed: [discord.com, example.com]
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: block_invites
+      trigger:
+        type: invite
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: regex_phone_numbers
+      trigger:
+        type: regex
+        regex: ['\d{3}-\d{3}-\d{4}']
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: all_caps
+      trigger:
+        type: caps
+        threshold: 75
+      actions:
+        - react:
+            emoji: "caps"
+            message: "${message.id}"
+
+    - name: emoji_spam
+      trigger:
+        type: emoji_spam
+        threshold: 12
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: mention_spam
+      trigger:
+        type: mention_spam
+        threshold: 5
+      actions:
+        - timeout:
+            user: "${user.id}"
+            duration: 15m
+            reason: "Mention spam"
+
+    - name: newline_spam
+      trigger:
+        type: newline_spam
+        threshold: 10
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: attachment_block
+      trigger:
+        type: attachment
+        blocked: [exe, scr, bat]
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: spam_rate
+      trigger:
+        type: spam
+        threshold: 5
+        window: 10s
+      actions:
+        - timeout:
+            user: "${user.id}"
+            duration: 5m
+            reason: "Message spam"
+
+    - name: duplicate_messages
+      trigger:
+        type: duplicate
+        threshold: 3
+        window: 1m
+      actions:
+        - delete_message:
+            message: "${message.id}"
+
+    - name: mass_ping_block
+      trigger:
+        type: mass_ping
+        threshold: 1
+      actions:
+        - timeout:
+            user: "${user.id}"
+            duration: 30m
+            reason: "Mass ping"
+
+scheduler:
+  enabled: true
+  timezone: UTC
+  tasks:
+    - name: daily_digest
+      cron: "0 12 * * *"
+      actions:
+        - log:
+            message: "Posting daily digest"
+
+    - name: hourly_cleanup
+      cron: "0 * * * *"
+      actions:
+        - delete_rows:
+            table: warnings
+            where:
+              created_at: { lt: "${dateAdd(now(), -30, 'days')}" }
+
+pipes:
+  external_api:
+    type: http
+    base_url: "https://api.example.com"
+    auth:
+      type: bearer
+      token: "${env.API_TOKEN}"
+    rate_limit:
+      requests: 10
+      window: 1s
+    retries:
+      max: 3
+      delay: 500ms
+
+  feedback_webhook:
+    type: webhook
+    path: /webhooks/feedback
+    verification:
+      type: hmac
+      secret: "${env.WEBHOOK_SECRET}"
+      algorithm: sha256
+
+  live_events:
+    type: websocket
+    url: "wss://events.example.com/ws"
+    heartbeat:
+      interval: 30s
+      message: ping
+    reconnect:
+      max_retries: 10
+      base_delay: 1s
+
+canvas:
+  generators:
+    welcome:
+      width: 1024
+      height: 512
+      background: "#1e1f22"
+      layers:
+        - type: gradient
+          x: 0
+          y: 0
+          width: 1024
+          height: 512
+          from: "#5865F2"
+          to: "#23272a"
+        - type: circle_image
+          x: 128
+          y: 256
+          radius: 96
+          src: "${user.displayAvatarURL}"
+        - type: text
+          x: 256
+          y: 230
+          text: "Welcome ${user.username}"
+          font: "bold 48px Arial"
+          fill: "#ffffff"
+        - type: text
+          x: 256
+          y: 290
+          text: "Member #${guild.member_count}"
+          font: "24px Arial"
+          fill: "#b9bbbe"
+
+    rank:
+      width: 800
+      height: 240
+      background: "#2b2d31"
+      layers:
+        - type: circle_image
+          x: 120
+          y: 120
+          radius: 80
+          src: "${user.displayAvatarURL}"
+        - type: text
+          x: 240
+          y: 90
+          text: "${user.username}"
+          font: "bold 32px Arial"
+          fill: "#ffffff"
+        - type: text
+          x: 240
+          y: 130
+          text: "Level ${state.member.member_xp | floor | divide(100)}"
+          font: "24px Arial"
+          fill: "#b9bbbe"
+        - type: progress_bar
+          x: 240
+          y: 160
+          width: 500
+          height: 24
+          value: "${state.member.member_xp % 100}"
+          max: 100
+          color: "#5865F2"
+          background: "#4e5058"
+
+    trophy:
+      width: 600
+      height: 400
+      background: "#0b0c10"
+      layers:
+        - type: rect
+          x: 0
+          y: 0
+          width: 600
+          height: 80
+          fill: "#5865F2"
+        - type: text
+          x: 300
+          y: 50
+          text: "Winner"
+          font: "bold 36px Arial"
+          fill: "#ffffff"
+          align: center
+        - type: image
+          x: 250
+          y: 150
+          width: 100
+          height: 100
+          src: "https://cdn.example.com/trophy.png"
+
+voice:
+  default_volume: 100
+  max_queue_size: 50
+  vote_skip:
+    enabled: true
+    threshold: 0.5
+  filters:
+    - bassboost
+    - nightcore
+
+locale:
+  default: en
+  strings:
+    en:
+      welcome: "Welcome!"
+      goodbye: "Goodbye"
+    es:
+      welcome: "Bienvenido"
+      goodbye: "Adios"

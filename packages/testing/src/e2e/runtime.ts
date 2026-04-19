@@ -665,6 +665,19 @@ export async function createE2ERuntime(
   const spec = loadSpecFromString(yamlSpec, {
     validate: options.validate ?? true,
   });
+  return createE2ERuntimeFromSpec(spec, options);
+}
+
+/**
+ * Create an E2E test runtime from an already-parsed FurlowSpec. Use this when
+ * the spec has been produced by `loadSpec()` with multi-file imports or any
+ * other pre-processing that `loadSpecFromString` does not handle.
+ */
+export async function createE2ERuntimeFromSpec(
+  parsedSpec: FurlowSpec,
+  _options: E2ETestRuntimeOptions = {}
+): Promise<E2ETestRuntime> {
+  const spec = parsedSpec;
 
   // Create core components
   const evaluator = createEvaluator();
@@ -737,65 +750,229 @@ export async function createE2ERuntime(
     },
   });
 
-  // Set variable handler
-  registerHandler('set_variable', {
-    name: 'set_variable',
+  // Production-name state handlers. Each also accepts the legacy `name`
+  // field so older test fixtures that used `set_variable { name }` keep
+  // working. Besides writing through StateManager (for scope-aware
+  // persistence), they mirror production by writing to `context.state[scope]
+  // [key]` so expressions like `${state.global.counter}` can read the value
+  // within the same action sequence.
+  const readVarName = (cfg: Record<string, unknown>): string =>
+    (cfg.var as string | undefined) ?? (cfg.key as string | undefined) ?? (cfg.name as string | undefined) ?? '';
+
+  const scopedContext = (cfg: Record<string, unknown>, ctx: ActionContext) => ({
+    scope: cfg.scope as string | undefined,
+    guildId: ctx.guildId,
+    channelId: ctx.channelId,
+    userId: ctx.userId,
+  });
+
+  const writeContextState = (
+    ctx: ActionContext,
+    scope: string | undefined,
+    key: string,
+    value: unknown,
+  ): void => {
+    const scopeName = scope ?? 'global';
+    const state = (ctx as Record<string, unknown>).state as Record<string, Record<string, unknown>> | undefined;
+    if (!state) {
+      (ctx as Record<string, unknown>).state = { [scopeName]: { [key]: value } };
+      return;
+    }
+    if (!state[scopeName]) state[scopeName] = {};
+    state[scopeName][key] = value;
+  };
+
+  const readContextState = (
+    ctx: ActionContext,
+    scope: string | undefined,
+    key: string,
+  ): unknown => {
+    const scopeName = scope ?? 'global';
+    const state = (ctx as Record<string, unknown>).state as Record<string, Record<string, unknown>> | undefined;
+    return state?.[scopeName]?.[key];
+  };
+
+  // set (production) and set_variable (legacy alias)
+  const setHandler: ActionHandler = {
+    name: 'set',
     async execute(config: Action, context: ActionContext): Promise<ActionResult> {
-      const name = (config as any).name;
-      let value = (config as any).value;
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      let value = cfg.value as unknown;
       if (typeof value === 'string') {
         value = await evaluator.evaluate(value, context);
       }
-      await stateManager.set(name, value, {
-        guildId: context.guildId,
-        channelId: context.channelId,
-        userId: context.userId,
-      });
+      const scope = cfg.scope as string | undefined;
+      try {
+        await stateManager.set(name, value, scopedContext(cfg, context));
+      } catch {
+        // StateManager refuses if the variable is not registered. For ad hoc
+        // scratch variables we still want the context.state update to happen
+        // so expressions like `state.global._iterations` work within a flow.
+      }
+      writeContextState(context, scope, name, value);
       return { success: true, data: { name, value } };
     },
-  });
+  };
+  registerHandler('set', setHandler);
+  registerHandler('set_variable', { ...setHandler, name: 'set_variable' });
 
-  // Get variable handler
+  // get_variable (legacy helper; no production analogue because expressions
+  // read state directly via state.{scope}.var).
   registerHandler('get_variable', {
     name: 'get_variable',
     async execute(config: Action, context: ActionContext): Promise<ActionResult> {
-      const name = (config as any).name;
-      const value = await stateManager.get(name, {
-        guildId: context.guildId,
-        channelId: context.channelId,
-        userId: context.userId,
-      });
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const value = await stateManager.get(name, scopedContext(cfg, context));
       return { success: true, data: { name, value } };
     },
   });
 
-  // Increment handler
   registerHandler('increment', {
     name: 'increment',
     async execute(config: Action, context: ActionContext): Promise<ActionResult> {
-      const name = (config as any).name;
-      const by = (config as any).by ?? 1;
-      const newValue = await stateManager.increment(name, by, {
-        guildId: context.guildId,
-        channelId: context.channelId,
-        userId: context.userId,
-      });
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const by = (cfg.by as number | undefined) ?? 1;
+      const scope = cfg.scope as string | undefined;
+      let newValue: number;
+      try {
+        newValue = await stateManager.increment(name, by, scopedContext(cfg, context));
+      } catch {
+        const current = (readContextState(context, scope, name) as number) ?? 0;
+        newValue = current + by;
+      }
+      writeContextState(context, scope, name, newValue);
       return { success: true, data: { name, value: newValue } };
     },
   });
 
-  // Decrement handler
   registerHandler('decrement', {
     name: 'decrement',
     async execute(config: Action, context: ActionContext): Promise<ActionResult> {
-      const name = (config as any).name;
-      const by = (config as any).by ?? 1;
-      const newValue = await stateManager.decrement(name, by, {
-        guildId: context.guildId,
-        channelId: context.channelId,
-        userId: context.userId,
-      });
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const by = (cfg.by as number | undefined) ?? 1;
+      const scope = cfg.scope as string | undefined;
+      let newValue: number;
+      try {
+        newValue = await stateManager.decrement(name, by, scopedContext(cfg, context));
+      } catch {
+        const current = (readContextState(context, scope, name) as number) ?? 0;
+        newValue = current - by;
+      }
+      writeContextState(context, scope, name, newValue);
       return { success: true, data: { name, value: newValue } };
+    },
+  });
+
+  // list_push / list_remove / set_map / delete_map round out the production
+  // state handler surface. The real StateManager from @furlow/core exposes
+  // these primitives; here we call them through.
+  registerHandler('list_push', {
+    name: 'list_push',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const ctx = scopedContext(cfg, context);
+      const current = ((await stateManager.get(name, ctx)) as unknown[] | undefined) ?? [];
+      let value = cfg.value as unknown;
+      if (typeof value === 'string') value = await evaluator.evaluate(value, context);
+      const next = [...current, value];
+      await stateManager.set(name, next, ctx);
+      return { success: true, data: { name, length: next.length } };
+    },
+  });
+
+  registerHandler('list_remove', {
+    name: 'list_remove',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const ctx = scopedContext(cfg, context);
+      const current = ((await stateManager.get(name, ctx)) as unknown[] | undefined) ?? [];
+      let value = cfg.value as unknown;
+      if (typeof value === 'string') value = await evaluator.evaluate(value, context);
+      const next = current.filter((v) => v !== value);
+      await stateManager.set(name, next, ctx);
+      return { success: true, data: { name, length: next.length } };
+    },
+  });
+
+  registerHandler('set_map', {
+    name: 'set_map',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const ctx = scopedContext(cfg, context);
+      const current = ((await stateManager.get(name, ctx)) as Record<string, unknown> | undefined) ?? {};
+      const key = await evaluator.interpolate(String(cfg.key ?? ''), context);
+      let value = cfg.value as unknown;
+      if (typeof value === 'string') value = await evaluator.evaluate(value, context);
+      const next = { ...current, [key]: value };
+      await stateManager.set(name, next, ctx);
+      return { success: true, data: { name, key, value } };
+    },
+  });
+
+  registerHandler('delete_map', {
+    name: 'delete_map',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const name = readVarName(cfg);
+      const ctx = scopedContext(cfg, context);
+      const current = ((await stateManager.get(name, ctx)) as Record<string, unknown> | undefined) ?? {};
+      const key = await evaluator.interpolate(String(cfg.key ?? ''), context);
+      const next = { ...current };
+      delete next[key];
+      await stateManager.set(name, next, ctx);
+      return { success: true, data: { name, key } };
+    },
+  });
+
+  // call_flow: dispatch a spec-defined flow from anywhere (events,
+  // component handlers, other flows).
+  registerHandler('call_flow', {
+    name: 'call_flow',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const flowName = cfg.flow as string | undefined;
+      if (!flowName) return { success: false, error: new Error('call_flow: flow name required') };
+      const args: Record<string, unknown> = {};
+      if (cfg.args && typeof cfg.args === 'object') {
+        for (const [k, v] of Object.entries(cfg.args as Record<string, unknown>)) {
+          args[k] = typeof v === 'string' ? await evaluator.evaluate(v, context) : v;
+        }
+      }
+      try {
+        const result = await flowEngine.execute(flowName, args, context, executor, evaluator);
+        return {
+          success: result.success,
+          data: result.value,
+          error: result.error,
+        };
+      } catch (err) {
+        return { success: false, error: err as Error };
+      }
+    },
+  });
+
+  // emit: route through the core event router so listeners in the spec fire.
+  registerHandler('emit', {
+    name: 'emit',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const eventName = cfg.event as string | undefined;
+      if (!eventName) return { success: false, error: new Error('emit: event name required') };
+      const data: Record<string, unknown> = {};
+      if (cfg.data && typeof cfg.data === 'object') {
+        for (const [k, v] of Object.entries(cfg.data as Record<string, unknown>)) {
+          data[k] = typeof v === 'string' ? await evaluator.evaluate(v, context) : v;
+        }
+      }
+      await eventRouter.emit(eventName, { ...context, ...data }, executor, evaluator);
+      return { success: true, data: { event: eventName } };
     },
   });
 
@@ -1145,6 +1322,9 @@ export async function createE2ERuntime(
               member: interaction.member,
               interaction,
             });
+            (context as Record<string, unknown>).custom_id = interaction.customId;
+            (context as Record<string, unknown>).customId = interaction.customId;
+            (context as Record<string, unknown>).component_type = 'button';
             // Use FlowEngine for action execution
             const internalFlowName = `__button_${interaction.customId}`;
             if (!flowEngine.has(internalFlowName)) {
@@ -1167,6 +1347,13 @@ export async function createE2ERuntime(
               interaction,
               args: { values: interaction.values },
             });
+            // Mirror production behavior: expose selected values at the top
+            // level of the context so specs can reference `${values}`.
+            (context as Record<string, unknown>).values = interaction.values;
+            (context as Record<string, unknown>).selected = interaction.values;
+            (context as Record<string, unknown>).custom_id = interaction.customId;
+            (context as Record<string, unknown>).customId = interaction.customId;
+            (context as Record<string, unknown>).component_type = 'select_menu';
             // Use FlowEngine for action execution
             const internalFlowName = `__select_${interaction.customId}`;
             if (!flowEngine.has(internalFlowName)) {
@@ -1195,6 +1382,13 @@ export async function createE2ERuntime(
               interaction,
               args: { fields },
             });
+            // Mirror production: modal submissions surface `fields` and
+            // `modal_values` directly on the context.
+            (context as Record<string, unknown>).fields = fields;
+            (context as Record<string, unknown>).modal_values = fields;
+            (context as Record<string, unknown>).custom_id = interaction.customId;
+            (context as Record<string, unknown>).customId = interaction.customId;
+            (context as Record<string, unknown>).component_type = 'modal';
             // Use FlowEngine for action execution
             const internalFlowName = `__modal_${interaction.customId}`;
             if (!flowEngine.has(internalFlowName)) {

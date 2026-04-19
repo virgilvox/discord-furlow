@@ -92,7 +92,8 @@ export interface BulkDeleteAction extends BaseAction {
   action: 'bulk_delete';
   channel?: Expression;
   count?: number;
-  filter?: SimpleCondition;
+  /** Optional user ID. When set, only that user's recent messages are deleted. */
+  user?: Expression;
 }
 
 /** Add reaction action */
@@ -110,6 +111,11 @@ export interface AddReactionAction extends BaseAction {
 /** Add reactions action */
 export interface AddReactionsAction extends BaseAction {
   action: 'add_reactions';
+  /** Channel ID expression */
+  channel?: Expression;
+  /** Message ID (preferred alias) */
+  message?: Expression;
+  /** Message ID (legacy alias) */
   message_id?: Expression;
   emojis: Expression[];
 }
@@ -117,14 +123,27 @@ export interface AddReactionsAction extends BaseAction {
 /** Remove reaction action */
 export interface RemoveReactionAction extends BaseAction {
   action: 'remove_reaction';
+  /** Channel ID expression */
+  channel?: Expression;
+  /** Message ID (preferred alias) */
+  message?: Expression;
+  /** Message ID (legacy alias) */
   message_id?: Expression;
   emoji: Expression;
+  /** User whose reaction should be removed (preferred alias) */
+  user?: Expression;
+  /** User whose reaction should be removed (legacy alias) */
   user_id?: Expression;
 }
 
 /** Clear reactions action */
 export interface ClearReactionsAction extends BaseAction {
   action: 'clear_reactions';
+  /** Channel ID expression */
+  channel?: Expression;
+  /** Message ID (preferred alias) */
+  message?: Expression;
+  /** Message ID (legacy alias) */
   message_id?: Expression;
   emoji?: Expression;
 }

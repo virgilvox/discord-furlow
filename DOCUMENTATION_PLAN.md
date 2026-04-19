@@ -36,8 +36,8 @@ docs/
 │   │   └── integration.md     # Integration actions (8)
 │   ├── expressions/           # Expression system
 │   │   ├── _index.md          # Expression overview
-│   │   ├── functions.md       # 69 functions
-│   │   └── transforms.md      # 48 transforms
+│   │   ├── functions.md       # 71 functions
+│   │   └── transforms.md      # 50 transforms
 │   ├── events.md              # Event reference
 │   ├── state.md               # State management
 │   ├── flows.md               # Flow system
@@ -346,7 +346,7 @@ Brief description.
 
 ### 5. Expression Functions Reference
 
-**Purpose**: Document all 69 functions
+**Purpose**: Document all 71 functions
 
 **Structure per function**:
 ```markdown
@@ -387,7 +387,7 @@ content: "${function_name('hello', 5)}"
 
 ### 6. Expression Transforms Reference
 
-**Purpose**: Document all 48 transforms
+**Purpose**: Document all 50 transforms
 
 **Structure per transform**:
 ```markdown

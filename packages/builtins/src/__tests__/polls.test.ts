@@ -152,7 +152,7 @@ describe('Polls Builtin', () => {
       });
 
       it('should validate minimum options', () => {
-        const minCheck = cmd.actions.find(
+        const minCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('length < 2')
@@ -161,7 +161,7 @@ describe('Polls Builtin', () => {
       });
 
       it('should validate maximum options', () => {
-        const maxCheck = cmd.actions.find(
+        const maxCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('maxOptions')
@@ -179,7 +179,7 @@ describe('Polls Builtin', () => {
       });
 
       it('should check permissions', () => {
-        const permCheck = cmd.actions.find(
+        const permCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('creator_id')

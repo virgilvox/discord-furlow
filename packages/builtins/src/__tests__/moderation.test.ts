@@ -118,7 +118,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should insert warning into database', () => {
-      const dbAction = warnCmd.actions.find((a) => a.action === 'db_insert') as Action & {
+      const dbAction = warnCmd.actions!.find((a) => a.action === 'db_insert') as Action & {
         table?: string;
         data?: Record<string, unknown>;
       };
@@ -132,7 +132,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should send ephemeral reply to moderator', () => {
-      const replyAction = warnCmd.actions.find((a) => a.action === 'reply') as Action & {
+      const replyAction = warnCmd.actions!.find((a) => a.action === 'reply') as Action & {
         ephemeral?: boolean;
         content?: string;
       };
@@ -143,7 +143,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should send DM notification to warned user', () => {
-      const dmAction = warnCmd.actions.find((a) => a.action === 'send_dm') as Action & {
+      const dmAction = warnCmd.actions!.find((a) => a.action === 'send_dm') as Action & {
         user?: string;
         embed?: Record<string, unknown>;
       };
@@ -154,7 +154,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should execute actions in correct order: db_insert, reply, send_dm', () => {
-      const actionOrder = warnCmd.actions.map((a) => a.action);
+      const actionOrder = warnCmd.actions!.map((a) => a.action);
       expect(actionOrder.indexOf('db_insert')).toBeLessThan(actionOrder.indexOf('reply'));
       expect(actionOrder.indexOf('reply')).toBeLessThan(actionOrder.indexOf('send_dm'));
     });
@@ -180,7 +180,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have kick action with DM enabled', () => {
-      const kickAction = kickCmd.actions.find((a) => a.action === 'kick') as Action & {
+      const kickAction = kickCmd.actions!.find((a) => a.action === 'kick') as Action & {
         user?: string;
         reason?: string;
         dm_user?: boolean;
@@ -193,7 +193,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have default reason when none provided', () => {
-      const kickAction = kickCmd.actions.find((a) => a.action === 'kick') as Action & {
+      const kickAction = kickCmd.actions!.find((a) => a.action === 'kick') as Action & {
         reason?: string;
       };
       expect(kickAction!.reason).toContain('No reason provided');
@@ -223,7 +223,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have ban action with message deletion support', () => {
-      const banAction = banCmd.actions.find((a) => a.action === 'ban') as Action & {
+      const banAction = banCmd.actions!.find((a) => a.action === 'ban') as Action & {
         delete_message_days?: unknown;
         dm_user?: boolean;
       };
@@ -247,7 +247,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have unban action', () => {
-      const unbanAction = unbanCmd.actions.find((a) => a.action === 'unban') as Action & {
+      const unbanAction = unbanCmd.actions!.find((a) => a.action === 'unban') as Action & {
         user?: string;
       };
       expect(unbanAction).toBeDefined();
@@ -271,7 +271,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have timeout action with DM enabled', () => {
-      const timeoutAction = timeoutCmd.actions.find((a) => a.action === 'timeout') as Action & {
+      const timeoutAction = timeoutCmd.actions!.find((a) => a.action === 'timeout') as Action & {
         duration?: string;
         dm_user?: boolean;
         dm_message?: string;
@@ -297,7 +297,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should query warnings table with correct filters', () => {
-      const queryAction = warningsCmd.actions.find((a) => a.action === 'db_query') as Action & {
+      const queryAction = warningsCmd.actions!.find((a) => a.action === 'db_query') as Action & {
         table?: string;
         where?: Record<string, unknown>;
         order_by?: string;
@@ -311,7 +311,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should order by created_at descending and limit to 10', () => {
-      const queryAction = warningsCmd.actions.find((a) => a.action === 'db_query') as Action & {
+      const queryAction = warningsCmd.actions!.find((a) => a.action === 'db_query') as Action & {
         order_by?: string;
         limit?: number;
       };
@@ -320,14 +320,14 @@ describe('Moderation Builtin', () => {
     });
 
     it('should store query results in "warnings" variable', () => {
-      const queryAction = warningsCmd.actions.find((a) => a.action === 'db_query') as Action & {
+      const queryAction = warningsCmd.actions!.find((a) => a.action === 'db_query') as Action & {
         as?: string;
       };
       expect(queryAction!.as).toBe('warnings');
     });
 
     it('should display different message for no warnings vs has warnings', () => {
-      const replyAction = warningsCmd.actions.find((a) => a.action === 'reply') as Action & {
+      const replyAction = warningsCmd.actions!.find((a) => a.action === 'reply') as Action & {
         embed?: {
           description?: string;
           color?: string;
@@ -362,7 +362,7 @@ describe('Moderation Builtin', () => {
     });
 
     it('should have bulk_delete action targeting current channel', () => {
-      const bulkAction = purgeCmd.actions.find((a) => a.action === 'bulk_delete') as Action & {
+      const bulkAction = purgeCmd.actions!.find((a) => a.action === 'bulk_delete') as Action & {
         channel?: string;
         count?: unknown;
         filter?: string;
@@ -372,11 +372,11 @@ describe('Moderation Builtin', () => {
     });
 
     it('should support optional user filter in bulk_delete', () => {
-      const bulkAction = purgeCmd.actions.find((a) => a.action === 'bulk_delete') as Action & {
-        filter?: string;
+      const bulkAction = purgeCmd.actions!.find((a) => a.action === 'bulk_delete') as Action & {
+        user?: string;
       };
-      expect(bulkAction!.filter).toContain('args.user');
-      expect(bulkAction!.filter).toContain('message.author.id');
+      expect(bulkAction!.user).toContain('args.user');
+      expect(bulkAction!.user).toContain('args.user.id');
     });
   });
 
@@ -490,7 +490,7 @@ describe('Moderation Builtin', () => {
       const expressionPattern = /\$\{[^}]+\}/g;
 
       for (const cmd of moderationCommands) {
-        for (const action of cmd.actions) {
+        for (const action of cmd.actions ?? []) {
           const actionStr = JSON.stringify(action);
           const matches = actionStr.match(expressionPattern) || [];
 
@@ -537,7 +537,7 @@ describe('Moderation Builtin', () => {
       const validContextVars = ['args', 'user', 'guild', 'channel', 'message', 'member', 'interaction', 'event', 'warnings'];
 
       for (const cmd of moderationCommands) {
-        for (const action of cmd.actions) {
+        for (const action of cmd.actions ?? []) {
           const actionStr = JSON.stringify(action);
           const varPattern = /\$\{(\w+)\./g;
           let match;
@@ -557,26 +557,26 @@ describe('Moderation Builtin', () => {
 
     it('should have kick action that requires KICK_MEMBERS permission', () => {
       const kickCmd = moderationCommands.find((c) => c.name === 'kick')!;
-      const kickAction = kickCmd.actions.find((a) => a.action === 'kick');
+      const kickAction = kickCmd.actions!.find((a) => a.action === 'kick');
       expect(kickAction).toBeDefined();
       // Note: Permission enforcement is done by the runtime, not the spec
     });
 
     it('should have ban action that requires BAN_MEMBERS permission', () => {
       const banCmd = moderationCommands.find((c) => c.name === 'ban')!;
-      const banAction = banCmd.actions.find((a) => a.action === 'ban');
+      const banAction = banCmd.actions!.find((a) => a.action === 'ban');
       expect(banAction).toBeDefined();
     });
 
     it('should have bulk_delete action that requires MANAGE_MESSAGES permission', () => {
       const purgeCmd = moderationCommands.find((c) => c.name === 'purge')!;
-      const bulkAction = purgeCmd.actions.find((a) => a.action === 'bulk_delete');
+      const bulkAction = purgeCmd.actions!.find((a) => a.action === 'bulk_delete');
       expect(bulkAction).toBeDefined();
     });
 
     it('should have timeout action that requires MODERATE_MEMBERS permission', () => {
       const timeoutCmd = moderationCommands.find((c) => c.name === 'timeout')!;
-      const timeoutAction = timeoutCmd.actions.find((a) => a.action === 'timeout');
+      const timeoutAction = timeoutCmd.actions!.find((a) => a.action === 'timeout');
       expect(timeoutAction).toBeDefined();
     });
   });

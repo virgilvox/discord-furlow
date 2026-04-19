@@ -237,7 +237,7 @@ export async function exportCommand(
     if (options.output) {
       const outputPath = resolve(options.output);
       await writeFile(outputPath, jsonOutput);
-      console.log(chalk.green(`\n  ✓ Exported ${outputCommands.length} command(s) to ${options.output}\n`));
+      console.log(chalk.green(`\n  Exported ${outputCommands.length} command(s) to ${options.output}\n`));
     } else {
       console.log('\n' + jsonOutput + '\n');
     }
@@ -268,7 +268,7 @@ export async function exportCommand(
     if (error instanceof Error) {
       const errorCode = 'code' in error ? (error as { code: string }).code : null;
 
-      console.log('\n' + chalk.red.bold('  ✗ Error'));
+      console.log('\n' + chalk.red.bold('  Error'));
       if (errorCode) {
         console.log(chalk.red(`  [${errorCode}]`));
       }

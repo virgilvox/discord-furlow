@@ -77,6 +77,52 @@ when: "!message.author.bot"
 - `when` - condition on events, commands, actions
 - `condition` / `if` - flow_if conditional branching
 - `while` - flow_while loop condition
+- `call_flow.args.*` - dynamic values passed to a called flow
+- `emit.data.*` - dynamic values attached to a custom event
+- `batch.items` - the array to iterate over
+- `flow_switch.value` - the value used to select a case
+
+Examples of correct usage for those fields:
+
+```yaml
+# call_flow with dynamic args (raw expressions, no ${})
+- call_flow:
+    flow: record_warning
+    args:
+      user_id: "args.target.id"
+      reason: "args.reason"
+      # Literal values are passed through unchanged.
+      severity: 3
+      reviewed: false
+
+# emit with dynamic data
+- emit:
+    event: warning_threshold_reached
+    data:
+      user_id: "args.user_id"
+      count: "state.user.user_warnings"
+
+# batch iterating over a state list
+- batch:
+    items: "state.guild.pending_reviews"
+    as: review
+    each:
+      - log:
+          message: "reviewing ${review}"
+```
+
+### Rule 2b: Reading State in Expressions
+
+State is exposed inside expressions under `state.{scope}.{var}`:
+
+```yaml
+when: "state.member.member_xp >= 100"
+content: "You have ${state.user.user_warnings} warnings."
+```
+
+`{scope}` is one of `global`, `guild`, `channel`, `user`, `member`. The variable
+must appear in `state.variables` with a matching `scope`, otherwise state
+access falls back to the default `guild` scope.
 
 ### Rule 3: Escape Quotes Inside Strings
 
@@ -492,7 +538,7 @@ components:
           emoji: "🔵"
       actions:
         - batch:
-            items: "${interaction.values}"
+            items: "values"   # raw expression; router exposes selected values on context
             as: role
             each:
               - toggle_role:
@@ -660,6 +706,7 @@ automod:
 - `attachment` - Block attachments (threshold count, blocked/allowed extensions)
 - `spam` - Message rate limiting (threshold count, window duration e.g. "10s")
 - `duplicate` - Repeated message detection (threshold count, window duration e.g. "1m")
+- `mass_ping` - Match `@everyone` and `@here` (threshold default 1)
 
 ### Scheduler
 
@@ -853,6 +900,8 @@ Both formats work identically. The shorthand format is normalized internally bef
 - bulk_delete:
     channel: "${channel.id}"
     count: 10
+    # Optional: restrict to a single user's recent messages.
+    # user: "${args.target.id}"
 ```
 
 ### Member Actions (14)
@@ -1051,9 +1100,9 @@ Both formats work identically. The shorthand format is normalized internally bef
       - reply:
           content: "Low"
 
-# flow_switch
+# flow_switch (value is raw expression, no ${})
 - flow_switch:
-    value: "${options.choice}"
+    value: "options.choice"
     cases:
       a:
         - reply:
@@ -1090,9 +1139,9 @@ Both formats work identically. The shorthand format is normalized internally bef
           user: "${user2.id}"
           content: "Hello"
 
-# batch - IMPORTANT: items must be an expression that evaluates to an array
+# batch - items is a RAW expression (no ${}) returning an array
 - batch:
-    items: "${users}"  # Expression returning array, NOT a YAML array
+    items: "users"       # must be a raw expression, not a ${} template
     as: "u"
     each:
       - send_dm:
@@ -1102,14 +1151,15 @@ Both formats work identically. The shorthand format is normalized internally bef
 
 # batch - iterating over static values (use expression, not YAML array)
 - set:
-    var: "option_keys"
+    var: option_keys
+    scope: channel
     value:
       - "option1"
       - "option2"
       - "option3"
 - batch:
-    items: "${option_keys}"  # Reference the variable
-    as: "key"
+    items: "state.channel.option_keys"   # raw expression reading state
+    as: key
     each:
       - log:
           message: "Processing ${key}"
@@ -1505,7 +1555,10 @@ Many actions have field aliases for convenience. Both versions work:
 | Action | Field | Alias |
 |--------|-------|-------|
 | `set`, `increment`, `decrement`, `list_push`, `list_remove`, `set_map`, `delete_map` | `var` | `key` |
-| `edit_message`, `delete_message`, `add_reaction` | `message_id` | `message` |
+| `edit_message`, `delete_message`, `add_reaction`, `add_reactions`, `remove_reaction`, `clear_reactions` | `message_id` | `message` |
+| `add_reactions`, `remove_reaction`, `clear_reactions` | (no channel field previously) | `channel` (resolves via context by default) |
+| `remove_reaction` | `user_id` | `user` |
+| `bulk_delete` | (no filter field) | `user` (restricts deletion to one author; requires fetching, so 100-message cap applies) |
 | `flow_if` | `if` | `condition` |
 | `voice_volume` | `level` | `volume` |
 | `circle_image` layer | `src` | `url` |
@@ -1607,7 +1660,7 @@ The following Discord.js methods are automatically called when accessed as prope
 | `? :` | Ternary: `x > 5 ? "big" : "small"` |
 | `\|` | Pipe (transform): `name \| upper` |
 
-### Functions (69)
+### Functions (71)
 
 **Date/Time (5)**
 | Function | Example |
@@ -1793,8 +1846,18 @@ For advanced use cases, you can also listen to raw Discord.js gateway events. Th
 **Guild:** `guild_create`, `guild_update`, `guild_delete`
 **Channel:** `channel_create`, `channel_update`, `channel_delete`
 **Thread:** `thread_create`, `thread_update`, `thread_delete`
-**Role:** `guild_role_create`, `guild_role_update`, `guild_role_delete`
-**Ban:** `guild_ban_add`, `guild_ban_remove`
+**Role:** `role_create`, `role_update`, `role_delete`
+**Ban:** `member_ban`, `member_unban`
+**Emoji:** `emoji_create`, `emoji_update`, `emoji_delete`
+**Sticker:** `sticker_create`, `sticker_update`, `sticker_delete`
+**Invite:** `invite_create`, `invite_delete`
+**Thread:** `thread_create`, `thread_update`, `thread_delete`, `thread_member_update`
+**Scheduled Event:** `scheduled_event_create`, `scheduled_event_update`, `scheduled_event_delete`, `scheduled_event_user_add`, `scheduled_event_user_remove`
+**Stage Instance:** `stage_instance_create`, `stage_instance_update`, `stage_instance_delete`
+**Shard:** `shard_ready`, `shard_disconnect`, `shard_error`
+**Channel:** `channel_pins_update` (in addition to `channel_create` / `channel_update` / `channel_delete`)
+**Message:** `message_delete_bulk` (in addition to `message_create` / `message_update` / `message_delete`)
+**Reaction:** `message_reaction_add`, `message_reaction_remove`, `message_reaction_remove_all` (legacy aliases `reaction_add` / `reaction_remove` still emit)
 **Presence:** `presence_update`, `typing_start`
 **Invite:** `invite_create`, `invite_delete`
 
@@ -1802,12 +1865,37 @@ For advanced use cases, you can also listen to raw Discord.js gateway events. Th
 
 ### Event Context Variables
 
-| Event Type | Variables |
-|------------|-----------|
-| Message events | `message`, `channel`, `guild`, `user` |
-| Member events | `member`, `guild`, `user` |
-| Reaction events | `reaction`, `message`, `user`, `emoji` |
-| Voice events | `member`, `channel`, `old_voice_state`, `new_voice_state` |
+Every event exposes `now`, `random`, `state`, `options` / `args`, `client`, and, where applicable, the ID shortcuts `guildId`, `channelId`, `userId`, and `messageId`. Entity-specific fields on top:
+
+| Event Type | Entity Variables |
+|------------|------------------|
+| `message_create` / `message_update` / `message_delete` | `message`, `channel`, `guild`, `user`, `attachments` (create), `old_message` (update) |
+| `message_delete_bulk` | `messages`, `message_count`, `channel` |
+| `message_reaction_add` / `message_reaction_remove` (and legacy `reaction_add` / `reaction_remove`) | `reaction`, `emoji`, `message`, `user`, `channel`, `guild` |
+| `message_reaction_remove_all` | `message`, `channel`, `guild` |
+| `member_join` / `member_leave` | `member`, `user`, `guild` |
+| `member_update` | `member`, `old_member`, `user`, `guild` |
+| `member_boost` / `member_unboost` | `member`, `user`, `guild`, `boost_since` or `boost_ended` |
+| `member_ban` / `member_unban` | `user`, `guild`, `reason` (ban only) |
+| `guild_create` / `guild_delete` / `guild_update` | `guild`, `old_guild` (update only) |
+| `channel_create` / `channel_delete` | `channel`, `guild` |
+| `channel_update` | `channel`, `old_channel`, `guild` |
+| `channel_pins_update` | `channel`, `pins_updated_at`, `guild` |
+| `thread_create` / `thread_delete` / `thread_update` | `thread`, `channel`, `guild`, `old_thread` (update) |
+| `thread_member_update` | `old_thread_member`, `new_thread_member`, `thread` |
+| `role_create` / `role_delete` / `role_update` | `role`, `guild`, `old_role` (update) |
+| `emoji_create` / `emoji_delete` / `emoji_update` | `emoji`, `guild`, `old_emoji` (update) |
+| `sticker_create` / `sticker_delete` / `sticker_update` | `sticker`, `guild`, `old_sticker` (update) |
+| `invite_create` / `invite_delete` | `invite`, `channel`, `guild`, `user` (inviter, create only) |
+| `voice_state_update` | `old_voice_state`, `new_voice_state`, `member`, `guild` |
+| `voice_join` / `voice_leave` / `voice_move` | `member`, `old_voice_state`, `new_voice_state`, `guild` |
+| `voice_stream_start` / `voice_stream_stop` | `member`, `streaming`, `voice_channel` (start only) |
+| `presence_update` | `presence`, `old_presence`, `user`, `guild` |
+| `typing_start` | `user`, `channel`, `guild` |
+| `scheduled_event_create` / `scheduled_event_delete` / `scheduled_event_update` | `scheduled_event`, `guild`, `channel`, `old_scheduled_event` (update) |
+| `scheduled_event_user_add` / `scheduled_event_user_remove` | `scheduled_event`, `user`, `guild`, `channel` |
+| `stage_instance_create` / `stage_instance_delete` / `stage_instance_update` | `stage_instance`, `guild`, `channel`, `old_stage_instance` (update) |
+| `shard_ready` / `shard_disconnect` / `shard_error` | `shard_id`, plus `unavailable_guilds` (ready) / `close_code`, `close_reason` (disconnect) / `error` (error) |
 | Interaction events | `interaction`, `user`, `guild`, `channel`, `options` |
 
 **Component Interaction Context (buttons, selects, modals):**
@@ -1818,11 +1906,13 @@ For advanced use cases, you can also listen to raw Discord.js gateway events. Th
 | Select Menu | `values` (selected values array), `selected`, `custom_id`, `component_type` |
 | Modal | `fields` (object mapping field custom_id to value), `modal_values`, `custom_id` |
 
-Example accessing select menu values:
+Example accessing select menu values. Note `batch.items` is a raw expression
+(no `${}`), but interpolations inside strings like `message:` still use `${}`:
+
 ```yaml
 # In component actions
 - batch:
-    items: "${values}"   # or "${interaction.values}"
+    items: "values"        # raw expression; values is set on context by the router
     as: selected
     each:
       - log:
@@ -1922,7 +2012,7 @@ events:
     when: "message.id == '123456789'"
     actions:
       - flow_switch:
-          value: "${reaction.emoji.name}"
+          value: "reaction.emoji.name"   # raw expression
           cases:
             "check":
               - assign_role:
@@ -2148,22 +2238,32 @@ src: "https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256"
     each: [...]
 ```
 
-**Solution:** Define the array in a `set` action first, then reference it:
+**Solution:** Define the array in a `set` action first, then reference it.
+`batch.items` is an evaluated field (raw expression, no `${}`):
 
 ```yaml
 # CORRECT - set variable first, then reference
 - set:
-    var: "items_list"
+    var: items_list
+    scope: channel
     value:
       - "a"
       - "b"
       - "c"
 - batch:
-    items: "${items_list}"
-    as: "item"
+    items: "state.channel.items_list"   # raw expression
+    as: item
     each:
       - log:
           message: "Item: ${item}"
+
+# Also valid: any raw expression that returns an array
+- batch:
+    items: "range(1, 10)"
+    as: i
+    each:
+      - log:
+          message: "Iteration ${i}"
 ```
 
 ### 5. Object Literals in Expressions Use Double Quotes

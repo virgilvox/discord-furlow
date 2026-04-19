@@ -10,7 +10,7 @@ const bot = await Rivet.load('./bolt.yaml')
 bot.start()
 ```
 
-This is the most flexible — people can embed it in their own Node app, extend it with custom action types, swap out the storage backend, etc. But it still requires someone 
+This is the most flexible. people can embed it in their own Node app, extend it with custom action types, swap out the storage backend, etc. But it still requires someone 
 to set up a project, install dependencies, handle hosting. It's a developer tool, not an end-user tool.
 
 **Option 2: Standalone CLI runtime (like Docker or Terraform)**
@@ -26,7 +26,7 @@ rivet dev ./my-bot/ --hot-reload
 ```
 
 The runtime IS the product. You don't write any code around it. You just write YAML files and point the runtime at them. This is closer to how Terraform or Docker Compose 
-works — the config is the program, the CLI is the engine. This feels like the right default for the spec's philosophy. You'd also get commands like `rivet init` to scaffold 
+works. the config is the program, the CLI is the engine. This feels like the right default for the spec's philosophy. You'd also get commands like `rivet init` to scaffold 
 a new bot, `rivet add moderation` to drop in a builtin, `rivet export` to dump the generated slash command registrations.
 
 **Option 3: Hosted platform (like Vercel for bots)**
@@ -42,14 +42,14 @@ running a platform, not just shipping a tool.
 
 ---
 
-Realistically, you'd build them in order — **Option 2 first, Option 1 falls out of it naturally, Option 3 is the stretch goal.** Here's how I'd actually structure it:
+Realistically, you'd build them in order. **Option 2 first, Option 1 falls out of it naturally, Option 3 is the stretch goal.** Here's how I'd actually structure it:
 
 **The core architecture would be:**
 
 ```
 rivet/
 ├── packages/
-│   ├── core/                  # the engine — pure logic, no I/O opinions
+│   ├── core/                  # the engine. pure logic, no I/O opinions
 │   │   ├── parser/            # YAML → internal representation (the "graph")
 │   │   ├── schema/            # JSON Schema validation for all BOLT types
 │   │   ├── resolver/          # resolve imports, env vars, file references
@@ -81,7 +81,7 @@ rivet/
 │   │   └── tcp.ts
 │   │
 │   ├── storage/               # storage backends
-│   │   ├── sqlite.ts          # default — zero config
+│   │   ├── sqlite.ts          # default. zero config
 │   │   ├── postgres.ts
 │   │   └── memory.ts          # for caches
 │   │
@@ -112,12 +112,12 @@ rivet/
 │       └── index.ts
 ```
 
-**The key insight is that the parser turns YAML into an intermediate representation** — basically a graph of nodes. Each event handler becomes a chain of action nodes. Each 
-flow is a callable subgraph. The runtime walks the graph when events fire. This is exactly like how LATCH works conceptually — the YAML is just a serialization format for a 
+**The key insight is that the parser turns YAML into an intermediate representation**. basically a graph of nodes. Each event handler becomes a chain of action nodes. Each 
+flow is a callable subgraph. The runtime walks the graph when events fire. This is exactly like how LATCH works conceptually. the YAML is just a serialization format for a 
 flow graph.
 
 The **expression evaluator** is the trickiest part. You need something sandboxed that can access context objects but can't do arbitrary code execution. You'd probably build 
-a small interpreter or use something like `expr-eval` but extended with your context objects and built-in functions. Not a full JS eval — a constrained expression language.
+a small interpreter or use something like `expr-eval` but extended with your context objects and built-in functions. Not a full JS eval. a constrained expression language.
 
 **For the action system**, each action type registers itself:
 
@@ -136,7 +136,7 @@ registry.register('send_message', {
 So adding new action types is just registering new handlers. Third parties could publish action plugins.
 
 **Builtins are just YAML that gets merged.** When you write `builtins: { moderation: { enabled: true } }`, the runtime loads `builtins/moderation/definition.yaml` which 
-contains the full command/event/state/flow definitions, templated with your config values. It's turtles all the way down — builtins are BOLT specs themselves.
+contains the full command/event/state/flow definitions, templated with your config values. It's turtles all the way down. builtins are BOLT specs themselves.
 
 **The development flow would be:**
 
@@ -152,7 +152,7 @@ rivet validate ./my-bot/
 rivet run ./my-bot/
 ```
 
-For the voice/audio stuff, you'd lean on existing libraries — `@discordjs/voice`, `@discordjs/opus`, `prism-media` for FFmpeg integration. The YAML just declares what to 
+For the voice/audio stuff, you'd lean on existing libraries. `@discordjs/voice`, `@discordjs/opus`, `prism-media` for FFmpeg integration. The YAML just declares what to 
 play; the runtime wires up the actual audio pipeline.
 
 The whole thing is probably TypeScript/Node given that discord.js is the most mature ecosystem for this. Though a Rust or Go runtime would be interesting for performance 

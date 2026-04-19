@@ -3,7 +3,7 @@
  * Handles ticket creation, claiming, closing, and transcripts
  */
 
-import type { FurlowSpec, CommandDefinition, EventHandler, TableDefinition, ComponentDefinition } from '@furlow/schema';
+import type { FurlowSpec, CommandDefinition, EventHandler, TableDefinition, ActionRowComponent } from '@furlow/schema';
 
 export interface TicketsConfig {
   /** Category to create tickets in */
@@ -61,7 +61,7 @@ export const ticketsTables: Record<string, TableDefinition> = {
   },
 };
 
-export const ticketPanelComponents: ComponentDefinition[] = [
+export const ticketPanelComponents: ActionRowComponent[] = [
   {
     type: 'action_row',
     components: [
@@ -76,7 +76,7 @@ export const ticketPanelComponents: ComponentDefinition[] = [
   },
 ];
 
-export const ticketControlComponents: ComponentDefinition[] = [
+export const ticketControlComponents: ActionRowComponent[] = [
   {
     type: 'action_row',
     components: [

@@ -181,7 +181,7 @@ describe('Leveling Builtin', () => {
       });
 
       it('should query levels table', () => {
-        const dbQuery = cmd.actions.find((a) => a.action === 'db_query');
+        const dbQuery = cmd.actions!.find((a) => a.action === 'db_query');
         expect(dbQuery).toBeDefined();
       });
 
@@ -204,7 +204,7 @@ describe('Leveling Builtin', () => {
       });
 
       it('should query with pagination', () => {
-        const dbQuery = cmd.actions.find(
+        const dbQuery = cmd.actions!.find(
           (a) =>
             a.action === 'db_query' &&
             (a as { order_by?: string }).order_by !== undefined
@@ -226,7 +226,7 @@ describe('Leveling Builtin', () => {
       });
 
       it('should use db_update action', () => {
-        const updateAction = cmd.actions.find((a) => a.action === 'db_update');
+        const updateAction = cmd.actions!.find((a) => a.action === 'db_update');
         expect(updateAction).toBeDefined();
       });
     });

@@ -20,15 +20,15 @@ commands:
 
 | Feature | Count |
 |---------|-------|
-| Actions | 84 |
+| Actions | 85 |
 | Expression Functions | 71 |
 | Transforms | 50 |
-| Event Types | 76 |
+| Events | 59 |
 
-- **No Coding Required** — Pure YAML configuration
-- **Scoped State** — Global, guild, channel, user, member scopes
-- **Reusable Flows** — Named action sequences with parameters
-- **Full Type Safety** — TypeScript support for extensions
+- **No Coding Required**: pure YAML configuration
+- **Scoped State**: global, guild, channel, user, and member scopes
+- **Reusable Flows**: named action sequences with parameters
+- **Full Type Safety**: TypeScript support for extensions
 
 ## Quick Start
 
@@ -47,18 +47,18 @@ furlow start
 ## Documentation
 
 ### Getting Started
-- [Installation](guides/installation) — Setup and requirements
-- [Quick Start](guides/quickstart) — Build your first bot
-- [Configuration](guides/configuration) — YAML specification reference
+- [Installation](guides/installation): setup and requirements
+- [Quick Start](guides/quickstart): build your first bot
+- [Configuration](guides/configuration): YAML specification reference
 
 ### Reference
-- [Actions](reference/actions/_index) — All 85 actions documented
-- [Expressions](reference/expressions/_index) — 71 functions and 50 transforms
-- [Events](reference/events) — 76 event types
-- [CLI](reference/cli) — Command-line interface
+- [Actions](reference/actions/_index): all 85 actions documented
+- [Expressions](reference/expressions/_index): 71 functions and 50 transforms
+- [Events](reference/events): 59 events including Discord gateway, voice transitions, and component interactions
+- [CLI](reference/cli): command-line interface
 
 ### Examples
-- [Simple Bot](examples/simple-bot) — Basic commands and events
+- [Simple Bot](examples/simple-bot): basic commands and events
 
 ## Packages
 

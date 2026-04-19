@@ -5,7 +5,7 @@
 [![Maintained by @virgilvox](https://img.shields.io/badge/maintained%20by-%40virgilvox-5865F2)](https://github.com/virgilvox)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Build powerful Discord bots with YAML — no code required.
+Build powerful Discord bots with YAML. No code required.
 
 ```yaml
 commands:
@@ -18,13 +18,13 @@ commands:
 
 ## Features
 
-- **85 Actions** — Messages, moderation, voice, channels, and more
-- **71 Expression Functions** — Date, math, string, array manipulation
-- **50 Transforms** — Pipe-based data transformations
-- **76 Events** — Discord gateway + high-level FURLOW events
-- **Scoped State** — Global, guild, channel, user, member scopes
-- **Flows** — Reusable action sequences with parameters
-- **External Integrations** — HTTP, WebSocket, MQTT, TCP/UDP, webhooks
+- **85 Actions**: messages, moderation, voice, channels, and more
+- **71 Expression Functions**: date, math, string, array manipulation
+- **50 Transforms**: pipe-based data transformations
+- **59 Events** across Discord gateway, voice transitions, component interactions, and high-level FURLOW events (automod, scheduler, pipes)
+- **Scoped State**: global, guild, channel, user, and member scopes
+- **Flows**: reusable action sequences with parameters
+- **External Integrations**: HTTP, WebSocket, MQTT, TCP/UDP, webhooks
 
 ## Quick Start
 

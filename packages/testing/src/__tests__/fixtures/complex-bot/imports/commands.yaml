@@ -1,0 +1,175 @@
+# Imported commands: proves multi-file imports work end to end.
+# All commands here get merged into the root spec's `commands` array.
+
+commands:
+  # Simple command exercising common expression functions and transforms.
+  - name: ping
+    description: "Check latency, show bot uptime"
+    actions:
+      - reply:
+          content: "Pong. Uptime start ts: ${state.global.uptime_started_at | default(0)}; random: ${random(1, 100)}"
+          ephemeral: false
+
+  # Command demonstrating every option type and using defer for long-running work.
+  - name: echo
+    description: "Echo back options of every type"
+    options:
+      - name: text
+        description: "Text input"
+        type: string
+        required: true
+        min_length: 1
+        max_length: 200
+      - name: count
+        description: "Integer between 1 and 10"
+        type: integer
+        required: true
+        min_value: 1
+        max_value: 10
+      - name: ratio
+        description: "Float option"
+        type: number
+        required: false
+      - name: enable
+        description: "Boolean option"
+        type: boolean
+        required: false
+      - name: target_user
+        description: "User option"
+        type: user
+        required: false
+      - name: target_channel
+        description: "Channel option"
+        type: channel
+        required: false
+      - name: target_role
+        description: "Role option"
+        type: role
+        required: false
+    actions:
+      - defer:
+          ephemeral: false
+      - reply:
+          content: "${args.text | upper} x${args.count}"
+
+  # Command that walks the complex nested flow.
+  - name: stress
+    description: "Run the nested flow stress harness"
+    options:
+      - name: iterations
+        description: "How many loop iterations"
+        type: integer
+        required: true
+        min_value: 1
+        max_value: 10
+    actions:
+      - call_flow:
+          flow: complex_nested_flow
+          args:
+            target_count: "args.iterations"
+
+  # Command with subcommand groups, demonstrating the full structure.
+  - name: admin
+    description: "Admin utilities"
+    subcommand_groups:
+      - name: moderation
+        description: "Moderation tools"
+        subcommands:
+          - name: warn
+            description: "Warn a user"
+            options:
+              - name: user
+                description: "The user to warn"
+                type: user
+                required: true
+              - name: reason
+                description: "Why the user is being warned"
+                type: string
+                required: true
+            actions:
+              - call_flow:
+                  flow: record_warning
+                  args:
+                    user_id: "args.user.id"
+                    reason: "args.reason"
+              - reply:
+                  content: "Warned ${args.user.id}: ${args.reason}"
+                  ephemeral: true
+
+          - name: clear
+            description: "Clear a user's warnings"
+            options:
+              - name: user
+                description: "The user to clear"
+                type: user
+                required: true
+            actions:
+              - delete_rows:
+                  table: warnings
+                  where:
+                    user_id: "${args.user.id}"
+              - reply:
+                  content: "Cleared warnings for ${args.user.id}"
+                  ephemeral: true
+
+      - name: config
+        description: "Guild configuration"
+        subcommands:
+          - name: set
+            description: "Set a preference"
+            options:
+              - name: key
+                description: "Preference key"
+                type: string
+                required: true
+                choices:
+                  - name: "Language"
+                    value: language
+                  - name: "Notifications"
+                    value: notifications
+              - name: value
+                description: "Preference value"
+                type: string
+                required: true
+            actions:
+              - set_map:
+                  var: preferences
+                  scope: user
+                  key: "${args.key}"
+                  value: "${args.value}"
+              - reply:
+                  content: "Set ${args.key} = ${args.value}"
+                  ephemeral: true
+
+  # Command showing components used together.
+  - name: poll
+    description: "Open a poll modal"
+    actions:
+      - show_modal:
+          modal: feedback
+
+  # Command that sends a rich embed.
+  - name: userinfo
+    description: "Show user information embed"
+    options:
+      - name: target
+        description: "User to inspect"
+        type: user
+        required: false
+    actions:
+      - reply:
+          embed:
+            title: "User Info"
+            description: "Details for ${args.target.username || user.username}"
+            color: "#5865F2"
+            author:
+              name: "Megabot"
+            footer:
+              text: "Queried at ${timestamp(now())}"
+            fields:
+              - name: "ID"
+                value: "${args.target.id || user.id}"
+                inline: true
+              - name: "Tag"
+                value: "${args.target.tag || user.tag || user.username}"
+                inline: true

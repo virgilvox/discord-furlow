@@ -23,17 +23,16 @@ furlow init [name]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-t, --template <template>` | Project template | `simple` |
-| `--no-git` | Skip git initialization | — |
-| `--no-install` | Skip dependency installation | — |
+| `--no-git` | Skip git initialization | none |
+| `--no-install` | Skip dependency installation | none |
 
 **Templates:**
 
 | Template | Description |
 |----------|-------------|
-| `simple` | Basic bot with ping command |
-| `moderation` | Moderation commands |
-| `music` | Music playback |
-| `leveling` | XP and levels |
+| `simple` | Minimal bot with ping command and ready event |
+| `moderation` | Moderation builtin preinstalled |
+| `full` | All builtins preinstalled |
 
 **Examples:**
 
@@ -63,8 +62,9 @@ furlow start [path]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-e, --env <file>` | Environment file path | `.env` |
-| `-g, --guild <id>` | Register commands to specific guild | — |
-| `--no-validate` | Skip schema validation | — |
+| `-g, --guild <id>` | Register commands to specific guild | none |
+| `--no-validate` | Skip schema validation | none |
+| `--verbose` | Enable verbose debug logging | none |
 
 **Examples:**
 
@@ -97,7 +97,7 @@ furlow dev [path]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-e, --env <file>` | Environment file path | `.env` |
-| `--no-validate` | Skip schema validation | — |
+| `--no-validate` | Skip schema validation | none |
 
 The bot automatically restarts when YAML files change.
 
@@ -140,7 +140,7 @@ furlow validate furlow.yaml --strict
 **Output:**
 
 ```
-✓ furlow.yaml is valid
+furlow.yaml is valid
   - 5 commands
   - 3 events
   - 2 flows
@@ -166,20 +166,20 @@ furlow add <builtin>
 
 | Module | Description |
 |--------|-------------|
-| `moderation` | Ban, kick, warn, mute commands |
-| `welcome` | Welcome messages and autoroles |
-| `tickets` | Support ticket system |
-| `leveling` | XP and level tracking |
-| `music` | Voice playback |
-| `utility` | Common utility commands |
-| `fun` | Fun and games commands |
-| `logging` | Server logging |
-| `automod` | Auto moderation rules |
-| `starboard` | Starboard feature |
-| `giveaway` | Giveaway system |
-| `poll` | Poll commands |
-| `reminder` | Reminder system |
-| `economy` | Virtual economy |
+| `moderation` | Warn, kick, ban, mute, case management |
+| `welcome` | Join/leave messages, auto-role, DM welcome |
+| `logging` | Message, member, and server event logging |
+| `tickets` | Support tickets, claiming, transcripts |
+| `reaction-roles` | Role assignment via reactions and buttons |
+| `leveling` | XP, levels, rewards, and leaderboards |
+| `music` | Voice playback, queue, and filters |
+| `starboard` | Star reactions and hall of fame |
+| `polls` | Voting and multiple choice |
+| `giveaways` | Requirements, reroll, and winners |
+| `auto-responder` | Custom triggers and responses |
+| `afk` | AFK status and mention notifications |
+| `reminders` | Personal reminders and DM delivery |
+| `utilities` | Serverinfo, userinfo, avatar, and more |
 
 **Examples:**
 

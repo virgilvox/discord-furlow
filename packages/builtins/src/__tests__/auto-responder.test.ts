@@ -121,9 +121,8 @@ describe('Auto-Responder Builtin', () => {
 
       it('should support multiple response types', () => {
         const batch = handler.actions.find((a) => a.action === 'batch');
-        const flowIf = (batch as { each?: { then?: unknown[] } }).each?.then?.find(
-          (a: { action?: string }) => a.action === 'flow_switch'
-        );
+        const thenBranch = (batch as { each?: { then?: { action?: string }[] } }).each?.then ?? [];
+        const flowIf = thenBranch.find((a) => a.action === 'flow_switch');
         const cases = (flowIf as { cases?: Record<string, unknown> })?.cases;
         expect(cases?.message).toBeDefined();
         expect(cases?.embed).toBeDefined();

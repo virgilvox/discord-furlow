@@ -1,0 +1,63 @@
+# Imported flows: merged into the root spec's `flows` list.
+
+flows:
+  - name: welcome_new_member
+    parameters:
+      - name: member_id
+        type: string
+        required: true
+      - name: member_name
+        type: string
+        required: true
+    actions:
+      - log:
+          message: "welcome: ${args.member_name} (${args.member_id})"
+      - set:
+          var: member_xp
+          value: 0
+          scope: member
+      - list_push:
+          var: favorite_tags
+          scope: member
+          value: newcomer
+      - emit:
+          event: member_welcomed
+          data:
+            member_id: "${args.member_id}"
+
+  - name: record_warning
+    parameters:
+      - name: user_id
+        type: string
+        required: true
+      - name: reason
+        type: string
+        required: true
+    actions:
+      - insert:
+          table: warnings
+          data:
+            user_id: "${args.user_id}"
+            moderator_id: "${user.id}"
+            guild_id: "${guild.id}"
+            reason: "${args.reason}"
+            created_at: "${now()}"
+      - increment:
+          var: user_warnings
+          scope: user
+      - try:
+          do:
+            - flow_if:
+                if: "state.user.user_warnings >= 3"
+                then:
+                  - log:
+                      message: "threshold reached for ${args.user_id}"
+                  - emit:
+                      event: warning_threshold_reached
+                      data:
+                        user_id: "${args.user_id}"
+                        count: "${state.user.user_warnings}"
+          catch:
+            - log:
+                message: "failed to escalate warning: ${error.message}"
+                level: warn

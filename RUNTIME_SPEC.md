@@ -138,21 +138,21 @@ buttons:
       - reply:
           content: "Confirmed!"
 
-# OPTIONAL: Select menu handlers
-selects:
-  - customId: "role_select"
-    actions:
-      - assign_role:
-          user: "${event.member}"
-          role: "${event.values[0]}"
+# OPTIONAL: Component handlers live under `components:` keyed by custom_id.
+components:
+  selects:
+    role_select:
+      actions:
+        - assign_role:
+            user: "${user.id}"
+            role: "${values[0]}"
 
-# OPTIONAL: Modal handlers
-modals:
-  - customId: "feedback_modal"
-    actions:
-      - send_message:
-          channel: "${config.feedbackChannel}"
-          content: "${event.fields.feedback}"
+  modals:
+    feedback_modal:
+      actions:
+        - send_message:
+            channel: "${config.feedbackChannel}"
+            content: "${fields.feedback}"
 
 # OPTIONAL: Scheduled tasks
 cron:
@@ -171,7 +171,7 @@ automod:
           timeWindow: "10s"
     actions:
       - timeout:
-          user: "${event.member}"
+          user: "${user.id}"
           duration: "5m"
           reason: "Spam detected"
 
@@ -841,87 +841,114 @@ All actions support these properties:
 
 ### 6.1 Event Types
 
-#### Discord Gateway Events (52)
+FURLOW emits canonical snake_case event names. User YAML binds to these
+names, not to Discord.js's camelCase event names. A runtime implementation
+MUST emit the events listed below. The complete, authoritative list lives in
+`@furlow/discord/events` (`EMITTED_FURLOW_EVENTS`) and is documented for
+end users in `docs/reference/events.md`.
 
-Runtimes MUST support all Discord gateway events:
+#### Bot Lifecycle (4)
 
-**Guild Events:**
-`guildCreate`, `guildUpdate`, `guildDelete`, `guildUnavailable`, `guildIntegrationsUpdate`, `guildBanAdd`, `guildBanRemove`
+`ready`, `shard_ready`, `shard_disconnect`, `shard_error`
 
-**Channel Events:**
-`channelCreate`, `channelUpdate`, `channelDelete`, `channelPinsUpdate`
+#### Guild (3)
 
-**Thread Events:**
-`threadCreate`, `threadUpdate`, `threadDelete`, `threadListSync`, `threadMemberUpdate`, `threadMembersUpdate`
+`guild_create`, `guild_delete`, `guild_update`
 
-**Member Events:**
-`guildMemberAdd`, `guildMemberRemove`, `guildMemberUpdate`, `guildMembersChunk`
+#### Members (7)
 
-**Role Events:**
-`roleCreate`, `roleUpdate`, `roleDelete`
+`member_join`, `member_leave`, `member_update`, `member_boost`,
+`member_unboost`, `member_ban`, `member_unban`
 
-**Message Events:**
-`messageCreate`, `messageUpdate`, `messageDelete`, `messageDeleteBulk`, `messageReactionAdd`, `messageReactionRemove`, `messageReactionRemoveAll`, `messageReactionRemoveEmoji`
+`member_boost` / `member_unboost` are derived from `guildMemberUpdate` by
+comparing `premiumSince` on old vs new member.
 
-**Presence Events:**
-`presenceUpdate`, `typingStart`, `userUpdate`
+#### Messages (4)
 
-**Voice Events:**
-`voiceStateUpdate`, `voiceServerUpdate`
+`message_create`, `message_update`, `message_delete`, `message_delete_bulk`
 
-**Interaction Events:**
-`interactionCreate`
+`message_create` skips bot authors.
 
-**Invite Events:**
-`inviteCreate`, `inviteDelete`
+#### Reactions (3 plus 2 legacy aliases)
 
-**Emoji/Sticker Events:**
-`emojiCreate`, `emojiUpdate`, `emojiDelete`, `stickerCreate`, `stickerUpdate`, `stickerDelete`
+`message_reaction_add`, `message_reaction_remove`,
+`message_reaction_remove_all`
 
-**Stage Events:**
-`stageInstanceCreate`, `stageInstanceUpdate`, `stageInstanceDelete`
+Legacy aliases still emitted for backward compatibility: `reaction_add`,
+`reaction_remove`.
 
-**Scheduled Event Events:**
-`guildScheduledEventCreate`, `guildScheduledEventUpdate`, `guildScheduledEventDelete`, `guildScheduledEventUserAdd`, `guildScheduledEventUserRemove`
+#### Channels (4)
 
-**Automod Events:**
-`autoModerationRuleCreate`, `autoModerationRuleUpdate`, `autoModerationRuleDelete`, `autoModerationActionExecution`
+`channel_create`, `channel_delete`, `channel_update`, `channel_pins_update`
 
-#### FURLOW High-Level Events (15)
+#### Threads (4)
 
-Convenience events that abstract common patterns:
+`thread_create`, `thread_delete`, `thread_update`, `thread_member_update`
 
-| Event | Triggered By | Context |
-|-------|--------------|---------|
-| `ready` | Bot ready | `client` |
-| `error` | Error occurred | `error` |
-| `member_join` | `guildMemberAdd` | `member`, `guild` |
-| `member_leave` | `guildMemberRemove` | `member`, `guild` |
-| `member_ban` | `guildBanAdd` | `user`, `guild` |
-| `member_unban` | `guildBanRemove` | `user`, `guild` |
-| `member_boost` | Member started boosting | `member`, `guild` |
-| `member_unboost` | Member stopped boosting | `member`, `guild` |
-| `message` | `messageCreate` (non-bot) | `message`, `channel`, `author` |
-| `message_edit` | `messageUpdate` | `oldMessage`, `newMessage` |
-| `message_delete` | `messageDelete` | `message` |
-| `voice_join` | Joined voice | `member`, `channel` |
-| `voice_leave` | Left voice | `member`, `channel` |
-| `voice_move` | Moved channels | `member`, `oldChannel`, `newChannel` |
-| `timer_fire` | Timer expired | `timerId`, `data` |
-| `custom` | `emit` action | User-defined |
+#### Roles (3)
+
+`role_create`, `role_delete`, `role_update`
+
+#### Emojis (3)
+
+`emoji_create`, `emoji_delete`, `emoji_update`
+
+#### Stickers (3)
+
+`sticker_create`, `sticker_delete`, `sticker_update`
+
+#### Invites (2)
+
+`invite_create`, `invite_delete`
+
+#### Voice (6)
+
+`voice_state_update`, `voice_join`, `voice_leave`, `voice_move`,
+`voice_stream_start`, `voice_stream_stop`
+
+`voice_join` / `voice_leave` / `voice_move` / `voice_stream_*` are derived
+from `voiceStateUpdate` by comparing old vs new state.
+
+#### Presence and Typing (2)
+
+`presence_update`, `typing_start`
+
+#### Scheduled Events (5)
+
+`scheduled_event_create`, `scheduled_event_delete`,
+`scheduled_event_update`, `scheduled_event_user_add`,
+`scheduled_event_user_remove`
+
+#### Stage Instances (3)
+
+`stage_instance_create`, `stage_instance_delete`, `stage_instance_update`
+
+#### Component Interactions (3)
+
+`button_click`, `select_menu`, `modal_submit`
+
+Autocomplete interactions are handled by the command dispatcher, not the
+event router, and are bound via `autocomplete` options on command
+parameters (source: `static`, `query`, or `expression`).
+
+#### Total
+
+59 canonical FURLOW event names (plus 2 legacy reaction aliases). Emitted
+from 28 underlying Discord.js `ClientEvents` bindings. See
+`docs/reference/events.md` for per-event context field inventory.
 
 ### 6.2 Event Handler Definition
 
 ```yaml
 events:
-  - event: messageCreate          # REQUIRED: Event name
-    when: "!event.author.bot"     # OPTIONAL: Condition
+  - event: message_create         # REQUIRED: Canonical FURLOW event name (snake_case)
+    when: "!message.author.bot"   # OPTIONAL: Raw JEXL expression (no ${})
     debounce: "500ms"             # OPTIONAL: Debounce delay
     throttle: "1s"                # OPTIONAL: Rate limit
     once: false                   # OPTIONAL: Execute once only
     actions:                      # REQUIRED: Actions to execute
       - log:
-          message: "New message from ${event.author.username}"
+          message: "New message from ${message.author.username}"
 ```
 
 ### 6.3 Handler Registration
@@ -1026,7 +1053,8 @@ flows:
 - call_flow:
     flow: greet_user
     args:
-      user: "${event.member.user}"
+      # `args.*` values are raw JEXL expressions (no ${}) or literals.
+      user: "user.id"
       greeting: "Welcome"
     as: greetResult
 ```
@@ -1258,14 +1286,14 @@ A standard runtime supports most production use cases.
 | Misc (5) | `pipe_request`, `pipe_send`, `webhook_send`, `create_timer`, `cancel_timer` |
 
 **Required Functions:**
-All 69 functions
+All 71 functions
 
 **Not Required:**
 - Voice actions (17)
 - Canvas actions (2): `canvas_render`, `render_layers`
 - Metrics actions (2): `counter_increment`, `record_metric`
 
-### 8.3 Full Runtime (84 Actions)
+### 8.3 Full Runtime (85 Actions)
 
 A full runtime implements all FURLOW features.
 
@@ -1277,7 +1305,7 @@ A full runtime implements all FURLOW features.
 | Canvas/Metrics (4) | `counter_increment`, `record_metric`, `canvas_render`, `render_layers` |
 
 **Required Functions:**
-All 69 functions
+All 71 functions
 
 ### 8.4 Compliance Testing
 
@@ -1773,8 +1801,8 @@ Call a named flow.
 ```yaml
 - call_flow:
     flow: "greet_user"          # Flow name
-    args:                       # Arguments
-      user: "${event.user}"
+    args:                       # Arguments (raw expressions, no ${})
+      user: "user.id"
     as: result                  # Store return value
 ```
 

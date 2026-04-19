@@ -36,9 +36,9 @@
       "icon": "fas fa-code",
       "pages": [
         { "id": "yaml-spec", "title": "YAML Specification", "path": "reference/yaml-spec.md" },
-        { "id": "actions", "title": "Actions", "path": "reference/actions/_index.md", "badge": "84" },
+        { "id": "actions", "title": "Actions", "path": "reference/actions/_index.md", "badge": "85" },
         { "id": "expressions", "title": "Expressions", "path": "reference/expressions/_index.md", "badge": "71 + 50" },
-        { "id": "events", "title": "Events", "path": "reference/events.md", "badge": "76" },
+        { "id": "events", "title": "Events", "path": "reference/events.md", "badge": "59" },
         { "id": "canvas", "title": "Canvas", "path": "reference/canvas.md" },
         { "id": "voice", "title": "Voice", "path": "reference/voice.md" },
         { "id": "cli", "title": "CLI", "path": "reference/cli.md" }

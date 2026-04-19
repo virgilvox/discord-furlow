@@ -156,7 +156,7 @@ describe('Reminders Builtin', () => {
       });
 
       it('should check max reminders per user', () => {
-        const maxCheck = cmd.actions.find(
+        const maxCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('maxRemindersPerUser')
@@ -169,7 +169,7 @@ describe('Reminders Builtin', () => {
       const cmd = remindersCommands.find((c) => c.name === 'reminders')!;
 
       it('should query user reminders ordered by time', () => {
-        const dbQuery = cmd.actions.find(
+        const dbQuery = cmd.actions!.find(
           (a) =>
             a.action === 'db_query' &&
             (a as { order_by?: string }).order_by === 'remind_at ASC'
@@ -178,7 +178,7 @@ describe('Reminders Builtin', () => {
       });
 
       it('should handle empty reminders', () => {
-        const emptyCheck = cmd.actions.find(
+        const emptyCheck = cmd.actions!.find(
           (a) =>
             a.action === 'flow_if' &&
             (a as { condition?: string }).condition?.includes('length === 0')
@@ -197,7 +197,7 @@ describe('Reminders Builtin', () => {
       });
 
       it('should verify ownership before deleting', () => {
-        const ownerCheck = cmd.actions.find(
+        const ownerCheck = cmd.actions!.find(
           (a) =>
             a.action === 'db_query' &&
             (a as { where?: { user_id?: string } }).where?.user_id

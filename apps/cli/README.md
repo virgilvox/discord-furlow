@@ -2,7 +2,7 @@
 
 Command-line interface for the [FURLOW](https://github.com/virgilvox/discord-furlow) declarative Discord bot framework.
 
-Build powerful Discord bots using YAML specifications — no code required.
+Build powerful Discord bots using YAML specifications. No code required.
 
 ## Installation
 
@@ -240,7 +240,7 @@ furlow start furlow.yaml
 ## Documentation
 
 - **Full Documentation**: [github.com/virgilvox/discord-furlow](https://github.com/virgilvox/discord-furlow)
-- **Actions Reference**: [84 available actions](https://github.com/virgilvox/discord-furlow/blob/main/docs/reference/actions/)
+- **Actions Reference**: [85 available actions](https://github.com/virgilvox/discord-furlow/blob/main/docs/reference/actions/)
 - **Expression Functions**: [71 functions](https://github.com/virgilvox/discord-furlow/blob/main/docs/reference/expressions/)
 - **Pipes Reference**: [External integrations](https://github.com/virgilvox/discord-furlow/blob/main/docs/packages/pipes.md)
 

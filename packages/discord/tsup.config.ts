@@ -8,6 +8,7 @@ export default defineConfig({
     'src/interactions/index.ts',
     'src/voice/index.ts',
     'src/video/index.ts',
+    'src/events/index.ts',
   ],
   format: ['esm'],
   dts: true,

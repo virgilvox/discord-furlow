@@ -188,12 +188,12 @@ commands:
 | `string` | Text | `min_length`, `max_length`, `choices`, `autocomplete` |
 | `integer` | Whole number | `min_value`, `max_value`, `choices`, `autocomplete` |
 | `number` | Decimal | `min_value`, `max_value`, `choices`, `autocomplete` |
-| `boolean` | True/false | — |
-| `user` | User mention | — |
+| `boolean` | True/false | none |
+| `user` | User mention | none |
 | `channel` | Channel | `channel_types` |
-| `role` | Role | — |
-| `mentionable` | User or role | — |
-| `attachment` | File | — |
+| `role` | Role | none |
+| `mentionable` | User or role | none |
+| `attachment` | File | none |
 
 ## Events
 

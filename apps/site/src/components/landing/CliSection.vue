@@ -11,9 +11,9 @@ const commands = [
 const lines = [
   { text: '$ npm install -g @furlow/cli' },
   { text: '$ furlow init my-bot' },
-  { text: '✓ Created my-bot/furlow.yaml', class: 'success' },
+  { text: 'Created my-bot/furlow.yaml', class: 'success' },
   { text: '$ cd my-bot && furlow dev' },
-  { text: '❯ Bot online as MyBot#1234', class: 'info' },
+  { text: 'Bot online as MyBot#1234', class: 'info' },
   { text: '⟳ Watching for changes...', class: 'warn' },
 ];
 

@@ -1,13 +1,13 @@
 # Events Reference
 
-FURLOW supports 76 event types: 57 Discord gateway events and 19 FURLOW high-level events.
+FURLOW emits snake_case events that your YAML can handle declaratively. Every event listed here is wired by `@furlow/discord/events` and dispatched through the core `EventRouter`.
 
 ## Event Handler Syntax
 
 ```yaml
 events:
   - event: message_create
-    condition: "message.content.startsWith('!')"
+    when: "!message.author.bot && message.content.startsWith('!')"
     actions:
       - reply:
           content: "Commands use / now"
@@ -20,234 +20,206 @@ events:
 
 ## Context Variables
 
-Each event provides specific context variables:
+Most events provide some combination of the following context fields. Every event also gets `now`, `random`, `options`, `args`, `state`, and `client`.
 
-| Event Type | Available Variables |
-|------------|---------------------|
-| Message events | `message`, `channel`, `guild`, `user` |
-| Member events | `member`, `guild`, `user` |
-| Reaction events | `reaction`, `message`, `user` |
-| Voice events | `voiceState`, `member`, `channel` |
-| Interaction events | `interaction`, `user`, `guild`, `channel` |
+| Context Field | When Populated |
+|---------------|----------------|
+| `user` | events involving a user (messages, reactions, interactions, presence, typing, bans, scheduled-event RSVPs) |
+| `member` | member-scoped events (member_join, member_update, voice events) |
+| `guild` | any guild-scoped event |
+| `channel` | channel-scoped, message, thread, invite events |
+| `message` | message events, reactions |
+| `reaction` | reaction events |
+| `role` | role events |
+| `thread` | thread events |
+| `emoji` | emoji events, reactions |
+| `sticker` | sticker events |
+| `invite` | invite events |
+| `scheduled_event` | scheduled-event events |
+| `stage_instance` | stage-instance events |
+| `presence` | presence_update |
+| `interaction` | component and command interactions |
+| `guildId` / `channelId` / `userId` / `messageId` | IDs for quick access without entity traversal |
 
----
-
-## Discord Gateway Events (57)
-
-### Guild Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_create` | Bot joins a guild |
-| `guild_update` | Guild settings changed |
-| `guild_delete` | Bot leaves or guild deleted |
-| `guild_available` | Guild becomes available |
-| `guild_unavailable` | Guild becomes unavailable |
-
-### Channel Events
-
-| Event | Description |
-|-------|-------------|
-| `channel_create` | Channel created |
-| `channel_update` | Channel updated |
-| `channel_delete` | Channel deleted |
-| `channel_pins_update` | Pins added/removed |
-
-### Thread Events
-
-| Event | Description |
-|-------|-------------|
-| `thread_create` | Thread created |
-| `thread_update` | Thread updated |
-| `thread_delete` | Thread deleted |
-| `thread_list_sync` | Thread list synced |
-| `thread_member_update` | Thread member updated |
-| `thread_members_update` | Thread members changed |
-
-### Member Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_member_add` | Member joins server |
-| `guild_member_update` | Member updated (roles, nickname) |
-| `guild_member_remove` | Member leaves server |
-| `guild_members_chunk` | Member chunk received |
-
-### Role Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_role_create` | Role created |
-| `guild_role_update` | Role updated |
-| `guild_role_delete` | Role deleted |
-
-### Emoji & Sticker Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_emojis_update` | Emojis changed |
-| `guild_stickers_update` | Stickers changed |
-
-### Ban Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_ban_add` | User banned |
-| `guild_ban_remove` | User unbanned |
-
-### Message Events
-
-| Event | Description |
-|-------|-------------|
-| `message_create` | Message sent |
-| `message_update` | Message edited |
-| `message_delete` | Message deleted |
-| `message_delete_bulk` | Multiple messages deleted |
-
-### Reaction Events
-
-| Event | Description |
-|-------|-------------|
-| `message_reaction_add` | Reaction added |
-| `message_reaction_remove` | Reaction removed |
-| `message_reaction_remove_all` | All reactions removed |
-| `message_reaction_remove_emoji` | All of one emoji removed |
-
-### Presence Events
-
-| Event | Description |
-|-------|-------------|
-| `presence_update` | User presence changed |
-| `typing_start` | User started typing |
-
-### Voice Events
-
-| Event | Description |
-|-------|-------------|
-| `voice_state_update` | Voice state changed |
-| `voice_server_update` | Voice server updated |
-
-### Interaction Events
-
-| Event | Description |
-|-------|-------------|
-| `interaction_create` | Interaction received |
-
-### Invite Events
-
-| Event | Description |
-|-------|-------------|
-| `invite_create` | Invite created |
-| `invite_delete` | Invite deleted |
-
-### Integration Events
-
-| Event | Description |
-|-------|-------------|
-| `integration_create` | Integration added |
-| `integration_update` | Integration updated |
-| `integration_delete` | Integration removed |
-
-### Webhook Events
-
-| Event | Description |
-|-------|-------------|
-| `webhooks_update` | Webhooks changed |
-
-### Stage Events
-
-| Event | Description |
-|-------|-------------|
-| `stage_instance_create` | Stage started |
-| `stage_instance_update` | Stage updated |
-| `stage_instance_delete` | Stage ended |
-
-### Scheduled Event Events
-
-| Event | Description |
-|-------|-------------|
-| `guild_scheduled_event_create` | Event created |
-| `guild_scheduled_event_update` | Event updated |
-| `guild_scheduled_event_delete` | Event deleted |
-| `guild_scheduled_event_user_add` | User interested |
-| `guild_scheduled_event_user_remove` | User uninterested |
-
-### Automod Events
-
-| Event | Description |
-|-------|-------------|
-| `auto_moderation_rule_create` | Automod rule created |
-| `auto_moderation_rule_update` | Automod rule updated |
-| `auto_moderation_rule_delete` | Automod rule deleted |
-| `auto_moderation_action_execution` | Automod action triggered |
+Discord.js entities are Proxy-wrapped so URL methods (`displayAvatarURL`, `iconURL`, etc.) are accessible as properties inside expressions. For example, `${user.displayAvatarURL}` evaluates to the URL string.
 
 ---
 
-## FURLOW High-Level Events (19)
+## Bot Lifecycle (4)
 
-These are convenience events that simplify common patterns.
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `ready` | Client connected and ready. Fires once on startup and again on reconnect. | none |
+| `shard_ready` | A specific shard connected. | `shard_id`, `unavailable_guilds` |
+| `shard_disconnect` | A shard disconnected from the gateway. | `shard_id`, `close_code`, `close_reason` |
+| `shard_error` | A shard websocket errored. | `shard_id`, `error` |
 
-### Lifecycle Events
+## Guild (3)
 
-| Event | Description |
-|-------|-------------|
-| `ready` | Bot is online and ready |
-| `error` | Error occurred |
-| `warn` | Warning occurred |
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `guild_create` | Bot joined a guild, or the guild became available. | `guild` |
+| `guild_delete` | Bot was removed, or guild became unavailable. | `guild` |
+| `guild_update` | Guild settings changed. | `guild`, `old_guild` |
 
-### Member Lifecycle Events
+## Members (7)
 
-| Event | Description | Context |
-|-------|-------------|---------|
-| `member_join` | Member joins | `member`, `guild` |
-| `member_leave` | Member leaves | `member`, `guild` |
-| `member_ban` | Member banned | `user`, `guild` |
-| `member_unban` | Member unbanned | `user`, `guild` |
-| `member_boost` | Member starts boosting | `member`, `guild` |
-| `member_unboost` | Member stops boosting | `member`, `guild` |
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `member_join` | Member joined the guild. | `member` |
+| `member_leave` | Member left or was kicked. | `member` |
+| `member_update` | Member roles, nickname, or flags changed. | `member`, `old_member` |
+| `member_boost` | Member started boosting the guild. | `member`, `boost_since` |
+| `member_unboost` | Member stopped boosting the guild. | `member`, `boost_ended` |
+| `member_ban` | Member was banned. | `user`, `guild`, `reason` |
+| `member_unban` | Member was unbanned. | `user`, `guild` |
 
-### Message Convenience Events
+`member_boost` and `member_unboost` are FURLOW-level events derived from `guildMemberUpdate` by comparing `premiumSince` on the old and new member.
 
-| Event | Description |
-|-------|-------------|
-| `message` | Alias for `message_create` |
-| `message_edit` | Alias for `message_update` |
-| `message_delete` | Alias for `message_delete` |
+## Messages (4)
 
-### Voice Convenience Events
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `message_create` | A non-bot user posted a message. | `message`, `attachments` |
+| `message_update` | A message was edited. | `message`, `old_message` |
+| `message_delete` | A message was deleted. | `message` |
+| `message_delete_bulk` | Multiple messages were deleted in one API call. | `messages`, `message_count`, `channel` |
 
-| Event | Description | Context |
-|-------|-------------|---------|
-| `voice_join` | User joins voice | `member`, `channel` |
-| `voice_leave` | User leaves voice | `member`, `channel` |
-| `voice_move` | User moves channels | `member`, `oldChannel`, `newChannel` |
-| `voice_stream_start` | User starts streaming | `member`, `channel` |
-| `voice_stream_stop` | User stops streaming | `member`, `channel` |
+Bot messages are skipped for `message_create` to avoid loops. `attachments` is an array of `{ name, size, contentType, url }`. `MessageContent` intent is required to read `message.content`.
 
-### Timer Events
+## Reactions (3 plus 2 legacy aliases)
 
-| Event | Description | Context |
-|-------|-------------|---------|
-| `timer_fire` | Timer triggered | `timer`, `data` |
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `message_reaction_add` | User reacted to a message (bot reactions skipped). | `reaction`, `emoji`, `user`, `message` |
+| `message_reaction_remove` | User removed a reaction. | `reaction`, `emoji`, `user`, `message` |
+| `message_reaction_remove_all` | All reactions were cleared from a message. | `message` |
+| `reaction_add` | Legacy alias for `message_reaction_add`. | same as above |
+| `reaction_remove` | Legacy alias for `message_reaction_remove`. | same as above |
 
-### Custom Events
+## Channels (4)
 
-| Event | Description |
-|-------|-------------|
-| `custom` | Custom event (from `emit` action) |
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `channel_create` | Channel was created. | `channel` |
+| `channel_delete` | Channel was deleted. | `channel` |
+| `channel_update` | Channel settings changed. | `channel`, `old_channel` |
+| `channel_pins_update` | Pinned message list changed. | `channel`, `pins_updated_at` |
+
+## Threads (4)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `thread_create` | Thread was created. | `thread`, `newly_created` |
+| `thread_delete` | Thread was deleted. | `thread` |
+| `thread_update` | Thread settings changed. | `thread`, `old_thread` |
+| `thread_member_update` | Thread member joined, left, or was updated. | `old_thread_member`, `new_thread_member` |
+
+## Roles (3)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `role_create` | Role was created. | `role` |
+| `role_delete` | Role was deleted. | `role` |
+| `role_update` | Role settings changed. | `role`, `old_role` |
+
+## Emojis (3)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `emoji_create` | Custom emoji created. | `emoji` |
+| `emoji_delete` | Custom emoji deleted. | `emoji` |
+| `emoji_update` | Custom emoji updated. | `emoji`, `old_emoji` |
+
+## Stickers (3)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `sticker_create` | Custom sticker created. | `sticker` |
+| `sticker_delete` | Custom sticker deleted. | `sticker` |
+| `sticker_update` | Custom sticker updated. | `sticker`, `old_sticker` |
+
+## Invites (2)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `invite_create` | Invite link created. | `invite`, `channel`, `user` |
+| `invite_delete` | Invite revoked or expired. | `invite` |
+
+## Voice (6)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `voice_state_update` | Raw voice-state change (fires for every transition). | `old_voice_state`, `new_voice_state`, `member` |
+| `voice_join` | User joined a voice channel. | `member`, voice states |
+| `voice_leave` | User left a voice channel. | `member`, voice states |
+| `voice_move` | User moved between voice channels. | `member`, voice states |
+| `voice_stream_start` | User started streaming their screen. | `member`, `streaming: true`, `voice_channel` |
+| `voice_stream_stop` | User stopped streaming. | `member`, `streaming: false` |
+
+`voice_join` / `voice_leave` / `voice_move` / `voice_stream_*` are FURLOW-level events derived from the underlying `voiceStateUpdate` by comparing old and new states. `voice_state_update` always fires last so handlers can do advanced filtering.
+
+## Presence and Typing (2)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `presence_update` | Member status or activity changed. Requires `GuildPresences` intent. | `presence`, `old_presence`, `user`, `guild` |
+| `typing_start` | User started typing. Requires `GuildMessageTyping` or `DirectMessageTyping` intent. | `user`, `channel`, `guild` |
+
+## Scheduled Events (5)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `scheduled_event_create` | Guild scheduled event created. | `scheduled_event` |
+| `scheduled_event_delete` | Guild scheduled event cancelled. | `scheduled_event` |
+| `scheduled_event_update` | Guild scheduled event updated. | `scheduled_event`, `old_scheduled_event` |
+| `scheduled_event_user_add` | User RSVP'd to an event. | `scheduled_event`, `user` |
+| `scheduled_event_user_remove` | User cancelled their RSVP. | `scheduled_event`, `user` |
+
+## Stage Instances (3)
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `stage_instance_create` | Stage instance started. | `stage_instance` |
+| `stage_instance_delete` | Stage instance ended. | `stage_instance` |
+| `stage_instance_update` | Stage instance updated. | `stage_instance`, `old_stage_instance` |
+
+## Component Interactions (3)
+
+These fire from `interactionCreate` for non-command interactions. Slash commands, autocomplete, and context-menu commands are handled by the CLI command dispatcher, not the event router.
+
+| Event | Description | Extra Context |
+|-------|-------------|---------------|
+| `button_click` | Button component was clicked. | `interaction`, `custom_id`, `component_type: 'button'` |
+| `select_menu` | Any select menu value was chosen (string, user, role, channel, mentionable). | `interaction`, `custom_id`, `values`, `selected`, `component_type: 'select_menu'` |
+| `modal_submit` | Modal form was submitted. | `interaction`, `custom_id`, `fields`, `modal_values`, `component_type: 'modal'` |
+
+Autocomplete is not dispatched as a FURLOW event. Declare autocomplete sources directly on command options via `source: static` / `query` / `expression`. See the Actions reference for details.
+
+---
+
+## FURLOW High-Level Events (from non-gateway sources)
+
+These are dispatched by the core runtime, not by the Discord adapter.
+
+| Event | Source | Description |
+|-------|--------|-------------|
+| `automod_triggered` | `@furlow/core/automod` | An automod rule matched. |
+| `timer_fire` | `@furlow/core/scheduler` | A timer scheduled with `create_timer` fired. |
+| _any user-defined name_ | `emit` action, cron triggers, pipe messages | Fired by user code or integrations. |
 
 ---
 
 ## Event Handler Options
 
-### condition / when
+### when (condition)
 
-Filter events with an expression:
+Filter events with a raw Jexl expression (no `${}` wrapper). Only truthy results run the actions.
 
 ```yaml
 events:
   - event: message_create
-    condition: "!message.author.bot && message.content.length > 100"
+    when: "!message.author.bot && message.content.length > 100"
     actions:
       - log:
           message: "Long message received"
@@ -255,7 +227,7 @@ events:
 
 ### debounce
 
-Ignore repeated triggers within the specified duration:
+Ignore repeated triggers within the specified duration. Only the last trigger runs.
 
 ```yaml
 events:
@@ -264,25 +236,26 @@ events:
     actions:
       - increment:
           var: message_count
+          scope: channel
 ```
 
 ### throttle
 
-Limit to one trigger per duration:
+Limit to at most one trigger per duration window.
 
 ```yaml
 events:
-  - event: guild_member_add
-    throttle: 1m  # Max once per minute
+  - event: member_join
+    throttle: 1m
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome!"
+          content: "Welcome ${member.display_name}!"
 ```
 
 ### once
 
-Only trigger once, then deactivate:
+Trigger once, then deactivate.
 
 ```yaml
 events:
@@ -290,14 +263,12 @@ events:
     once: true
     actions:
       - log:
-          message: "Bot started!"
+          message: "Bot started"
 ```
 
 ---
 
 ## Duration Format
-
-Durations support these formats:
 
 | Format | Description |
 |--------|-------------|
@@ -316,7 +287,7 @@ Durations support these formats:
 
 ```yaml
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
@@ -332,7 +303,7 @@ events:
 ```yaml
 events:
   - event: message_reaction_add
-    condition: "message.id == '123456789' && reaction.emoji.name == '✅'"
+    when: "message.id == '123456789' && reaction.emoji.name == '✅'"
     actions:
       - assign_role:
           user: "${user.id}"
@@ -344,7 +315,7 @@ events:
 ```yaml
 events:
   - event: message_delete
-    condition: "!message.author.bot"
+    when: "!message.author.bot"
     actions:
       - send_message:
           channel: "${env.LOG_CHANNEL}"
@@ -367,11 +338,22 @@ events:
     actions:
       - send_message:
           channel: "${env.LOG_CHANNEL}"
-          content: "${member.display_name} joined ${channel.name}"
+          content: "${member.display_name} joined ${new_voice_state.channel.name}"
 
   - event: voice_leave
     actions:
       - send_message:
           channel: "${env.LOG_CHANNEL}"
-          content: "${member.display_name} left ${channel.name}"
+          content: "${member.display_name} left ${old_voice_state.channel.name}"
+```
+
+### Boost Alert
+
+```yaml
+events:
+  - event: member_boost
+    actions:
+      - send_message:
+          channel: "${env.ANNOUNCE_CHANNEL}"
+          content: "Thanks for the boost, ${member.display_name}!"
 ```

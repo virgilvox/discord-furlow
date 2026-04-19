@@ -135,6 +135,7 @@ describe('Tickets Builtin', () => {
 
         const button = ticketPanelComponents[0].components[0];
         expect(button.type).toBe('button');
+        if (button.type !== 'button') throw new Error('expected button component');
         expect(button.custom_id).toBe('ticket_create');
         expect(button.style).toBe('primary');
       });

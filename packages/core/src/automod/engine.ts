@@ -251,6 +251,17 @@ export class AutomodEngine {
         }
         break;
 
+      case 'mass_ping':
+        // Match @everyone / @here when they exceed threshold (default 1).
+        // Discord does not auto-escape these substrings, so even a single
+        // occurrence is typically abusive when posted by non-privileged users.
+        const massPingPattern = /@(everyone|here)/g;
+        const massPings = content.match(massPingPattern) ?? [];
+        if (massPings.length >= (trigger.threshold ?? 1)) {
+          matches.push(`${massPings.length} mass mention(s)`);
+        }
+        break;
+
       case 'newline_spam':
         const newlines = (content.match(/\n/g) ?? []).length;
         if (newlines >= (trigger.threshold ?? 10)) {

@@ -74,7 +74,7 @@ export async function validateCommand(
     const result = validateFurlowSpec(spec);
 
     if (!result.valid) {
-      console.log('\n' + chalk.red.bold('  ✗ Validation Errors\n'));
+      console.log('\n' + chalk.red.bold('  Validation Errors\n'));
 
       for (let i = 0; i < result.errors.length; i++) {
         const error = result.errors[i];
@@ -83,7 +83,7 @@ export async function validateCommand(
 
         const hint = getHint(error.message);
         if (hint) {
-          console.log(chalk.cyan(`     💡 ${hint}`));
+          console.log(chalk.cyan(`     ${hint}`));
         }
         console.log('');
       }
@@ -148,21 +148,21 @@ export async function validateCommand(
     const displaySuggestions = options.strict ? suggestions : [];
 
     if (displayWarnings.length > 0) {
-      console.log('\n' + chalk.yellow.bold('  ⚠ Warnings\n'));
+      console.log('\n' + chalk.yellow.bold('  Warnings\n'));
       for (const warning of displayWarnings) {
         console.log(chalk.yellow(`    • ${warning}`));
       }
     }
 
     if (displaySuggestions.length > 0) {
-      console.log('\n' + chalk.blue.bold('  💡 Suggestions\n'));
+      console.log('\n' + chalk.blue.bold('  Suggestions\n'));
       for (const suggestion of displaySuggestions) {
         console.log(chalk.blue(`    • ${suggestion}`));
       }
     }
 
     // Print summary
-    console.log('\n' + chalk.green.bold('  ✓ Specification is valid!\n'));
+    console.log('\n' + chalk.green.bold('  Specification is valid!\n'));
 
     // Detailed summary
     console.log('  ' + chalk.bold('Summary'));
@@ -199,7 +199,7 @@ export async function validateCommand(
       // Format error with code highlighting
       const errorCode = 'code' in error ? (error as { code: string }).code : null;
 
-      console.log('\n' + chalk.red.bold('  ✗ Error'));
+      console.log('\n' + chalk.red.bold('  Error'));
       console.log('');
 
       if (errorCode) {
@@ -228,7 +228,7 @@ export async function validateCommand(
       // Show hint based on error type
       const hint = getHint(error.message);
       if (hint) {
-        console.log(chalk.cyan(`\n  💡 ${hint}`));
+        console.log(chalk.cyan(`\n  ${hint}`));
       }
     }
 

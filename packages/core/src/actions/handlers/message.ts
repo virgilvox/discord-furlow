@@ -479,12 +479,12 @@ const addReactionsHandler: ActionHandler<AddReactionsAction> = {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
-    const channel = await resolveChannel(undefined, context, deps);
+    const channel = await resolveChannel(config.channel as string | undefined, context, deps);
     if (!channel) {
       return { success: false, error: new Error('Channel not found') };
     }
 
-    const messageId = config.message_id;
+    const messageId = config.message ?? config.message_id;
     const message = await resolveMessage(channel, messageId as string | undefined, context, deps);
     if (!message) {
       return { success: false, error: new Error('Message not found') };
@@ -514,32 +514,26 @@ const removeReactionHandler: ActionHandler<RemoveReactionAction> = {
   name: 'remove_reaction',
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
-    const { evaluator, client } = deps;
+    const { evaluator } = deps;
 
-    // Get channel from context
-    const channelId = context.channelId || (context.channel as any)?.id;
-    if (!channelId) {
+    const channel = await resolveChannel(config.channel as string | undefined, context, deps);
+    if (!channel) {
       return { success: false, error: new Error('Channel not found') };
     }
 
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
-      return { success: false, error: new Error('Invalid channel type') };
-    }
-
-    const messageId = config.message_id
-      ? await evaluator.interpolate(String(config.message_id), context)
-      : context.messageId || (context.message as any)?.id;
-
-    if (!messageId) {
+    const messageExpr = config.message ?? config.message_id;
+    const message = await resolveMessage(channel, messageExpr as string | undefined, context, deps);
+    if (!message) {
       return { success: false, error: new Error('Message not found') };
     }
 
-    const message = await (channel as TextChannel).messages.fetch(messageId);
+    const messageId = message.id;
     const emoji = await evaluator.interpolate(String(config.emoji), context);
-    const userId = config.user_id
-      ? await evaluator.interpolate(String(config.user_id), context)
+    const userExpr = config.user ?? config.user_id;
+    const userId = userExpr
+      ? await evaluator.interpolate(String(userExpr), context)
       : context.userId || (context.user as any)?.id;
+    void messageId;
 
     try {
       const reaction = message.reactions.cache.get(emoji);
@@ -560,27 +554,18 @@ const clearReactionsHandler: ActionHandler<ClearReactionsAction> = {
   name: 'clear_reactions',
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
-    const { evaluator, client } = deps;
+    const { evaluator } = deps;
 
-    const channelId = context.channelId || (context.channel as any)?.id;
-    if (!channelId) {
+    const channel = await resolveChannel(config.channel as string | undefined, context, deps);
+    if (!channel) {
       return { success: false, error: new Error('Channel not found') };
     }
 
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
-      return { success: false, error: new Error('Invalid channel type') };
-    }
-
-    const messageId = config.message_id
-      ? await evaluator.interpolate(String(config.message_id), context)
-      : context.messageId || (context.message as any)?.id;
-
-    if (!messageId) {
+    const messageExpr = config.message ?? config.message_id;
+    const message = await resolveMessage(channel, messageExpr as string | undefined, context, deps);
+    if (!message) {
       return { success: false, error: new Error('Message not found') };
     }
-
-    const message = await (channel as TextChannel).messages.fetch(messageId);
 
     try {
       if (config.emoji) {
@@ -606,16 +591,40 @@ const bulkDeleteHandler: ActionHandler<BulkDeleteAction> = {
   name: 'bulk_delete',
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
+    const { evaluator } = deps;
 
     const channel = await resolveChannel(config.channel as string | undefined, context, deps);
     if (!channel) {
       return { success: false, error: new Error('Channel not found') };
     }
 
-    const count = config.count || 100;
+    const requested = typeof config.count === 'number'
+      ? config.count
+      : config.count
+        ? parseInt(await evaluator.interpolate(String(config.count), context), 10)
+        : 100;
+    const count = Math.max(1, Math.min(100, Number.isFinite(requested) ? requested : 100));
 
     try {
-      const deleted = await channel.bulkDelete(count, true);
+      // Without a user filter we delegate to Discord's bulk delete.
+      if (!config.user) {
+        const deleted = await channel.bulkDelete(count, true);
+        return { success: true, data: deleted.size };
+      }
+
+      // With a user filter, fetch the last `count` messages, keep only those
+      // by the target user, and bulk-delete the subset.
+      const userIdRaw = await evaluator.interpolate(String(config.user), context);
+      const userId = userIdRaw?.replace(/[<@!>]/g, '');
+      if (!userId) {
+        return { success: false, error: new Error('User ID required for filtered bulk_delete') };
+      }
+      const recent = await channel.messages.fetch({ limit: count });
+      const byUser = recent.filter((m) => m.author?.id === userId);
+      if (byUser.size === 0) {
+        return { success: true, data: 0 };
+      }
+      const deleted = await channel.bulkDelete(byUser, true);
       return { success: true, data: deleted.size };
     } catch (err) {
       return { success: false, error: err as Error };
