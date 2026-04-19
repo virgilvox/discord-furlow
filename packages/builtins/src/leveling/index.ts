@@ -54,7 +54,7 @@ export const levelingTables: Record<string, TableDefinition> = {
 
 export const levelingEventHandlers: EventHandler[] = [
   {
-    event: 'message',
+    event: 'message_create',
     condition: '!message.author.bot && !config.leveling.ignoredChannels?.includes(channel.id)',
     actions: [
       // Check cooldown

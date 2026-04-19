@@ -93,12 +93,12 @@ describe('Leveling Builtin', () => {
 
   describe('Event Handlers', () => {
     it('should have message event handler', () => {
-      const handler = levelingEventHandlers.find((h) => h.event === 'message');
+      const handler = levelingEventHandlers.find((h) => h.event === 'message_create');
       expect(handler).toBeDefined();
     });
 
     describe('message handler', () => {
-      const handler = levelingEventHandlers.find((h) => h.event === 'message')!;
+      const handler = levelingEventHandlers.find((h) => h.event === 'message_create')!;
 
       it('should exclude bot messages', () => {
         expect(handler.condition).toContain('!message.author.bot');

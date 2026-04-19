@@ -84,12 +84,12 @@ describe('Auto-Responder Builtin', () => {
 
   describe('Event Handlers', () => {
     it('should have message event handler', () => {
-      const handler = autoResponderEventHandlers.find((h) => h.event === 'message');
+      const handler = autoResponderEventHandlers.find((h) => h.event === 'message_create');
       expect(handler).toBeDefined();
     });
 
     describe('message handler', () => {
-      const handler = autoResponderEventHandlers.find((h) => h.event === 'message')!;
+      const handler = autoResponderEventHandlers.find((h) => h.event === 'message_create')!;
 
       it('should check for bot ignore setting', () => {
         expect(handler.condition).toContain('ignoreBots');

@@ -100,7 +100,7 @@ export const loggingEventHandlers: EventHandler[] = [
   },
   // Bulk Message Delete
   {
-    event: 'message_bulk_delete',
+    event: 'message_delete_bulk',
     condition: 'config.logging.events?.messageBulkDelete !== false',
     actions: [
       {

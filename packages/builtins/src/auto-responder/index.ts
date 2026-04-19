@@ -49,7 +49,7 @@ export const autoResponderTables: Record<string, TableDefinition> = {
 
 export const autoResponderEventHandlers: EventHandler[] = [
   {
-    event: 'message',
+    event: 'message_create',
     condition: '!message.author.bot || !config.autoResponder?.ignoreBots',
     actions: [
       // Get all triggers for this guild

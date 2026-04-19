@@ -257,7 +257,7 @@ describe('Tickets Builtin', () => {
     it('should log messages in ticket channels', () => {
       const handler = ticketsEventHandlers.find(
         (h) =>
-          h.event === 'message' &&
+          h.event === 'message_create' &&
           conditionIncludes(h.condition, 'parentId')
       );
       expect(handler).toBeDefined();

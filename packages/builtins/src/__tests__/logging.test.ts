@@ -40,7 +40,7 @@ describe('Logging Builtin', () => {
     });
 
     it('should handle message_bulk_delete event', () => {
-      expect(eventNames).toContain('message_bulk_delete');
+      expect(eventNames).toContain('message_delete_bulk');
     });
 
     it('should handle member_join event', () => {

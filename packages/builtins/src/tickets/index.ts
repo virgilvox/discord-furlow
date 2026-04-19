@@ -470,7 +470,7 @@ export const ticketsEventHandlers: EventHandler[] = [
   },
   // Log ticket messages
   {
-    event: 'message',
+    event: 'message_create',
     condition: 'channel.parentId === config.tickets.category',
     actions: [
       {

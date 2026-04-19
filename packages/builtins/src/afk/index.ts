@@ -29,7 +29,7 @@ export const afkTables: Record<string, TableDefinition> = {
 export const afkEventHandlers: EventHandler[] = [
   // Remove AFK when user sends message
   {
-    event: 'message',
+    event: 'message_create',
     condition: '!message.author.bot',
     actions: [
       {
@@ -81,7 +81,7 @@ export const afkEventHandlers: EventHandler[] = [
   },
   // Notify when AFK user is mentioned
   {
-    event: 'message',
+    event: 'message_create',
     condition: 'message.mentions.users.size > 0 && !message.author.bot',
     actions: [
       {

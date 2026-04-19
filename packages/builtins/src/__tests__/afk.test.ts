@@ -59,14 +59,14 @@ describe('AFK Builtin', () => {
 
   describe('Event Handlers', () => {
     it('should have message handlers', () => {
-      const handlers = afkEventHandlers.filter((h) => h.event === 'message');
+      const handlers = afkEventHandlers.filter((h) => h.event === 'message_create');
       expect(handlers.length).toBe(2);
     });
 
     describe('AFK removal handler', () => {
       const handler = afkEventHandlers.find(
         (h) =>
-          h.event === 'message' &&
+          h.event === 'message_create' &&
           h.condition === '!message.author.bot'
       )!;
 
@@ -106,7 +106,7 @@ describe('AFK Builtin', () => {
     describe('AFK mention notification handler', () => {
       const handler = afkEventHandlers.find(
         (h) =>
-          h.event === 'message' &&
+          h.event === 'message_create' &&
           conditionIncludes(h.condition, 'mentions.users.size')
       )!;
 

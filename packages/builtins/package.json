@@ -1,6 +1,6 @@
 {
   "name": "@furlow/builtins",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Pre-built bot components for FURLOW framework",
   "keywords": [
     "furlow",
