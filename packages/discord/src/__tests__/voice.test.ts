@@ -31,6 +31,7 @@ vi.mock('@discordjs/voice', () => ({
     unpause: vi.fn(),
     stop: vi.fn(),
     on: vi.fn(),
+    removeAllListeners: vi.fn(),
   })),
   createAudioResource: vi.fn().mockImplementation(() => ({
     volume: { setVolume: vi.fn() },
@@ -89,6 +90,7 @@ describe('VoiceManager', () => {
         unpause: vi.fn(),
         stop: vi.fn(),
         on: vi.fn(),
+        removeAllListeners: vi.fn(),
       } as any,
       queue: [] as QueueItem[],
       currentTrack: null,
@@ -329,6 +331,7 @@ describe('VoiceManager', () => {
           unpause: vi.fn(),
           stop: vi.fn(),
           on: vi.fn(),
+          removeAllListeners: vi.fn(),
         } as any,
         paused: false,
         startTime: Date.now(),
@@ -559,6 +562,7 @@ describe('VoiceManager', () => {
         } as any,
         player: {
           stop: vi.fn(),
+          removeAllListeners: vi.fn(),
         } as any,
       };
       (manager as any).guildStates.set(guildId, state);
@@ -644,7 +648,7 @@ describe('VoiceManager track lifecycle events', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (manager as any).guildStates.set(guildId, {
       connection: { destroy: vi.fn() },
-      player: { play: vi.fn(), stop: vi.fn() },
+      player: { play: vi.fn(), stop: vi.fn(), removeAllListeners: vi.fn() },
       queue: [],
       currentTrack: {
         id: trackId,

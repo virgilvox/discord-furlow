@@ -76,12 +76,30 @@ function authenticateUpgrade(
   request: IncomingMessage
 ): Promise<Profile | null> {
   return new Promise((resolve) => {
-    sessionMiddleware(request as Request, {} as Response, () => {
-      const session = (request as Request).session as unknown as
-        | { passport?: { user?: Profile } }
-        | undefined;
-      resolve(session?.passport?.user ?? null);
-    });
+    // If the session store is unavailable or misconfigured the middleware
+    // may never call next(). A 5s cap keeps a broken store from holding
+    // half-open sockets indefinitely. Errors from the middleware are
+    // surfaced via the err arg and treated as "not authenticated" rather
+    // than propagated (the upgrade path has no express error chain).
+    const timer = setTimeout(() => resolve(null), 5000);
+    try {
+      sessionMiddleware(request as Request, {} as Response, (err?: unknown) => {
+        clearTimeout(timer);
+        if (err) {
+          console.error('WebSocket session middleware error:', err);
+          resolve(null);
+          return;
+        }
+        const session = (request as Request).session as unknown as
+          | { passport?: { user?: Profile } }
+          | undefined;
+        resolve(session?.passport?.user ?? null);
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      console.error('WebSocket session middleware threw:', err);
+      resolve(null);
+    }
   });
 }
 

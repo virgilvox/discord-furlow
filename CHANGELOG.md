@@ -5,6 +5,37 @@ All notable changes to FURLOW will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2026-04-20 hardening pass
+
+Published as `@furlow/discord@1.0.8`, `@furlow/dashboard@1.0.5`.
+
+### Fixed
+
+- `@furlow/discord` `VoiceManager.leave()` now calls
+  `player.removeAllListeners()` before dropping guild state. Without this,
+  a delayed `AudioPlayerStatus.Idle` event from `@discordjs/voice` could
+  still fire into `handleTrackEnd` for a guild that has already been torn
+  down (the handler no-ops on missing state, but the listener closures
+  held GC references across rapid join/leave cycles).
+- `apps/dashboard` `pickFields` now rejects any payload containing
+  `__proto__`, `constructor`, or `prototype` keys at any depth (plus a
+  depth cap at 8 for pathological nesting). Node's JSON.parse treats
+  `__proto__` as an own property rather than a prototype setter, but
+  downstream code that copies the value with `Object.assign` could still
+  surface these keys; this is defense in depth.
+- `apps/dashboard` WebSocket session middleware now has a 5s timeout and
+  try/catch. A broken session store no longer holds half-open sockets
+  indefinitely at the upgrade handshake.
+
+### Added (tests)
+
+- `apps/dashboard/server/__tests__/pick-fields.test.ts` locks in the
+  settings validator contract: unknown keys dropped, wrong types reject
+  the whole body, `null` allowed for known keys, prototype keys rejected
+  at any depth. 9 tests.
+- Dashboard package ships a standalone `vitest.config.ts` so vitest sees
+  tests under `server/` (the client `vite.config.ts` pins root to `src/`).
+
 ## 2026-04-19 follow-up
 
 Published as `@furlow/testing@1.0.7`, `@furlow/dashboard@1.0.4`.

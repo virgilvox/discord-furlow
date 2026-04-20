@@ -24,11 +24,35 @@ type StorageGetter = () => StorageAdapter | null;
  * known keys reject the whole body so we never half-write a settings doc.
  */
 type FieldType = 'string' | 'boolean' | 'number' | 'object' | 'array';
-function pickFields(
+
+// Reject prototype-tampering keys at every depth of an incoming payload.
+// Node's JSON.parse stores `__proto__` as an own property rather than
+// setting the prototype, so a plain JSON POST does not pollute Object
+// prototype. Downstream code that later copies the value with
+// `Object.assign` or structured-cloning, however, can surface these keys
+// in ways that bypass hasOwnProperty checks. Cheap defense: refuse the
+// whole body if any of these keys appear anywhere.
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+function hasForbiddenKey(value: unknown, depth = 0): boolean {
+  if (depth > 8) return true; // bail out on pathological nesting
+  if (Array.isArray(value)) {
+    return value.some((v) => hasForbiddenKey(v, depth + 1));
+  }
+  if (value && typeof value === 'object') {
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      if (FORBIDDEN_KEYS.has(key)) return true;
+      if (hasForbiddenKey((value as Record<string, unknown>)[key], depth + 1)) return true;
+    }
+  }
+  return false;
+}
+
+export function pickFields(
   body: unknown,
   schema: Record<string, FieldType>
 ): Record<string, unknown> | null {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  if (hasForbiddenKey(body)) return null;
   const src = body as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const [key, type] of Object.entries(schema)) {

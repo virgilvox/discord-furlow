@@ -219,6 +219,12 @@ export class VoiceManager {
     if (!state) return false;
 
     state.player.stop();
+    // Drop the AudioPlayerStatus.Idle / 'error' listeners wired up in join()
+    // so a delayed Idle event from @discordjs/voice cannot call back into
+    // handleTrackEnd after we've cleared this guild's state. handleTrackEnd
+    // no-ops on missing state, but clearing here also avoids holding GC
+    // references to the player's closures across rapid join/leave cycles.
+    state.player.removeAllListeners();
     state.connection.destroy();
     this.guildStates.delete(guildId);
 
