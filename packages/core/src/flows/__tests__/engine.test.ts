@@ -804,7 +804,7 @@ describe('FlowEngine with Real Evaluator', () => {
       ).rejects.toThrow('Maximum flow call depth');
     });
 
-    it('should prevent infinite recursion by enforcing depth limit', async () => {
+    it('should prevent infinite recursion by surfacing a failed result', async () => {
       const limitedEngine = createFlowEngine({ maxDepth: 3 });
 
       // Track how many times the recursive flow actually runs
@@ -826,11 +826,15 @@ describe('FlowEngine with Real Evaluator', () => {
 
       const result = await limitedEngine.execute('recursive', {}, context, trackingExecutor as any, evaluator);
 
-      // Should stop recursion after reaching maxDepth
-      // With maxDepth=3, we can call the flow 3 times
-      expect(callCount).toBeLessThanOrEqual(6); // 2 actions per level * 3 levels max
-      // Flow should complete (error is caught)
-      expect(result.success).toBe(true);
+      // The guard must actually stop execution.
+      expect(callCount).toBeLessThanOrEqual(6);
+      // And it must be observable. Silent truncation is a bug, not a feature:
+      // the caller needs to know the flow did not complete so it can back off
+      // or surface an error to the user. Historically this assertion was
+      // `toBe(true)` which encoded "silent success on truncation" as the
+      // invariant.
+      expect(result.success).toBe(false);
+      expect(result.error?.message ?? '').toMatch(/depth|recursion/i);
     });
 
     it('should allow calls up to maxDepth limit', async () => {
@@ -888,8 +892,10 @@ describe('FlowEngine with Real Evaluator', () => {
       // 3 levels of nesting should fail with maxDepth=2
       const result = await engine2.execute('level1', {}, context, executor, evaluator);
 
-      // Flow catches the error internally
-      expect(result.success).toBe(true);
+      // The outer flow must surface the depth-limit error, not silently
+      // truncate to success.
+      expect(result.success).toBe(false);
+      expect(result.error?.message ?? '').toMatch(/depth|recursion/i);
       // l3_action should NOT have executed
       const actionNames = executor.executedActions.map(e => e.action.action);
       expect(actionNames).not.toContain('l3_action');

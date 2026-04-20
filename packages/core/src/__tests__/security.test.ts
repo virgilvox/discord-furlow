@@ -354,28 +354,47 @@ describe('StateManager Security', () => {
       expect(elapsed).toBeLessThan(1000);
     });
 
-    it('should complete ReDoS-style patterns without exponential time', async () => {
-      // Classic ReDoS pattern with evil input
-      // Pattern: (a+)+$ tested against 'aaaaaaaaaaaaaaaaaaaaaaaaaaaa!'
-      // This would cause exponential backtracking in naive regex engines
+    it('rejects catastrophic backtracking regex patterns in expressions', async () => {
+      // The classic ReDoS pattern: `(a+)+b` against a long `aaaa...` input
+      // that fails at the end. A naive regex engine exhibits exponential
+      // backtracking and hangs. The FURLOW evaluator must either (a) refuse
+      // the pattern up front via isValidRegexPattern, or (b) complete in
+      // linear time because the underlying engine is safe. Either is fine;
+      // what we must NOT have is the test completing because we never
+      // actually ran a regex (the old version of this test used a glob).
+      const evaluator = createEvaluator();
+      const evilInput = 'a'.repeat(60) + '!';
+      const vulnerablePattern = '(a+)+b';
 
-      // Instead of testing actual regex evaluation (which Jexl may not do),
-      // test that key pattern matching completes quickly
+      // Try to match via the `match` expression function, which is the
+      // user-facing regex surface.
       const start = Date.now();
-
-      // Add some keys that match simple patterns
-      await storage.set('aaaaaaaaaaaaaaaaaaaaa', { value: 'test', type: 'string', createdAt: Date.now(), updatedAt: Date.now() });
-
-      // Query with complex pattern
       try {
-        await storage.keys('a*');
+        await evaluator.evaluate(`match(${JSON.stringify(evilInput)}, ${JSON.stringify(vulnerablePattern)})`, {});
       } catch {
-        // Pattern error is acceptable
+        // Refusing the pattern is a valid defense.
       }
-
       const elapsed = Date.now() - start;
-      // Must complete in reasonable time
-      expect(elapsed).toBeLessThan(500);
+
+      // 60 `a`s against `(a+)+b` backtracks ~2^60 steps in an unsafe engine.
+      // We give ourselves a generous 1 second budget: a safe engine returns
+      // no-match in microseconds; a pattern rejection returns immediately.
+      expect(elapsed).toBeLessThan(1000);
+    });
+
+    it('match() with a clearly unsafe pattern does not hang', async () => {
+      // A second, even nastier pattern with nested quantifiers. Same budget.
+      const evaluator = createEvaluator();
+      const evilInput = 'a'.repeat(50);
+      const pattern = '(a|a)+$';
+
+      const start = Date.now();
+      try {
+        await evaluator.evaluate(`match(${JSON.stringify(evilInput)}, ${JSON.stringify(pattern)})`, {});
+      } catch {
+        // Refusing is acceptable.
+      }
+      expect(Date.now() - start).toBeLessThan(1000);
     });
   });
 });

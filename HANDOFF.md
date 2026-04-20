@@ -223,7 +223,123 @@ Every claim in `/docs/` maps to something the runtime actually does. Specificall
 
 ## Known Issues
 
-None blocking. The old "typecheck errors in tests" issue was resolved by excluding test files from strict typecheck; vitest + esbuild still runs them.
+None blocking after the QA audit hotfix pass. See "QA Audit Findings" below
+for the detailed record and the follow-up backlog.
+
+## QA Audit Findings (2026-04-19)
+
+A god-mode QA audit treated the suite as adversarial: which tests look
+thorough but actually prove nothing? It found real production bugs hidden
+by structure-only tests, plus a broader class of test-quality weaknesses.
+
+### What shipped as a hotfix (`@furlow/builtins@1.0.7`)
+
+Five builtins declared event names the runtime never emits. Because every
+builtin test file was structure-only (asserting `handler.event === '...'`
+against hand-written YAML), the tests encoded the buggy names as the
+invariant. A correct fix would have made the tests fail.
+
+| Builtin | Was | Fixed to | Impact (before fix) |
+|---------|-----|----------|---------------------|
+| `afk` | `event: 'message'` x2 | `message_create` | AFK set/clear handlers never fired |
+| `auto-responder` | `event: 'message'` | `message_create` | Never responded to triggers |
+| `leveling` | `event: 'message'` | `message_create` | XP never accrued |
+| `tickets` | `event: 'message'` | `message_create` | Message activity never tracked |
+| `logging` | `event: 'message_bulk_delete'` | `message_delete_bulk` | Bulk-delete events never logged |
+
+Hotfix shipped as `@furlow/builtins@1.0.7`.
+
+### Additional broken builtins (deferred; require runtime work)
+
+These need small framework additions, not typo fixes, so they are
+tracked as separate follow-ups below.
+
+- `giveaways`, `polls`, `reminders` listen for `event: 'scheduler_tick'`
+  which nothing in the runtime emits. Their time-based logic never fires.
+- `music` listens for `event: 'voice_track_start'` which nothing emits.
+  Queue auto-advance does not run.
+
+### Test-quality weaknesses the audit documented
+
+The suite is 2,764 passing but several categories of test do not prove
+the behavior they claim. This was documented so future passes can harden
+them. The full list (severity, file:line, concrete quote) lives in this
+commit's message and the PR history.
+
+High-impact examples:
+
+- `security.test.ts` "ReDoS protection" test uses a glob, not a
+  backtracking regex. Does not exercise the claimed defense.
+- `database.integration.test.ts` has zero SQL-injection tests despite
+  the pipe claiming identifier escaping prevents it.
+- `flows/engine.test.ts` depth-limit test asserts `success === true`
+  after the guard hits, calling silent truncation a pass.
+- `automod/engine.test.ts` `when`-condition tests use a mock that
+  always returns true; logic inversion would not be caught.
+- `webhook.test.ts` reimplements `timingSafeEqual` as a local helper,
+  tests the helper, never exercises the pipe's real verification code.
+- `http.integration.test.ts` fully mocks axios; real auth encoding,
+  retry timing, and rate-limit behavior are not verified.
+- `mqtt.integration.test.ts` uses a fully mocked MQTT client; wildcard
+  subscription matching passes regardless of whether the pipe
+  implements MQTT semantics.
+- `events.test.ts` (discord) uses a plain Node `EventEmitter` cast to
+  `Client`. Private-field access and class lifecycle issues that differ
+  between EventEmitter and real `discord.js@14.25` are not exercised
+  (partially mitigated by `real-client.integration.test.ts`).
+- `voice.test.ts` filter tests only assert `state.filters.has(name)`;
+  FFmpeg is mocked and the filter graph is never applied to audio.
+- `@furlow/testing` E2E runtime registers 27 of 85 production action
+  handlers; 58 production actions used in a user's YAML would crash in
+  production while passing locally.
+- `@furlow/testing` E2E runtime wires 5 of 28 Discord.js events; 23
+  events fire in production but not in tests.
+- `@furlow/testing` E2E runtime context is missing `_deps`,
+  `_actionExecutor`, `_eventRouter`, `_components`, `_pipes`,
+  `_canvasGenerators`, and Proxy-wrapped Discord objects. Specs
+  referencing `${user.displayAvatarURL}` work in prod, are undefined in E2E.
+
+### Follow-up backlog (prioritized)
+
+**P1 (runtime correctness):**
+- [x] Implement `scheduler_tick` emission (enables giveaways / polls / reminders).
+- [x] Implement `voice_track_start` emission (enables music queue advance).
+- [x] Add cross-builtin event-name guard test that fails if any builtin
+      declares an event the runtime cannot emit.
+
+**P2 (safety-critical test hardening):**
+- [x] Replace the ReDoS glob pseudo-test with a real catastrophic
+      backtracking pattern and time budget.
+- [x] Add SQL-injection tests for the database pipe.
+- [x] Flip the flow depth-limit test to expect `success === false` when
+      the guard fires.
+- [x] Use a real evaluator in the automod `when` condition tests.
+
+**P3 (test infrastructure parity - in progress, see follow-up PR):**
+- [~] Register stub handlers in the E2E runtime for the 58 missing
+      production action names (partial in this pass).
+- [ ] Wire the 23 missing Discord.js event listeners in the E2E runtime
+      and route them to the correct FURLOW event names.
+- [ ] Expose `_deps`, `_actionExecutor`, `_eventRouter`, `_components`,
+      `_pipes`, `_canvasGenerators`, and Proxy-wrapped Discord objects
+      on the E2E context to match production `buildBaseContext`.
+
+**P4 (test realism - longer horizon):**
+- [ ] Replace axios mocks in `http.integration.test.ts` with a real
+      local HTTP server. Exercise real retry timing and rate-limit
+      backoff.
+- [ ] Replace MQTT mocks with testcontainers MQTT broker under
+      `INTEGRATION_TESTS=true`. Prove wildcard matching.
+- [ ] Replace the EventEmitter stand-in in the full discord test matrix
+      with a real `discord.js.Client`. The 4 cases in
+      `real-client.integration.test.ts` prove this is feasible.
+- [ ] Voice filter tests that actually invoke FFmpeg against a sample
+      audio stream.
+- [ ] Behavioral integration tests per builtin that load the builtin
+      via E2E runtime, simulate the trigger, and assert the expected
+      state change or Discord API call (not just reply text match).
+- [ ] Kill the E2E runtime's silent `try { stateManager.set }` fallback
+      so unregistered variables fail the same way they do in production.
 
 ## Recent Changes (2026-04-19 audit pass)
 

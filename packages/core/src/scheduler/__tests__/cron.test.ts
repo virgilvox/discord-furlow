@@ -683,3 +683,73 @@ describe('createCronScheduler', () => {
     expect(scheduler.getJobNames()).toEqual([]);
   });
 });
+
+describe('CronScheduler tick handler', () => {
+  let scheduler: CronScheduler;
+  let executor: ActionExecutor;
+  let evaluator: ExpressionEvaluator;
+  let contextBuilder: () => ActionContext;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    scheduler = createCronScheduler();
+    executor = { executeSequence: vi.fn().mockResolvedValue([]) } as unknown as ActionExecutor;
+    evaluator = { evaluate: vi.fn().mockResolvedValue(true) } as unknown as ExpressionEvaluator;
+    contextBuilder = () => ({} as ActionContext);
+  });
+
+  afterEach(() => {
+    scheduler.stop();
+    vi.useRealTimers();
+  });
+
+  it('fires tick handler at the declared interval while running', async () => {
+    const tick = vi.fn();
+    scheduler.setTickHandler(tick, 1000);
+    scheduler.start(executor, evaluator, contextBuilder);
+
+    expect(tick).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(tick).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(2500);
+    expect(tick).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops firing tick handler after stop()', async () => {
+    const tick = vi.fn();
+    scheduler.setTickHandler(tick, 500);
+    scheduler.start(executor, evaluator, contextBuilder);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(tick).toHaveBeenCalledTimes(1);
+    scheduler.stop();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(tick).toHaveBeenCalledTimes(1);
+  });
+
+  it('setTickHandler(null) clears the handler without stopping the scheduler', async () => {
+    const tick = vi.fn();
+    scheduler.setTickHandler(tick, 500);
+    scheduler.start(executor, evaluator, contextBuilder);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(tick).toHaveBeenCalledTimes(1);
+
+    scheduler.setTickHandler(null);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(tick).toHaveBeenCalledTimes(1);
+    expect(scheduler.isRunning()).toBe(true);
+  });
+
+  it('rethrown tick handler errors do not stop subsequent ticks', async () => {
+    const tick = vi.fn().mockImplementation(() => {
+      throw new Error('boom');
+    });
+    scheduler.setTickHandler(tick, 100);
+    scheduler.start(executor, evaluator, contextBuilder);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(tick).toHaveBeenCalledTimes(3);
+  });
+});

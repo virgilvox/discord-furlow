@@ -93,15 +93,52 @@ export interface SearchResult {
   author?: string;
 }
 
+/**
+ * Events emitted by VoiceManager.
+ *   - `track_start`: a new track began playing. Payload: `{ guildId, track }`.
+ *   - `track_end`: the current track finished (or was skipped / stopped).
+ */
+export type VoiceManagerEvent = 'track_start' | 'track_end';
+export type VoiceManagerListener = (payload: { guildId: string; track: QueueItem | null }) => void;
+
 export class VoiceManager {
   private guildStates: Map<string, GuildVoiceState> = new Map();
   private config: VoiceConfig = {};
+  private listeners: Map<VoiceManagerEvent, Set<VoiceManagerListener>> = new Map();
 
   /**
    * Configure the voice manager
    */
   configure(config: VoiceConfig): void {
     this.config = config;
+  }
+
+  /**
+   * Subscribe to a VoiceManager event. Used by the host (CLI) to forward
+   * `track_start` as the FURLOW `voice_track_start` event.
+   */
+  on(event: VoiceManagerEvent, listener: VoiceManagerListener): () => void {
+    let set = this.listeners.get(event);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(event, set);
+    }
+    set.add(listener);
+    return () => {
+      set!.delete(listener);
+    };
+  }
+
+  private emit(event: VoiceManagerEvent, payload: { guildId: string; track: QueueItem | null }): void {
+    const set = this.listeners.get(event);
+    if (!set) return;
+    for (const listener of set) {
+      try {
+        listener(payload);
+      } catch (err) {
+        console.error(`VoiceManager listener error for "${event}":`, err);
+      }
+    }
   }
 
   /**
@@ -263,6 +300,9 @@ export class VoiceManager {
     // Play
     state.player.play(resource);
     state.paused = false;
+
+    // Notify subscribers that a new track started.
+    this.emit('track_start', { guildId, track: state.currentTrack });
   }
 
   /**
@@ -659,14 +699,17 @@ export class VoiceManager {
     const state = this.guildStates.get(guildId);
     if (!state) return;
 
+    const endedTrack = state.currentTrack;
+    this.emit('track_end', { guildId, track: endedTrack });
+
     // Handle loop modes
-    if (state.loopMode === 'track' && state.currentTrack) {
-      await this.play(guildId, state.currentTrack.url);
+    if (state.loopMode === 'track' && endedTrack) {
+      await this.play(guildId, endedTrack.url);
       return;
     }
 
-    if (state.loopMode === 'queue' && state.currentTrack) {
-      state.queue.push(state.currentTrack);
+    if (state.loopMode === 'queue' && endedTrack) {
+      state.queue.push(endedTrack);
     }
 
     // Play next track

@@ -1111,6 +1111,90 @@ export async function createE2ERuntimeFromSpec(
     },
   });
 
+  // Stub handlers for the remaining production actions. These let E2E tests
+  // exercise specs that use the full 85-action surface without every test
+  // needing to register its own mocks. Each stub records a tracker entry
+  // (so assertions can verify the action ran with its config) and returns
+  // `{ success: true }`. Tests that need realistic behavior (state
+  // manipulation, etc.) still have the production-name handlers registered
+  // above (`set`, `increment`, `list_push`, `set_map`, `delete_map`,
+  // `emit`, `call_flow`, and table primitives).
+  const STUB_ACTIONS = [
+    // Message
+    'edit_message',
+    'update_message',
+    'bulk_delete',
+    'add_reaction',
+    'add_reactions',
+    'remove_reaction',
+    'clear_reactions',
+    // Member
+    'toggle_role',
+    'server_mute',
+    'server_deafen',
+    'disconnect_member',
+    'set_nickname',
+    'move_member',
+    'remove_timeout',
+    'send_dm',
+    // Channel / role
+    'create_channel',
+    'edit_channel',
+    'delete_channel',
+    'set_channel_permissions',
+    'create_thread',
+    'archive_thread',
+    'create_role',
+    'edit_role',
+    'delete_role',
+    // Component
+    'show_modal',
+    // Voice
+    'voice_join',
+    'voice_leave',
+    'voice_play',
+    'voice_pause',
+    'voice_resume',
+    'voice_stop',
+    'voice_skip',
+    'voice_seek',
+    'voice_volume',
+    'voice_set_filter',
+    'voice_search',
+    'queue_get',
+    'queue_add',
+    'queue_remove',
+    'queue_clear',
+    'queue_shuffle',
+    'queue_loop',
+    // Database pipe-style actions (real state handlers above cover `insert`,
+    // `update`, `delete_rows`, `query`).
+    'db_insert',
+    'db_update',
+    'db_delete',
+    'db_query',
+    // Integration
+    'pipe_request',
+    'pipe_send',
+    'webhook_send',
+    'create_timer',
+    'cancel_timer',
+    'counter_increment',
+    'record_metric',
+    'canvas_render',
+    'render_layers',
+  ];
+
+  for (const name of STUB_ACTIONS) {
+    registerHandler(name, {
+      name,
+      async execute(config: Action): Promise<ActionResult> {
+        tracker.recordDiscordCall(name, [config]);
+        return { success: true };
+      },
+    });
+  }
+
   // Helper function to create action context
   function createContext(
     eventData: {

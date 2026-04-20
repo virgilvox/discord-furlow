@@ -698,6 +698,53 @@ describe('AutomodEngine', () => {
           mockContext
         );
       });
+
+      // Behavioral tests against a REAL evaluator. A mocked evaluator that
+      // always returns true cannot catch condition-inversion regressions;
+      // these tests exercise actual jexl so `when` semantics are proven.
+      describe('with real evaluator', () => {
+        // Lazy import to avoid cycles with the mocked-evaluator describe block.
+        async function realEval() {
+          const mod = await import('../../expression/evaluator.js');
+          return mod.createEvaluator();
+        }
+
+        it('runs the rule when `when` evaluates truthy on real context', async () => {
+          const evaluator = await realEval();
+          engine.configure({
+            rules: [
+              {
+                name: 'truthy-when',
+                trigger: { type: 'keyword', keywords: ['bad'] },
+                when: 'guildId == "guild-123"',
+                actions: [],
+              },
+            ],
+          });
+          const result = await engine.check('bad content', mockContext, evaluator);
+          // Guard matched `bad` and when evaluates truthy: rule participates.
+          expect(result.passed).toBe(false);
+          expect(result.matches.length).toBeGreaterThan(0);
+        });
+
+        it('skips the rule when `when` evaluates falsy on real context', async () => {
+          const evaluator = await realEval();
+          engine.configure({
+            rules: [
+              {
+                name: 'falsy-when',
+                trigger: { type: 'keyword', keywords: ['bad'] },
+                when: 'guildId == "some-other-guild"',
+                actions: [],
+              },
+            ],
+          });
+          const result = await engine.check('bad content', mockContext, evaluator);
+          // `bad` matches the keyword but the when is false: rule is skipped.
+          expect(result.passed).toBe(true);
+          expect(result.matches.length).toBe(0);
+        });
+      });
     });
   });
 

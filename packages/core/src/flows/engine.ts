@@ -318,6 +318,14 @@ export class FlowEngine {
           flowCtx.abortReason = result.error?.message ?? 'Nested flow aborted';
         }
 
+        // Depth-limit errors propagate as aborts. Silently truncating
+        // recursive flows masks runaway specs and makes `result.success`
+        // from the top-level flow a lie.
+        if (result.error instanceof MaxFlowDepthError) {
+          flowCtx.aborted = true;
+          flowCtx.abortReason = result.error.message;
+        }
+
         if (action.as && result.value !== undefined) {
           (context as Record<string, unknown>)[action.as as string] = result.value;
         }

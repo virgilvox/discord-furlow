@@ -20,6 +20,9 @@ export class CronScheduler {
   private timezone: string = 'UTC';
   private running = false;
   private checkInterval: NodeJS.Timeout | null = null;
+  private tickHandler: (() => void | Promise<void>) | null = null;
+  private tickIntervalMs = 60_000;
+  private tickInterval: NodeJS.Timeout | null = null;
 
   /**
    * Configure the scheduler
@@ -70,6 +73,54 @@ export class CronScheduler {
   }
 
   /**
+   * Register a periodic tick handler. The scheduler will invoke `handler`
+   * every `intervalMs` (default 60s) while it is running. Used by the host
+   * to emit the FURLOW `scheduler_tick` event so builtins like giveaways,
+   * polls, and reminders can poll their state tables.
+   *
+   * Passing `null` clears the handler.
+   */
+  setTickHandler(
+    handler: (() => void | Promise<void>) | null,
+    intervalMs?: number
+  ): void {
+    this.tickHandler = handler;
+    if (typeof intervalMs === 'number' && intervalMs > 0) {
+      this.tickIntervalMs = intervalMs;
+    }
+    // If already running, rewire the interval to pick up the new handler.
+    if (this.running) {
+      this.restartTickInterval();
+    }
+  }
+
+  private restartTickInterval(): void {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+    if (!this.tickHandler) return;
+    this.tickInterval = setInterval(() => {
+      void this.invokeTickHandler();
+    }, this.tickIntervalMs);
+  }
+
+  private async invokeTickHandler(): Promise<void> {
+    const handler = this.tickHandler;
+    if (!handler) return;
+    try {
+      await handler();
+    } catch (err) {
+      handleError(
+        err instanceof Error ? err : new Error(String(err)),
+        'scheduler',
+        'error',
+        { phase: 'tick_handler' },
+      );
+    }
+  }
+
+  /**
    * Start the scheduler
    */
   start(
@@ -101,6 +152,9 @@ export class CronScheduler {
         { phase: 'initial_check' }
       );
     });
+
+    // Start the periodic tick emission if a handler was registered.
+    this.restartTickInterval();
   }
 
   /**
@@ -112,6 +166,11 @@ export class CronScheduler {
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
+    }
+
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
     }
 
     for (const job of this.jobs.values()) {

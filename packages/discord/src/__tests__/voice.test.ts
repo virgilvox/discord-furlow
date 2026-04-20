@@ -638,3 +638,54 @@ describe('createVoiceManager factory', () => {
     expect(manager).toBeInstanceOf(VoiceManager);
   });
 });
+
+describe('VoiceManager track lifecycle events', () => {
+  function seedGuildState(manager: VoiceManager, guildId: string, trackId = 't1'): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (manager as any).guildStates.set(guildId, {
+      connection: { destroy: vi.fn() },
+      player: { play: vi.fn(), stop: vi.fn() },
+      queue: [],
+      currentTrack: {
+        id: trackId,
+        url: `https://example.com/${trackId}`,
+        title: trackId,
+        duration: 1,
+        thumbnail: null,
+      },
+      currentResource: null,
+      volume: 100,
+      loopMode: 'off',
+      filters: new Set(),
+      paused: false,
+      startTime: 0,
+      pausedAt: 0,
+    });
+  }
+
+  it('calls track_start listeners when play() succeeds', async () => {
+    const manager = createVoiceManager();
+    seedGuildState(manager, 'g1');
+
+    const starts: Array<{ guildId: string; track: unknown }> = [];
+    manager.on('track_start', (payload) => {
+      starts.push(payload);
+    });
+
+    await manager.play('g1', 'https://example.com/t1');
+    expect(starts.length).toBe(1);
+    expect(starts[0]?.guildId).toBe('g1');
+  });
+
+  it('on() returns an unsubscribe that removes the listener', async () => {
+    const manager = createVoiceManager();
+    seedGuildState(manager, 'g2', 't2');
+
+    const listener = vi.fn();
+    const unsubscribe = manager.on('track_start', listener);
+    unsubscribe();
+
+    await manager.play('g2', 'https://example.com/t2');
+    expect(listener).not.toHaveBeenCalled();
+  });
+});

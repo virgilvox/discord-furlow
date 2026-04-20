@@ -87,6 +87,7 @@ export async function startCommand(path: string | undefined, options: StartOptio
     const { createEventRouter } = await import('@furlow/core/events');
     const { createFlowEngine } = await import('@furlow/core/flows');
     const { createStateManager } = await import('@furlow/core/state');
+    const { createCronScheduler } = await import('@furlow/core/scheduler');
     const { registerCoreHandlers } = await import('@furlow/core/actions/handlers');
     const { createMemoryAdapter } = await import('@furlow/storage');
 
@@ -137,6 +138,24 @@ export async function startCommand(path: string | undefined, options: StartOptio
       } catch {
         console.log(chalk.yellow('  Voice support not available (missing @discordjs/voice)'));
       }
+    }
+
+    // Placeholder reference so we can subscribe voice events after the
+    // DiscordEventRouter is created. Actual wiring happens below.
+    let subscribeVoiceTrackEvents: null | (() => void) = null;
+    if (voiceManager) {
+      subscribeVoiceTrackEvents = () => {
+        const vm = voiceManager as {
+          on: (event: 'track_start' | 'track_end',
+               listener: (payload: { guildId: string; track: unknown }) => void) => () => void;
+        };
+        vm.on('track_start', ({ guildId, track }) => {
+          void discordEventRouter.emit('voice_track_start', { guildId, track });
+        });
+        vm.on('track_end', ({ guildId, track }) => {
+          void discordEventRouter.emit('voice_track_end', { guildId, track });
+        });
+      };
     }
 
     const discordClient = client.getClient();
@@ -207,7 +226,12 @@ export async function startCommand(path: string | undefined, options: StartOptio
       cmdSpinner.succeed(`Registered ${spec.commands.length} command(s) to ${guildIds.length} guild(s)`);
     }
 
-    // Wire every Discord event through the declarative router.
+    // Wire the cron scheduler. Even without user-declared jobs, the
+    // scheduler's periodic tick emission is required by builtins (giveaways,
+    // polls, reminders) that poll state tables via `event: 'scheduler_tick'`.
+    const scheduler = createCronScheduler();
+    if (spec.scheduler) scheduler.configure(spec.scheduler);
+
     const discordEventRouter = new DiscordEventRouter({
       client: discordClient,
       coreRouter: coreEventRouter,
@@ -225,6 +249,30 @@ export async function startCommand(path: string | undefined, options: StartOptio
     });
     discordEventRouter.start();
 
+    // Forward VoiceManager track lifecycle events to the FURLOW event bus.
+    subscribeVoiceTrackEvents?.();
+
+    // Emit `scheduler_tick` every minute so time-polling builtins run.
+    scheduler.setTickHandler(() => {
+      void discordEventRouter.emit('scheduler_tick');
+    }, 60_000);
+
+    // Build a base context for scheduled cron jobs.
+    const { buildBaseContext } = await import('@furlow/discord/events');
+    const schedulerContextBuilder = () =>
+      buildBaseContext({
+        client: discordClient,
+        evaluator,
+        stateManager,
+        flowEngine,
+        voiceManager,
+        actionExecutor,
+        eventRouter: coreEventRouter,
+        spec,
+      });
+
+    scheduler.start(actionExecutor, evaluator, schedulerContextBuilder as never);
+
     // Ready fires immediately if the client connected before we registered.
     if (discordClient.isReady()) {
       setImmediate(() => {
@@ -241,6 +289,7 @@ export async function startCommand(path: string | undefined, options: StartOptio
 
     const shutdown = async (): Promise<void> => {
       console.log('\n' + chalk.yellow('  Shutting down...'));
+      scheduler.stop();
       discordEventRouter.stop();
       if (voiceManager) (voiceManager as { disconnectAll: () => void }).disconnectAll();
       await stateManager.close();

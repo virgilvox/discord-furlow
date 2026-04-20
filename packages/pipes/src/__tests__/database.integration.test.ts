@@ -580,4 +580,89 @@ describe('DatabasePipe Integration', () => {
       await pipe.disconnect();
     });
   });
+
+  describe('SQL injection defense', () => {
+    // These tests assert the identifier validator in
+    // `packages/pipes/src/database/index.ts` rejects every crafted table or
+    // column name that attempts to break out of the identifier context.
+    async function pipeFor(): Promise<DatabasePipe> {
+      const pipe = createDatabasePipe({
+        name: 'sqli-test',
+        config: {
+          type: 'database',
+          adapter: 'memory',
+          connection: ':memory:',
+        },
+      });
+      await pipe.connect();
+      return pipe;
+    }
+
+    const MALICIOUS_IDENTIFIERS = [
+      'users; DROP TABLE users',
+      "users'; DROP TABLE users; --",
+      'users" OR "1"="1',
+      'users/*comment*/',
+      ' users',
+      'users ',
+      'users--',
+      'users,products',
+      '1users',
+      '',
+      'users.products',
+      'users[0]',
+      '`users`',
+    ];
+
+    it.each(MALICIOUS_IDENTIFIERS)(
+      'insert() rejects malicious table name: %s',
+      async (badTable) => {
+        const pipe = await pipeFor();
+        const result = await pipe.insert(badTable, { name: 'X' });
+        expect(result.success).toBe(false);
+        await pipe.disconnect();
+      },
+    );
+
+    it('update() rejects injection via the where column name', async () => {
+      const pipe = await pipeFor();
+      const result = await pipe.update(
+        'users',
+        { 'name; DROP TABLE users; --': 'John' } as unknown as Record<string, string>,
+        { email: 'x@y.z' },
+      );
+      expect(result.success).toBe(false);
+      await pipe.disconnect();
+    });
+
+    it('update() rejects injection via the data column name', async () => {
+      const pipe = await pipeFor();
+      const result = await pipe.update(
+        'users',
+        { name: 'John' },
+        { "email'; DROP TABLE users; --": 'x@y.z' } as unknown as Record<string, string>,
+      );
+      expect(result.success).toBe(false);
+      await pipe.disconnect();
+    });
+
+    it('delete() rejects injection via the where column name', async () => {
+      const pipe = await pipeFor();
+      const result = await pipe.delete('users', {
+        'name OR 1=1': 'anything',
+      } as unknown as Record<string, unknown>);
+      expect(result.success).toBe(false);
+      await pipe.disconnect();
+    });
+
+    it('valid snake_case identifiers still work after hardening', async () => {
+      const pipe = await pipeFor();
+      const result = await pipe.insert('users', {
+        name: 'Valid Name',
+        email_address: 'user@example.com',
+      });
+      expect(result.success).toBe(true);
+      await pipe.disconnect();
+    });
+  });
 });
