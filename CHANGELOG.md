@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 2026-04-20 per-handler execution quotas (M1)
 
-Published as `@furlow/core@1.0.13`, `@furlow/schema@1.0.6`.
+Published as `@furlow/core@1.0.13`, `@furlow/schema@1.0.6`,
+`@furlow/cli@1.0.16`.
 
 Parity-plan milestone M1. Caps the cost of a single event or command
 handler invocation so a runaway spec (`repeat { times: 1_000_000 }`,
@@ -46,7 +47,13 @@ Modelled on Kite's `FlowContextLimits` and YAGPDB's `MaxOps` /
   options gain an optional `quotaLimits` override.
 - `@furlow/schema` `EventHandler.timeout?: string | number` and
   `CommandDefinition.timeout?: string | number` for per-handler
-  wallclock overrides (`"30s"`, `"500ms"`, raw ms).
+  wallclock overrides (`"30s"`, `"500ms"`, raw ms). JSON schema in
+  `packages/schema/src/schemas/index.ts` updated to match.
+- `@furlow/cli` slash-command dispatch in `apps/cli/src/commands/
+  start.ts` now builds a `FlowQuota` per invocation, honours
+  `command.timeout`, and surfaces `QuotaExceededError` as a user-
+  facing "execution limit exceeded" error reply. Event handlers
+  already run through `EventRouter`, which owns their quota lifecycle.
 - `@furlow/core` 19 new tests in `flows/__tests__/quota.test.ts` cover
   operations / credits / wallclock / stack-depth / api-bucket
   enforcement, router lifecycle, and duration parsing.

@@ -20,6 +20,7 @@ import { config as loadEnv } from 'dotenv';
 import type { ChatInputCommandInteraction } from 'discord.js';
 import type { StorageAdapter } from '@furlow/storage';
 import type { ActionExecutor } from '@furlow/core/actions';
+import { FlowQuota, parseQuotaDuration, QuotaExceededError } from '@furlow/core';
 import type { Action } from '@furlow/schema';
 
 interface StartOptions {
@@ -429,7 +430,34 @@ function createCommandDispatcher(deps: CommandDispatcherDeps) {
       log('actions', `Executing ${actions.length} action(s):`);
       actions.forEach((a, i) => log('actions', `  ${i + 1}. ${(a as { action: string }).action}`));
 
-      const results = await deps.actionExecutor.executeSequence(actions as unknown as Action[], context as never);
+      const timeoutMs = parseQuotaDuration((cmd as { timeout?: string | number }).timeout);
+      const quota = new FlowQuota({
+        limits: timeoutMs !== undefined ? { wallclockMs: timeoutMs } : {},
+      });
+      const ctxRecord = context as unknown as Record<string, unknown>;
+      ctxRecord.quota = quota;
+      ctxRecord.signal = quota.signal;
+      quota.startWallclock();
+
+      let results: Awaited<ReturnType<ActionExecutor['executeSequence']>> = [];
+      try {
+        results = await deps.actionExecutor.executeSequence(actions as unknown as Action[], context as never);
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          console.error(
+            chalk.red(`Command "${cmd.name}" aborted: quota ${err.metric} exceeded (${err.observed} > ${err.limit})`),
+          );
+          if (interaction.deferred && !interaction.replied) {
+            await interaction.editReply({ content: 'Command aborted: execution limit exceeded.' }).catch(() => {});
+          }
+          return;
+        }
+        throw err;
+      } finally {
+        quota.dispose();
+        delete ctxRecord.quota;
+        delete ctxRecord.signal;
+      }
 
       results.forEach((r, i) => {
         const actionName = (actions[i] as { action?: string })?.action ?? 'unknown';
