@@ -1,7 +1,7 @@
 # Message Events
 
 events:
-  - event: message
+  - event: message_create
     # Skip bot messages
     condition: "!message.author.bot"
     actions:

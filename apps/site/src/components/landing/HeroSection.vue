@@ -17,7 +17,7 @@ import FurlowButton from '@/components/common/FurlowButton.vue';
         <p class="hero-tagline">DECLARATIVE DISCORD BOTS</p>
         <p class="hero-description">
           Build powerful Discord bots with YAML specifications.
-          No code required. 84 actions, expressions, state management,
+          No code required. 85 actions, expressions, state management,
           voice support, and more.
         </p>
         <div class="hero-actions">

@@ -869,6 +869,17 @@ export const actionCategories: ActionCategory[] = [
           { name: 'as', type: 'string', label: 'Store as variable' },
         ],
       },
+      {
+        name: 'render_layers',
+        description: 'Render canvas layers inline without a named generator',
+        fields: [
+          { name: 'width', type: 'number', label: 'Width', required: true },
+          { name: 'height', type: 'number', label: 'Height', required: true },
+          { name: 'background', type: 'expression', label: 'Background color' },
+          { name: 'layers', type: 'expression', label: 'Layers (expression returning array)', required: true },
+          { name: 'as', type: 'string', label: 'Store as variable' },
+        ],
+      },
     ],
   },
 ];

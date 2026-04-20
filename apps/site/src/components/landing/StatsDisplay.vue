@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const stats = [
-  { value: '84', label: 'ACTIONS', description: 'Built-in action handlers' },
+  { value: '85', label: 'ACTIONS', description: 'Built-in action handlers' },
   { value: '71', label: 'FUNCTIONS', description: 'Expression functions' },
   { value: '50', label: 'TRANSFORMS', description: 'Data transforms' },
-  { value: '76', label: 'EVENTS', description: 'Discord events' },
+  { value: '59', label: 'EVENTS', description: 'Discord events' },
 ];
 </script>
 

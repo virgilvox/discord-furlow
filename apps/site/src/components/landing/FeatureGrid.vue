@@ -8,7 +8,7 @@ const features = [
   },
   {
     icon: 'fas fa-bolt',
-    title: '84 ACTIONS',
+    title: '85 ACTIONS',
     description: 'Send messages, manage roles, moderate users, handle voice, and more with built-in actions.',
     color: 'yellow',
   },

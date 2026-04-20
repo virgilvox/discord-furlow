@@ -79,6 +79,18 @@ export const moderationCommands: CommandDefinition[] = [
         dm_message: 'You have been kicked from ${guild.name}. Reason: ${args.reason || "No reason provided"}',
       },
       {
+        action: 'db_insert',
+        table: 'mod_cases',
+        data: {
+          guild_id: '${guild.id}',
+          user_id: '${args.user.id}',
+          moderator_id: '${user.id}',
+          action: 'kick',
+          reason: '${args.reason || "No reason provided"}',
+          created_at: '${now()}',
+        },
+      },
+      {
         action: 'reply',
         content: 'Kicked ${args.user.username}',
         ephemeral: true,
@@ -103,6 +115,18 @@ export const moderationCommands: CommandDefinition[] = [
         dm_message: 'You have been banned from ${guild.name}. Reason: ${args.reason || "No reason provided"}',
       },
       {
+        action: 'db_insert',
+        table: 'mod_cases',
+        data: {
+          guild_id: '${guild.id}',
+          user_id: '${args.user.id}',
+          moderator_id: '${user.id}',
+          action: 'ban',
+          reason: '${args.reason || "No reason provided"}',
+          created_at: '${now()}',
+        },
+      },
+      {
         action: 'reply',
         content: 'Banned ${args.user.username}',
         ephemeral: true,
@@ -121,6 +145,18 @@ export const moderationCommands: CommandDefinition[] = [
         action: 'unban',
         user: '${args.user_id}',
         reason: '${args.reason || "No reason provided"}',
+      },
+      {
+        action: 'db_insert',
+        table: 'mod_cases',
+        data: {
+          guild_id: '${guild.id}',
+          user_id: '${args.user_id}',
+          moderator_id: '${user.id}',
+          action: 'unban',
+          reason: '${args.reason || "No reason provided"}',
+          created_at: '${now()}',
+        },
       },
       {
         action: 'reply',
@@ -145,6 +181,18 @@ export const moderationCommands: CommandDefinition[] = [
         reason: '${args.reason || "No reason provided"}',
         dm_user: true,
         dm_message: 'You have been timed out in ${guild.name} for ${args.duration}. Reason: ${args.reason || "No reason provided"}',
+      },
+      {
+        action: 'db_insert',
+        table: 'mod_cases',
+        data: {
+          guild_id: '${guild.id}',
+          user_id: '${args.user.id}',
+          moderator_id: '${user.id}',
+          action: 'timeout',
+          reason: '${args.reason || "No reason provided"} (${args.duration})',
+          created_at: '${now()}',
+        },
       },
       {
         action: 'reply',

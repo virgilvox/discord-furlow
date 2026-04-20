@@ -10,6 +10,7 @@ import { createServer } from 'http';
 import { join } from 'node:path';
 import { createApiRoutes } from './routes/api.js';
 import { initWebSocket, broadcastBotStatus } from './websocket.js';
+import { randomBytes } from 'node:crypto';
 import type { StorageAdapter } from '@furlow/storage';
 
 const app: Express = express();
@@ -51,10 +52,21 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Session configuration
+// Session configuration. DASHBOARD_SECRET must be set in production; we
+// refuse to fall back to a well-known hardcoded default that would let
+// anyone forge sessions. In development a per-process random secret is
+// fine (sessions do not need to survive restarts).
+const sessionSecret =
+  process.env.DASHBOARD_SECRET ??
+  (process.env.NODE_ENV === 'production'
+    ? (() => {
+        throw new Error('DASHBOARD_SECRET environment variable must be set in production');
+      })()
+    : randomBytes(32).toString('hex'));
+
 app.use(
   session({
-    secret: process.env.DASHBOARD_SECRET ?? 'furlow-dashboard-secret',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {

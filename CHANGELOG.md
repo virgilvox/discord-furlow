@@ -5,6 +5,94 @@ All notable changes to FURLOW will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2026-04-19 audit pass
+
+Published as `@furlow/core@1.0.12`, `@furlow/discord@1.0.7`,
+`@furlow/builtins@1.0.8`, `@furlow/testing@1.0.6`, `@furlow/cli@1.0.15`,
+`@furlow/schema@1.0.5`.
+
+### Fixed (shipping bugs)
+
+- Five builtins declared event names the runtime never emitted, which
+  rendered their message-triggered handlers non-functional. Fixed in
+  `@furlow/builtins@1.0.7` hotfix (`afk`, `auto-responder`, `leveling`,
+  `tickets` now listen for `message_create`; `logging` now listens for
+  `message_delete_bulk`).
+- `examples/multi-file-bot/events/message.yaml` had the same
+  `event: 'message'` bug teaching new users the wrong pattern.
+- `specs/compliance/minimal.furlow.yaml` used `params:` instead of
+  `parameters:` in five flow definitions; the engine silently dropped
+  them.
+- `moderation` builtin declared a `mod_cases` audit-log table that no
+  command ever wrote to. `kick`, `ban`, `unban`, `timeout` now insert
+  into `mod_cases`.
+- `apps/dashboard` session secret fell back to a hardcoded string when
+  `DASHBOARD_SECRET` was unset. Production now refuses to start without
+  an explicit secret; development uses a per-process random.
+
+### Added (runtime)
+
+- `@furlow/discord/events` declarative event module. 59 canonical
+  FURLOW events wired via a single table. `start.ts` dropped from 1,128
+  to 464 lines.
+- `CronScheduler.setTickHandler` + CLI wiring emits `scheduler_tick`
+  every 60s. Unblocks `giveaways`, `polls`, `reminders` builtins.
+- `CronScheduler` is now actually instantiated by the CLI; user
+  `scheduler:` blocks used to be silently ignored.
+- `VoiceManager` emits `track_start` / `track_end`. CLI forwards as
+  FURLOW `voice_track_start` / `voice_track_end` events. Unblocks the
+  `music` builtin.
+- `mass_ping` automod trigger implemented.
+- Flow engine `MaxFlowDepthError` now propagates as an abort from the
+  outer flow instead of being silently truncated.
+- Action field aliases: `add_reactions`, `remove_reaction`,
+  `clear_reactions` accept `channel`, `message`, `user`. `bulk_delete`
+  accepts `user` to restrict deletion to one author.
+- `clientReady` binding replaces deprecated `ready` listener
+  (Discord.js v14.25 deprecated it).
+
+### Added (tests)
+
+- Cross-builtin event-name guard prevents regression of the event-name
+  bug class.
+- Real-evaluator automod `when` tests (mocks always returning true
+  could not catch condition inversion).
+- SQL-injection test suite for the database pipe (13 malicious
+  identifiers plus column-name injection).
+- Real catastrophic-backtracking ReDoS test (glob-based pseudo-test
+  removed).
+- VoiceManager track lifecycle listener tests.
+- Scheduler tick-handler lifecycle tests.
+- CLI smoke tests for `validate` and `export`.
+- Real-Client `DiscordEventRouter` integration tests.
+- Complex-bot integration test (13 cases exercising every subsystem).
+- E2E runtime registers stub handlers for all 85 production actions.
+
+### Fixed (test quality)
+
+- Flow-engine depth-limit tests flipped from `success === true` (which
+  encoded silent failure as correct) to `success === false` with error
+  messaging.
+- Builtin event-name assertions pinned the buggy names; updated to
+  reference the corrected names.
+
+### Documentation
+
+- Full rewrite of `HANDOFF.md`, `RUNTIME_SPEC.md` event section,
+  `docs/reference/llm-reference.md`, `docs/reference/events.md`,
+  `docs/manifest.json` badges.
+- Legacy flat docs replaced with redirects to canonical pages.
+- Site landing counts corrected (84 -> 85 actions, 76 -> 59 events).
+- `render_layers` added to site builder action schemas.
+
+### Tooling
+
+- Strict typecheck excludes test files. Vitest + esbuild still runs
+  them. Closes the long-standing "typecheck errors in tests" known
+  issue.
+- Root `pnpm test` uses `--concurrency=1` to prevent OOM between
+  storage and core test runs.
+
 ## [0.1.0] - 2026-02-03
 
 ### Added

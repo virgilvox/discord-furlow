@@ -4,25 +4,29 @@
 
 FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is a declarative Discord bot framework built as a TypeScript monorepo with pnpm workspaces and Turborepo. Bot behavior is described in YAML. The runtime (parser, expression evaluator, action executor, flow engine, event router, state manager, automod, scheduler, canvas, pipes) is fully implemented.
 
-## Current State: v1.0.5
+## Current State
 
-All production code builds clean, typechecks clean, and tests clean. The runtime surface, schema types, handler implementations, and documentation are in agreement. Every documented action, event, function, transform, and context field maps to a concrete handler, emission, or context builder in the code.
+All production code builds clean, typechecks clean, and tests clean. The
+runtime surface, schema types, handler implementations, and documentation
+are in agreement. Every documented action, event, function, transform, and
+context field maps to a concrete handler, emission, or context builder in
+the code. Event names declared by every builtin are guarded by a test.
 
-### Package snapshot
+### Package snapshot (current published versions)
 
 | Package | Version | Tests | Notes |
 |---------|---------|-------|-------|
-| `@furlow/schema` | 1.0.4 | none | Type definitions + JSON schema |
-| `@furlow/storage` | 1.0.4 | 226 | Memory, SQLite, PostgreSQL |
-| `@furlow/core` | 1.0.10 | 1,335 | Parser, evaluator, flow engine, state, automod, scheduler, canvas |
-| `@furlow/discord` | 1.0.5 | 205 | Client, voice, video, interactions, new declarative event router |
-| `@furlow/pipes` | 1.0.5 | 256 | HTTP, WebSocket, MQTT, TCP/UDP, Webhook, Database, File |
-| `@furlow/testing` | 1.0.4 | 301 | MockClient, ActionTracker, E2E runtime, complex-bot integration |
-| `@furlow/builtins` | 1.0.5 | 437 | 14 modules |
-| `@furlow/cli` | 1.0.13 | 4 | Smoke tests for `validate` and `export` |
-| `@furlow/dashboard` | 1.0.3 | none | Express + React (private app, not published as a package dep) |
+| `@furlow/schema` | 1.0.5 | none | Type definitions + JSON schema |
+| `@furlow/storage` | 1.0.4 | 226 (50 skipped on Docker) | Memory, SQLite, PostgreSQL |
+| `@furlow/core` | 1.0.12 | 1,342 | Parser, evaluator, flow engine, state, automod, scheduler, canvas, depth guard surfaces failures |
+| `@furlow/discord` | 1.0.7 | 207 | Client, voice (with track lifecycle events), video, interactions, declarative event router |
+| `@furlow/pipes` | 1.0.5 | 273 | HTTP, WebSocket, MQTT, TCP/UDP, Webhook, Database (with SQL-injection test suite), File |
+| `@furlow/testing` | 1.0.6 | 301 | MockClient, ActionTracker, E2E runtime with 85 action stubs, complex-bot integration |
+| `@furlow/builtins` | 1.0.8 | 449 | 14 modules; event-name guard test catches the kind of bug that shipped in 1.0.6 |
+| `@furlow/cli` | 1.0.15 | 4 | Wires cron scheduler, forwards voice track events, smoke tests for `validate` and `export` |
+| `@furlow/dashboard` | 1.0.3 | none | Express + React (private app, not published) |
 
-**Total Tests: 2,764 passing (50 storage tests skipped, gated on testcontainers)**
+**Total Tests: 2,802 passing (50 storage tests skipped, gated on testcontainers).**
 
 ### Verification commands
 

@@ -167,7 +167,7 @@ flows:
   # TEST 4: Flow If/Else
   # ===========================================
   - name: test_flow_if
-    params:
+    parameters:
       - name: value
         type: number
         required: true
@@ -198,7 +198,7 @@ flows:
   # TEST 5: Flow Switch
   # ===========================================
   - name: test_flow_switch
-    params:
+    parameters:
       - name: status
         type: string
         required: true
@@ -353,7 +353,7 @@ flows:
   # TEST 10: Try/Catch/Finally
   # ===========================================
   - name: test_try_catch
-    params:
+    parameters:
       - name: shouldFail
         type: boolean
         default: false
@@ -393,7 +393,7 @@ flows:
   # TEST 11: Call Flow (Nested)
   # ===========================================
   - name: calculate_factorial
-    params:
+    parameters:
       - name: n
         type: number
         required: true
@@ -495,7 +495,7 @@ flows:
   # TEST 15: Abort Action
   # ===========================================
   - name: test_abort
-    params:
+    parameters:
       - name: shouldAbort
         type: boolean
         default: true
