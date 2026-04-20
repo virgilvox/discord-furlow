@@ -116,6 +116,11 @@ export const furlowSchema = {
     errors: {
       $ref: '#/$defs/errors',
     },
+    plugins: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Plugin files (JS/ESM) to load at startup. Paths resolve relative to the spec file.',
+    },
   },
   $defs: {
     identity: {
@@ -407,6 +412,9 @@ export const furlowSchema = {
         throttle: { type: 'string' },
         once: { type: 'boolean' },
         timeout: { type: ['string', 'number'] },
+        maxHandlers: { type: 'integer', minimum: 1 },
+        cron: { type: 'string' },
+        interval: { type: 'string' },
       },
       required: ['event', 'actions'],
     },

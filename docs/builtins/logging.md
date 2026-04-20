@@ -42,7 +42,7 @@ builtins:
     events:
       - message_delete
       - message_update
-      - message_bulk_delete
+      - message_delete_bulk
       - member_join
       - member_leave
       - member_update
@@ -70,7 +70,7 @@ builtins:
 
 - **message_delete** - Message deleted (shows content if cached)
 - **message_update** - Message edited (shows before/after)
-- **message_bulk_delete** - Bulk message deletion
+- **message_delete_bulk** - Bulk message deletion
 
 ### Member Events
 
@@ -108,10 +108,7 @@ Set the log channel for a specific event type.
 Enable or disable logging for a specific event.
 
 ### `/logging ignore-channel <channel>`
-Add a channel to the ignore list.
-
-### `/logging unignore-channel <channel>`
-Remove a channel from the ignore list.
+Toggle a channel in the ignore list (adds if absent, removes if present).
 
 ## Log Format
 

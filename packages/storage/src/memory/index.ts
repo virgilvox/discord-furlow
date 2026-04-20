@@ -3,6 +3,8 @@
  */
 
 import type { StorageAdapter, StoredValue, QueryOptions, TableDefinition } from '../types.js';
+import { assertValueWithinCap } from '../limits.js';
+import { isWhereClauseEntry, matchWhereValue, validateWhereClauseEntry } from '../where.js';
 
 export class MemoryAdapter implements StorageAdapter {
   private store: Map<string, StoredValue> = new Map();
@@ -25,6 +27,7 @@ export class MemoryAdapter implements StorageAdapter {
   }
 
   async set(key: string, value: StoredValue): Promise<void> {
+    assertValueWithinCap(value.value);
     this.store.set(key, value);
   }
 
@@ -195,9 +198,12 @@ export class MemoryAdapter implements StorageAdapter {
     where: Record<string, unknown>
   ): boolean {
     for (const [key, value] of Object.entries(where)) {
-      if (row[key] !== value) {
-        return false;
+      if (isWhereClauseEntry(value)) {
+        validateWhereClauseEntry(value);
+        if (!matchWhereValue(row[key], value)) return false;
+        continue;
       }
+      if (row[key] !== value) return false;
     }
     return true;
   }

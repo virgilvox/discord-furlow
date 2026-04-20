@@ -1,6 +1,6 @@
 {
   "name": "@furlow/dashboard",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Web dashboard for FURLOW Discord bots",
   "keywords": ["furlow", "discord", "dashboard", "web"],
   "license": "MIT",

@@ -20,6 +20,12 @@ import type {
   LogAction,
   EmitAction,
 } from '@furlow/schema';
+import {
+  ArrayTooLongError,
+  assertArrayWithinCap,
+  MAX_LOG_MESSAGE_BYTES,
+  measureBytes,
+} from '@furlow/storage';
 
 /**
  * Parse duration string to milliseconds
@@ -251,6 +257,13 @@ const batchHandler: ActionHandler<BatchAction> = {
       return { success: false, error: new Error('Items must be an array') };
     }
 
+    try {
+      assertArrayWithinCap(items);
+    } catch (err) {
+      if (err instanceof ArrayTooLongError) return { success: false, error: err };
+      throw err;
+    }
+
     // The FlowEngine/ActionExecutor will handle the actual iteration
     return { success: true, data: { items, count: items.length } };
   },
@@ -289,7 +302,10 @@ const logHandler: ActionHandler<LogAction> = {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
-    const message = await evaluator.interpolate(String(config.message), context);
+    const interpolated = await evaluator.interpolate(String(config.message), context);
+    const message = measureBytes(interpolated) > MAX_LOG_MESSAGE_BYTES
+      ? interpolated.slice(0, MAX_LOG_MESSAGE_BYTES) + '... (truncated)'
+      : interpolated;
     const level = config.level || 'info';
 
     switch (level) {

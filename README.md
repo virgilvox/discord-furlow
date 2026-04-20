@@ -82,11 +82,11 @@ commands:
           content: "🎲 You rolled **${random(1, options.sides || 6)}**"
 
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome ${member.display_name}!"
+          content: "Welcome ${member.displayName}!"
 ```
 
 ## CLI Commands
@@ -112,7 +112,7 @@ events:
 | [Expressions Reference](docs/reference/expressions/) | Functions and transforms |
 | [Events Reference](docs/reference/events.md) | Event types |
 | [CLI Reference](docs/reference/cli.md) | Command-line interface |
-| [Pipes Reference](docs/packages/pipes.md) | External integrations |
+| [Pipes Reference](docs/packages/pipes/README.md) | External integrations |
 | [Examples](docs/examples/) | Complete bot examples |
 
 ## Packages
@@ -125,7 +125,7 @@ events:
 | `@furlow/schema` | TypeScript types |
 | `@furlow/storage` | Database adapters |
 | `@furlow/builtins` | Pre-built modules |
-| `@furlow/pipes` | HTTP, WebSocket, MQTT, TCP/UDP, webhooks |
+| `@furlow/pipes` | HTTP, WebSocket, MQTT, TCP/UDP, webhooks, database, file |
 | `@furlow/testing` | Test utilities |
 
 ## Production deployment

@@ -233,24 +233,23 @@ commands:
 # Event handlers
 events:
   # Auto-delete messages with too many mentions
-  message_create:
-    - name: "anti_mass_mention"
-      condition: "length(message.mentions) > 5 && !member.role_ids|includes(env.MOD_ROLE)"
-      actions:
-        - delete_message:
-            channel: "${channel.id}"
-            message: "${message.id}"
-        - timeout:
-            user: "${user.id}"
-            duration: "5m"
-            reason: "Mass mention (auto-mod)"
-        - send_message:
-            channel: "${env.MOD_LOG_CHANNEL}"
-            content: "${user.mention} was auto-muted for mass mentioning"
+  - event: message_create
+    when: "length(message.mentions) > 5 && !member.role_ids|includes(env.MOD_ROLE)"
+    actions:
+      - delete_message:
+          channel: "${channel.id}"
+          message: "${message.id}"
+      - timeout:
+          user: "${user.id}"
+          duration: "5m"
+          reason: "Mass mention (auto-mod)"
+      - send_message:
+          channel: "${env.MOD_LOG_CHANNEL}"
+          content: "${user.mention} was auto-muted for mass mentioning"
 
   # Log deleted messages
-  message_delete:
-    condition: "!message.author?.bot"
+  - event: message_delete
+    when: "!message.author?.bot"
     actions:
       - send_message:
           channel: "${env.MESSAGE_LOG_CHANNEL}"
@@ -268,42 +267,42 @@ events:
                   value: "${truncate(message.content ?? 'Unknown', 1000)}"
               timestamp: true
 
-  # Handle report buttons
-  button_click:
-    - name: "report_warn"
-      condition: "startsWith(custom_id, 'report_warn_')"
-      actions:
-        - flow_if:
-            condition: "!member.role_ids|includes(env.MOD_ROLE)"
-            then:
-              - reply:
-                  content: "You don't have permission to do this."
-                  ephemeral: true
-            else:
-              - call_flow:
-                  flow: "warn_from_report"
-                  args:
-                    user_id: "${replace(custom_id, 'report_warn_', '')}"
-                    moderator: "${user}"
-              - update_message:
-                  content: "Report handled by ${user.mention}"
-                  embeds: []
-                  components: []
+  # Handle report buttons (warn)
+  - event: button_click
+    when: "startsWith(custom_id, 'report_warn_')"
+    actions:
+      - flow_if:
+          condition: "!member.role_ids|includes(env.MOD_ROLE)"
+          then:
+            - reply:
+                content: "You don't have permission to do this."
+                ephemeral: true
+          else:
+            - call_flow:
+                flow: "warn_from_report"
+                args:
+                  user_id: "replace(custom_id, 'report_warn_', '')"
+                  moderator: "user"
+            - update_message:
+                content: "Report handled by ${user.mention}"
+                embeds: []
+                components: []
 
-    - name: "report_dismiss"
-      condition: "custom_id == 'report_dismiss'"
-      actions:
-        - flow_if:
-            condition: "!member.role_ids|includes(env.MOD_ROLE)"
-            then:
-              - reply:
-                  content: "You don't have permission to do this."
-                  ephemeral: true
-            else:
-              - update_message:
-                  content: "Report dismissed by ${user.mention}"
-                  embeds: []
-                  components: []
+  # Handle report buttons (dismiss)
+  - event: button_click
+    when: "custom_id == 'report_dismiss'"
+    actions:
+      - flow_if:
+          condition: "!member.role_ids|includes(env.MOD_ROLE)"
+          then:
+            - reply:
+                content: "You don't have permission to do this."
+                ephemeral: true
+          else:
+            - update_message:
+                content: "Report dismissed by ${user.mention}"
+                embeds: []
+                components: []
 
 # Flows
 flows:

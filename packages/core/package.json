@@ -1,6 +1,6 @@
 {
   "name": "@furlow/core",
-  "version": "1.0.13",
+  "version": "1.0.15",
   "description": "Core runtime engine for FURLOW Discord bot framework",
   "keywords": [
     "furlow",
@@ -80,6 +80,18 @@
     "./errors": {
       "types": "./dist/errors/index.d.ts",
       "import": "./dist/errors/index.js"
+    },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.js"
+    },
+    "./cooldowns": {
+      "types": "./dist/cooldowns/index.d.ts",
+      "import": "./dist/cooldowns/index.js"
+    },
+    "./observability": {
+      "types": "./dist/observability/index.d.ts",
+      "import": "./dist/observability/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -99,6 +111,7 @@
   },
   "dependencies": {
     "@furlow/schema": "^1.0.3",
+    "@furlow/storage": "workspace:*",
     "fast-glob": "^3.3.3",
     "jexl": "^2.3.0",
     "yaml": "^2.3.0"
@@ -111,14 +124,10 @@
     "vitest": "^1.2.0"
   },
   "peerDependencies": {
-    "@furlow/storage": "^1.0.3",
     "canvas": "^2.11.0",
     "discord.js": "^14.14.0"
   },
   "peerDependenciesMeta": {
-    "@furlow/storage": {
-      "optional": true
-    },
     "canvas": {
       "optional": true
     },

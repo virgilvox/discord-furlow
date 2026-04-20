@@ -111,15 +111,15 @@ builtins:
       voice: "${env.VOICE_LOG_CHANNEL}"
     events:
       - message_delete
-      - message_edit
+      - message_update
       - member_join
       - member_leave
       - member_ban
       - member_unban
       - voice_join
       - voice_leave
-      - role_add
-      - role_remove
+      - role_create
+      - role_delete
 
   # Reaction roles
   reaction_roles:
@@ -382,14 +382,14 @@ commands:
 # ============================================
 
 events:
-  ready:
+  - event: ready
     actions:
       - log:
           level: info
-          message: "CommunityBot ready! Serving ${bot.guilds|length} guilds"
+          message: "CommunityBot ready! Serving ${client.guilds.cache.size} guilds"
 
   # Handle giveaway ending
-  giveaway_end:
+  - event: giveaway_end
     actions:
       - log:
           level: info
@@ -397,13 +397,12 @@ events:
       # In production, would fetch reactions and pick winner
 
   # Suggestion votes
-  button_click:
-    - name: "suggestion_vote"
-      condition: "startsWith(custom_id, 'suggestion_')"
-      actions:
-        - reply:
-            content: "Vote recorded!"
-            ephemeral: true
+  - event: button_click
+    when: "startsWith(custom_id, 'suggestion_')"
+    actions:
+      - reply:
+          content: "Vote recorded!"
+          ephemeral: true
 
 # ============================================
 # SCHEDULER

@@ -89,8 +89,13 @@ pipes:
               - pipe_send:
                   pipe: tcp_server
                   data:
-                    message: "OK: ${guild.member_count} members online"
+                    message: "OK: server alive"
 ```
+
+TCP server handlers run outside any Discord guild context. `guild`,
+`member`, and `channel` are not populated; use pipe-side state
+(`state.global.*`) or stash data keyed by remote address to track
+per-client information.
 
 ### Request-Response Pattern
 

@@ -461,7 +461,7 @@ context_menus:
 
 ```yaml
 events:
-  - event: guild_member_add
+  - event: member_join
     when: "!member.user.bot"
     debounce: 5s
     throttle: 1m
@@ -477,7 +477,7 @@ events:
 ```yaml
 flows:
   log_action:
-    params:
+    parameters:
       - name: action
         type: string
         required: true
@@ -712,11 +712,11 @@ automod:
 
 ```yaml
 scheduler:
-  enabled: true
   timezone: UTC
-  tasks:
+  jobs:
     - name: daily_backup
       cron: "0 0 * * *"
+      enabled: true
       actions:
         - call_flow:
             flow: backup_data
@@ -1983,7 +1983,7 @@ canvas:
           align: center
 
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       # Pre-compute avatar URL (canvas doesn't support WebP)
       - set:
@@ -2029,7 +2029,7 @@ events:
 ```yaml
 flows:
   log_mod_action:
-    params:
+    parameters:
       - name: action
         type: string
         required: true

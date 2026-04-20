@@ -4,6 +4,35 @@
 
 import Database from 'better-sqlite3';
 import type { StorageAdapter, StoredValue, QueryOptions, TableDefinition, TableColumn } from '../types.js';
+import { assertValueWithinCap } from '../limits.js';
+import {
+  escapeLikeLiteral,
+  isWhereClauseEntry,
+  validateWhereClauseEntry,
+  type WhereClauseEntry,
+} from '../where.js';
+
+/**
+ * Build a SQL where-clause fragment and the bound parameter for a single
+ * WhereClauseEntry. Returns a tuple of (SQL fragment referencing the
+ * escaped column via `col`, bound parameter list).
+ */
+function buildLikeClause(col: string, entry: WhereClauseEntry): [string, string[]] {
+  validateWhereClauseEntry(entry);
+  switch (entry.op) {
+    case 'eq':
+      return [`${col} = ?`, [entry.value]];
+    case 'like':
+      // LIKE ESCAPE '\\' lets users escape `%` and `_` themselves.
+      return [`${col} LIKE ? ESCAPE '\\'`, [entry.value]];
+    case 'startswith':
+      return [`${col} LIKE ? ESCAPE '\\'`, [escapeLikeLiteral(entry.value) + '%']];
+    case 'endswith':
+      return [`${col} LIKE ? ESCAPE '\\'`, ['%' + escapeLikeLiteral(entry.value)]];
+    case 'contains':
+      return [`${col} LIKE ? ESCAPE '\\'`, ['%' + escapeLikeLiteral(entry.value) + '%']];
+  }
+}
 
 export interface SQLiteOptions {
   path?: string;
@@ -96,6 +125,7 @@ export class SQLiteAdapter implements StorageAdapter {
   }
 
   async set(key: string, value: StoredValue): Promise<void> {
+    assertValueWithinCap(value.value);
     this.db
       .prepare(`
         INSERT OR REPLACE INTO furlow_kv (key, value, type, expires_at, created_at, updated_at)
@@ -299,9 +329,19 @@ export class SQLiteAdapter implements StorageAdapter {
     const params: unknown[] = [];
 
     if (options.where && Object.keys(options.where).length > 0) {
-      const whereClauses = Object.keys(options.where).map((col) => `${escapeIdentifier(col)} = ?`);
-      query += ` WHERE ${whereClauses.join(' AND ')}`;
-      params.push(...Object.values(options.where));
+      const clauses: string[] = [];
+      for (const [col, value] of Object.entries(options.where)) {
+        const escapedCol = escapeIdentifier(col);
+        if (isWhereClauseEntry(value)) {
+          const [sql, bound] = buildLikeClause(escapedCol, value);
+          clauses.push(sql);
+          params.push(...bound);
+        } else {
+          clauses.push(`${escapedCol} = ?`);
+          params.push(value);
+        }
+      }
+      query += ` WHERE ${clauses.join(' AND ')}`;
     }
 
     if (options.orderBy) {

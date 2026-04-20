@@ -12,6 +12,7 @@ import { Overview } from './pages/Overview';
 import { Settings } from './pages/Settings';
 import { Moderation } from './pages/Moderation';
 import { Levels } from './pages/Levels';
+import { Handlers } from './pages/Handlers';
 
 // Global styles
 const globalStyles = `
@@ -68,6 +69,7 @@ function App() {
           <Route path="/guild/:id/settings" element={<Settings />} />
           <Route path="/guild/:id/moderation" element={<Moderation />} />
           <Route path="/guild/:id/levels" element={<Levels />} />
+          <Route path="/handlers" element={<Handlers />} />
 
           {/* Placeholder routes for future pages */}
           <Route path="/guild/:id/welcome" element={<ComingSoon title="Welcome Settings" />} />

@@ -130,6 +130,14 @@ export interface EventHandler {
    * refused. Defaults to the per-handler quota wallclock (30s).
    */
   timeout?: string | number;
+  /**
+   * Override the runtime fan-out cap for this event name. The router
+   * only fires the first N matching handlers per emission, regardless
+   * of how many are registered. Default 10 (set via `RouterOptions`).
+   * When multiple handlers for the same event declare different values,
+   * the first declaration wins.
+   */
+  maxHandlers?: number;
 }
 
 /** Events configuration */

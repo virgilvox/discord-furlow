@@ -15,6 +15,7 @@ import type {
   DeleteMapAction,
 } from '@furlow/schema';
 import type { StateManager } from '../../state/manager.js';
+import { assertArrayWithinCap, ArrayTooLongError, MAX_ARRAY_LENGTH } from '@furlow/storage';
 
 /**
  * Get the state context for a given scope
@@ -113,10 +114,17 @@ const setHandler: ActionHandler<SetAction> = {
       value = config.value;
     }
 
-    // If we have a state manager, use it for persistent state
+    // If we have a state manager, use it for persistent state.
+    // Per-call TTL (from config.ttl) is passed through; it overrides any
+    // TTL declared on the variable definition. The 4th argument is only
+    // supplied when ttl is set so existing call-site tests are unaffected.
     if (stateManager) {
       const stateContext = getStateContext(config.scope, context);
-      await stateManager.set(key, value, stateContext);
+      if (config.ttl !== undefined) {
+        await stateManager.set(key, value, stateContext, { ttl: config.ttl });
+      } else {
+        await stateManager.set(key, value, stateContext);
+      }
     }
 
     // Also set in context.state for immediate access (scoped structure)
@@ -234,6 +242,12 @@ const listPushHandler: ActionHandler<ListPushAction> = {
 
     // Push value
     list.push(value);
+    try {
+      assertArrayWithinCap(list);
+    } catch (err) {
+      if (err instanceof ArrayTooLongError) return { success: false, error: err };
+      throw err;
+    }
 
     // Save
     if (stateManager) {
@@ -369,6 +383,13 @@ const setMapHandler: ActionHandler<SetMapAction> = {
       enumerable: true,
       configurable: true,
     });
+
+    if (Object.keys(map).length > MAX_ARRAY_LENGTH) {
+      return {
+        success: false,
+        error: new ArrayTooLongError(Object.keys(map).length),
+      };
+    }
 
     // Save
     if (stateManager) {

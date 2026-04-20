@@ -218,7 +218,7 @@ See [Events Reference](../reference/events.md) for all event types.
 ```yaml
 flows:
   send_log:
-    params:
+    parameters:
       - name: message
         type: string
       - name: level

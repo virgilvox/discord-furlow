@@ -200,13 +200,16 @@ Autocomplete is not dispatched as a FURLOW event. Declare autocomplete sources d
 
 ## FURLOW High-Level Events (from non-gateway sources)
 
-These are dispatched by the core runtime, not by the Discord adapter.
+These are dispatched by the core runtime or the CLI, not by the Discord adapter.
 
 | Event | Source | Description |
 |-------|--------|-------------|
 | `automod_triggered` | `@furlow/core/automod` | An automod rule matched. |
 | `timer_fire` | `@furlow/core/scheduler` | A timer scheduled with `create_timer` fired. |
-| _any user-defined name_ | `emit` action, cron triggers, pipe messages | Fired by user code or integrations. |
+| `scheduler_tick` | CLI `CronScheduler` | Fires every 60s. Builtins like `giveaways`, `polls`, and `reminders` subscribe to this. |
+| `voice_track_start` | `@furlow/discord/voice` via CLI | The voice manager started playing a queued track. Context: `guildId`, `track`. |
+| `voice_track_end` | `@furlow/discord/voice` via CLI | The voice manager finished playing a track. Context: `guildId`, `track`. |
+| _any user-defined name_ | `emit` action, pipe messages | Fired by user code or integrations. |
 
 ---
 

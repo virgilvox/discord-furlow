@@ -273,11 +273,11 @@ Event handlers for Discord events.
 
 ```yaml
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome, ${member.display_name}!"
+          content: "Welcome, ${member.displayName}!"
 
   - event: message_create
     when: "message.content | startsWith('!')"
@@ -304,7 +304,7 @@ Reusable action sequences.
 ```yaml
 flows:
   log_moderation:
-    params:
+    parameters:
       - name: action
         type: string
         required: true
@@ -451,7 +451,7 @@ embeds:
     timestamp: true
 
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
@@ -583,23 +583,20 @@ Scheduled tasks and cron jobs.
 
 ```yaml
 scheduler:
-  enabled: true
   timezone: UTC
-  tasks:
+  jobs:
     - name: daily_backup
       cron: "0 0 * * *"  # Every day at midnight
+      enabled: true
       actions:
         - call_flow:
             flow: backup_data
-
-    - name: hourly_stats
-      interval: 1h
-      actions:
-        - record_metric:
-            name: active_users
-            type: gauge
-            value: "${client.guilds.reduce((a, g) => a + g.memberCount, 0)}"
 ```
+
+The scheduler emits a `scheduler_tick` event every 60 seconds; builtins such as
+`giveaways`, `polls`, and `reminders` subscribe to it. Jobs defined in
+`scheduler.jobs` are registered with the cron runner and run at their scheduled
+time.
 
 ---
 

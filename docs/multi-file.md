@@ -115,7 +115,7 @@ my-bot/
 ├── events/
 │   ├── _index.yaml          # Imports all event files
 │   ├── member.yaml          # member_join, member_leave
-│   └── message.yaml         # message, message_delete
+│   └── message.yaml         # message_create, message_delete
 ├── flows/
 │   ├── _index.yaml          # Imports all flow files
 │   ├── moderation.yaml      # log_modaction, escalate_warning

@@ -375,6 +375,13 @@ export interface SetAction extends BaseAction {
   scope?: 'global' | 'guild' | 'channel' | 'user' | 'member';
   /** Store result in variable */
   as?: string;
+  /**
+   * Optional time-to-live for the stored value. When the TTL elapses the
+   * entry disappears from state reads. Accepts duration strings like
+   * "30s", "5m", "1h" or raw milliseconds. Overrides any TTL declared on
+   * the variable definition.
+   */
+  ttl?: string | number;
 }
 
 /** Increment action */

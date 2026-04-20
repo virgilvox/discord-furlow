@@ -4,6 +4,33 @@
 
 import { Pool, type PoolConfig } from 'pg';
 import type { StorageAdapter, StoredValue, QueryOptions, TableDefinition, TableColumn } from '../types.js';
+import { assertValueWithinCap } from '../limits.js';
+import {
+  escapeLikeLiteral,
+  isWhereClauseEntry,
+  validateWhereClauseEntry,
+  type WhereClauseEntry,
+} from '../where.js';
+
+function buildLikeClausePg(
+  col: string,
+  entry: WhereClauseEntry,
+  paramIndex: number,
+): { sql: string; params: string[] } {
+  validateWhereClauseEntry(entry);
+  switch (entry.op) {
+    case 'eq':
+      return { sql: `${col} = $${paramIndex}`, params: [entry.value] };
+    case 'like':
+      return { sql: `${col} LIKE $${paramIndex}`, params: [entry.value] };
+    case 'startswith':
+      return { sql: `${col} LIKE $${paramIndex}`, params: [escapeLikeLiteral(entry.value) + '%'] };
+    case 'endswith':
+      return { sql: `${col} LIKE $${paramIndex}`, params: ['%' + escapeLikeLiteral(entry.value)] };
+    case 'contains':
+      return { sql: `${col} LIKE $${paramIndex}`, params: ['%' + escapeLikeLiteral(entry.value) + '%'] };
+  }
+}
 
 export interface PostgresOptions extends PoolConfig {
   url?: string;
@@ -94,6 +121,7 @@ export class PostgresAdapter implements StorageAdapter {
   }
 
   async set(key: string, value: StoredValue): Promise<void> {
+    assertValueWithinCap(value.value);
     await this.init();
 
     await this.pool.query(
@@ -314,11 +342,20 @@ export class PostgresAdapter implements StorageAdapter {
     let paramIndex = 1;
 
     if (options.where && Object.keys(options.where).length > 0) {
-      const whereClauses = Object.keys(options.where).map(
-        (col) => `${escapeIdentifier(col)} = $${paramIndex++}`
-      );
-      query += ` WHERE ${whereClauses.join(' AND ')}`;
-      params.push(...Object.values(options.where));
+      const clauses: string[] = [];
+      for (const [col, value] of Object.entries(options.where)) {
+        const escapedCol = escapeIdentifier(col);
+        if (isWhereClauseEntry(value)) {
+          const { sql, params: bound } = buildLikeClausePg(escapedCol, value, paramIndex);
+          clauses.push(sql);
+          params.push(...bound);
+          paramIndex += bound.length;
+        } else {
+          clauses.push(`${escapedCol} = $${paramIndex++}`);
+          params.push(value);
+        }
+      }
+      query += ` WHERE ${clauses.join(' AND ')}`;
     }
 
     if (options.orderBy) {

@@ -62,4 +62,4 @@ Edit `furlow.yaml` to:
 - Add event handlers
 - Store persistent data
 
-See the [FURLOW documentation](../../docs/getting-started.md) for more details.
+See the [FURLOW documentation](../../docs/guides/quickstart.md) for more details.

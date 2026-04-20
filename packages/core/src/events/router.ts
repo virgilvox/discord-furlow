@@ -14,10 +14,21 @@ import {
   parseQuotaDuration,
   type QuotaLimits,
 } from '../flows/quota.js';
+import { getHandlerStats } from '../observability/index.js';
 
 export interface RouterOptions {
-  /** Maximum handlers per event */
+  /**
+   * Static cap on the number of handlers that can be registered for a single
+   * event name. Exceeding this at registration time throws. Default 100.
+   */
   maxHandlersPerEvent?: number;
+  /**
+   * Runtime cap: when a single event fires, only the first N matching
+   * handlers (after `when`-condition filtering) actually run. Default 10.
+   * Prevents fan-out amplification attacks where one message triggers
+   * dozens of API calls. Overriden per-event via `handler.maxHandlers`.
+   */
+  maxFiringPerEvent?: number;
   /** Default debounce time in ms */
   defaultDebounce?: number;
   /** Default throttle time in ms */
@@ -29,6 +40,7 @@ export interface RouterOptions {
 
 const DEFAULT_OPTIONS: Required<Omit<RouterOptions, 'quotaLimits'>> = {
   maxHandlersPerEvent: 100,
+  maxFiringPerEvent: 10,
   defaultDebounce: 0,
   defaultThrottle: 0,
 };
@@ -41,10 +53,26 @@ export class EventRouter {
   private quotaLimits: Partial<QuotaLimits>;
   private idCounter = 0;
 
+  private truncationWarned: Set<EventName> = new Set();
+
   constructor(options: RouterOptions = {}) {
     const { quotaLimits, ...rest } = options;
     this.options = { ...DEFAULT_OPTIONS, ...rest };
     this.quotaLimits = quotaLimits ?? {};
+  }
+
+  /**
+   * Log a one-time warning per event name when the runtime fan-out cap
+   * truncates the handler list. Repeats are silenced because a busy event
+   * will trip this on every emission.
+   */
+  private warnTruncated(event: EventName, observed: number, cap: number): void {
+    if (this.truncationWarned.has(event)) return;
+    this.truncationWarned.add(event);
+    console.warn(
+      `[event] "${event}" has ${observed} matching handlers; only the first ${cap} will fire per emission. ` +
+      'Set handler.maxHandlers or constructor option maxFiringPerEvent to change this.',
+    );
   }
 
   /**
@@ -123,7 +151,21 @@ export class EventRouter {
     const eventHandlers = this.handlers.get(event) ?? [];
     const activeHandlers = eventHandlers.filter((h) => h.active);
 
-    for (const registered of activeHandlers) {
+    // Fan-out cap: only fire the first N matching handlers per event.
+    // Per-event override takes precedence over the global default.
+    const firstOverride = activeHandlers.find(
+      (h) => typeof (h.handler as { maxHandlers?: number }).maxHandlers === 'number',
+    );
+    const cap = firstOverride
+      ? ((firstOverride.handler as { maxHandlers: number }).maxHandlers)
+      : this.options.maxFiringPerEvent;
+    const toRun = activeHandlers.slice(0, cap);
+
+    if (activeHandlers.length > cap) {
+      this.warnTruncated(event, activeHandlers.length, cap);
+    }
+
+    for (const registered of toRun) {
       const { handler } = registered;
 
       // Handle debounce
@@ -212,10 +254,15 @@ export class EventRouter {
     // Normalize actions from YAML shorthand to schema format
     const normalizedActions = normalizeActions(handler.actions);
 
+    // M8 observability: record run and error stats keyed on handler id.
+    const stats = getHandlerStats();
+    const startMs = Date.now();
+    let captured: Error | null = null;
     try {
       await executor.executeSequence(normalizedActions, context);
     } catch (err) {
       if (err instanceof QuotaExceededError) {
+        captured = err;
         handleError(err, 'event', 'warn', {
           event: handler.event,
           handlerId: registered.id,
@@ -224,9 +271,16 @@ export class EventRouter {
           observed: err.observed,
         });
       } else {
+        captured = err instanceof Error ? err : new Error(String(err));
         throw err;
       }
     } finally {
+      const durationMs = Date.now() - startMs;
+      if (captured) {
+        stats.recordError(registered.id, handler.event, captured, durationMs);
+      } else {
+        stats.recordRun(registered.id, handler.event, durationMs);
+      }
       if (ownsQuota) {
         quota.dispose();
         delete context.quota;

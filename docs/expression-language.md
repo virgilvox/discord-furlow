@@ -11,7 +11,7 @@ Use `${}` to embed expressions in strings:
 ```yaml
 content: "Hello, ${user.username}!"
 content: "You have ${points} points"
-content: "Welcome to ${guild.name}, member #${guild.member_count}"
+content: "Welcome to ${guild.name}, member #${guild.memberCount}"
 ```
 
 ### Pure Expressions
@@ -143,7 +143,7 @@ nickname: "${member?.nickname}"
 | `message.embeds` | number | Number of embeds |
 | `message.mentions` | string[] | Mentioned user IDs |
 | `message.mention_roles` | string[] | Mentioned role IDs |
-| `message.created_at` | Date | Send timestamp |
+| `message.createdAt` | Date | Send timestamp |
 | `message.edited_at` | Date | Edit timestamp (null if unedited) |
 | `message.pinned` | boolean | Whether message is pinned |
 | `message.url` | string | Message URL |
@@ -184,7 +184,7 @@ content: "Current time: ${now()}"
 #### `timestamp(date?, format?)`
 Converts a date to Unix timestamp or Discord timestamp format.
 ```yaml
-content: "Joined ${timestamp(member.joined_at, 'relative')}"
+content: "Joined ${timestamp(member.joinedAt, 'relative')}"
 content: "Unix: ${timestamp()}"
 ```
 
@@ -545,8 +545,8 @@ content: "${items|join(' | ')}"
 ```yaml
 content: |
   Welcome to **${guild.name}**, ${user.mention}!
-  You are member #${guild.member_count|format}.
-  Account created: ${timestamp(user.created_at, 'relative')}
+  You are member #${guild.memberCount|format}.
+  Account created: ${timestamp(user.createdAt, 'relative')}
 ```
 
 ### Level Up
@@ -560,7 +560,7 @@ content: |
 
 ### Conditional Greeting
 ```yaml
-content: "${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, ${member.display_name}!"
+content: "${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, ${member.displayName}!"
 ```
 
 ### Moderation Log

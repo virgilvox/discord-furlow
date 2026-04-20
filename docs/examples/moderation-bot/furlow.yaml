@@ -72,7 +72,7 @@ automod:
 # Flows
 flows:
   log_action:
-    params:
+    parameters:
       - name: action_type
         type: string
       - name: target
@@ -99,7 +99,7 @@ flows:
               timestamp: true
 
   add_warning:
-    params:
+    parameters:
       - name: user_id
         type: string
       - name: reason

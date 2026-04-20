@@ -149,57 +149,35 @@ Shows the server leaderboard.
 |--------|------|----------|-------------|
 | `page` | Integer | No | Page number |
 
-### `/levels rewards`
+### `/setxp` (Admin)
 
-Lists available level rewards.
-
-```
-/levels rewards
-```
-
-### `/levels set` (Admin)
-
-Sets a user's XP or level.
+Sets a user's XP to a specific value.
 
 ```
-/levels set user:@User level:10
-/levels set user:@User xp:5000
+/setxp user:@User xp:5000
 ```
 
 **Options:**
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
 | `user` | User | Yes | Target user |
-| `level` | Integer | No | Set level |
-| `xp` | Integer | No | Set XP |
+| `xp` | Integer | Yes | XP amount |
 
 **Permissions:** Administrator
 
-### `/levels reset` (Admin)
+### `/setlevel` (Admin)
 
-Resets a user's or everyone's progress.
+Sets a user's level and resets their XP to 0.
 
 ```
-/levels reset user:@User
-/levels reset all:true
+/setlevel user:@User level:10
 ```
 
 **Options:**
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `user` | User | No | User to reset |
-| `all` | Boolean | No | Reset everyone |
-
-**Permissions:** Administrator
-
-### `/levels multiplier` (Admin)
-
-Sets XP multipliers.
-
-```
-/levels multiplier role:@Booster value:1.5
-/levels multiplier channel:#vip-chat value:2.0
-```
+| `user` | User | Yes | Target user |
+| `level` | Integer | Yes | New level |
 
 **Permissions:** Administrator
 

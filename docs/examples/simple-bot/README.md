@@ -54,7 +54,7 @@ commands:
 
 ### Enable welcome messages
 
-Uncomment the `guild_member_add` event in `furlow.yaml`.
+Uncomment the `member_join` event in `furlow.yaml`.
 
 ### Add persistence
 

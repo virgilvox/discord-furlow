@@ -4,7 +4,7 @@ Welcome to the FURLOW documentation! FURLOW is a declarative Discord bot framewo
 
 ## What is FURLOW?
 
-FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) transforms how you build Discord bots. Instead of writing JavaScript or Python, you describe your bot's behavior in simple YAML files.
+FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers, and a nod to the ship scrap builder in Farscape) transforms how you build Discord bots. Instead of writing JavaScript or Python, you describe your bot's behavior in simple YAML files.
 
 ```yaml
 # A complete command in 5 lines

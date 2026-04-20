@@ -86,11 +86,7 @@
       "title": "Advanced",
       "icon": "fas fa-graduation-cap",
       "pages": [
-        { "id": "custom-actions", "title": "Custom Actions", "path": "advanced/custom-actions.md" },
-        { "id": "custom-expressions", "title": "Custom Expressions", "path": "advanced/custom-expressions.md" },
-        { "id": "performance", "title": "Performance", "path": "advanced/performance.md" },
-        { "id": "scaling", "title": "Scaling", "path": "advanced/scaling.md" },
-        { "id": "debugging", "title": "Debugging", "path": "advanced/debugging.md" }
+        { "id": "plugins", "title": "Plugins (custom actions, functions, transforms)", "path": "advanced/custom-actions.md" }
       ]
     },
     {

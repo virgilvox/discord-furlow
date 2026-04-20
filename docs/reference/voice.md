@@ -73,14 +73,7 @@ Leave the voice channel.
   guild: "${guild.id}"
 ```
 
-#### `voice_move`
-
-Move to a different voice channel.
-
-```yaml
-- action: voice_move
-  channel: "${newChannel.id}"
-```
+To move the bot to a different channel, call `voice_leave` followed by `voice_join` with the new channel id.
 
 ### Playback Actions
 
@@ -281,78 +274,29 @@ Set loop mode.
   mode: queue               # off, track, queue
 ```
 
-#### `queue_move`
-
-Move a track in the queue.
-
-```yaml
-- action: queue_move
-  from: 5
-  to: 1
-```
-
-### Voice State Actions
-
-#### `voice_get_state`
-
-Get the bot's voice state in a guild.
-
-```yaml
-- action: voice_get_state
-  guild: "${guild.id}"
-  as: voiceState
-```
-
-**State structure:**
-
-```javascript
-{
-  connected: true,
-  channel_id: "123456789",
-  playing: true,
-  paused: false,
-  volume: 50,
-  current: { /* track */ },
-  queue: { /* queue */ }
-}
-```
-
 ### Audio Filter Actions
 
-#### `voice_filter`
+#### `voice_set_filter`
 
-Apply audio filters.
-
-```yaml
-- action: voice_filter
-  filters:
-    - type: bassboost
-      gain: 10
-    - type: nightcore
-      rate: 1.25
-```
-
-**Available filters:**
-
-| Filter | Parameters | Description |
-|--------|------------|-------------|
-| `bassboost` | `gain: -20 to 20` | Boost bass frequencies |
-| `nightcore` | `rate: 0.5 to 2.0` | Speed up with pitch shift |
-| `vaporwave` | `rate: 0.5 to 1.0` | Slow down with pitch shift |
-| `treble` | `gain: -20 to 20` | Boost treble frequencies |
-| `karaoke` | `level: 0 to 1` | Remove vocals |
-| `8d` | `depth: 0 to 1` | 8D audio effect |
-| `vibrato` | `frequency, depth` | Vibrato effect |
-| `tremolo` | `frequency, depth` | Tremolo effect |
-| `rotation` | `frequency` | Rotating audio effect |
-| `speed` | `rate: 0.5 to 2.0` | Change speed |
-
-**Reset filters:**
+Enable or disable a named audio filter on the current playback.
 
 ```yaml
-- action: voice_filter
-  filters: []               # Clear all filters
+- action: voice_set_filter
+  filter: bassboost
+  enabled: true             # default: true
 ```
+
+Disable a filter:
+
+```yaml
+- action: voice_set_filter
+  filter: nightcore
+  enabled: false
+```
+
+**Available filters:** `bassboost`, `nightcore`, `vaporwave`, `8d`, `treble`, `normalizer`, `karaoke`, `tremolo`, `vibrato`, `reverse` (10 total).
+
+Filters are toggled by name. Parameter knobs per filter are not exposed through YAML. To swap filter graphs, disable the active filter and enable a different one.
 
 ## Complete Example: Music Bot
 
@@ -406,17 +350,19 @@ commands:
             content: "No results found for: ${options.query}"
           - action: abort
 
-      # Join voice channel if not connected
-      - action: voice_get_state
-        guild: "${guild.id}"
-        as: voiceState
-
+      # Require the user to be in a voice channel
       - action: flow_if
-        condition: "!voiceState.connected"
+        condition: "!member.voice.channelId"
         then:
-          - voice_join:
-              channel: "${member.voice.channel_id}"
-              self_deaf: true
+          - action: reply
+            content: "Join a voice channel first."
+            ephemeral: true
+          - action: abort
+
+      # Join the user's channel (idempotent if already connected)
+      - voice_join:
+          channel: "${member.voice.channelId}"
+          self_deaf: true
 
       # Add to queue
       - action: queue_add
@@ -442,22 +388,19 @@ commands:
   - name: skip
     description: Skip the current song
     actions:
-      - action: voice_get_state
+      - action: queue_get
         guild: "${guild.id}"
-        as: voiceState
-
+        as: state
       - action: flow_if
-        condition: "!voiceState.playing"
+        condition: "!state.currentTrack"
         then:
           - action: reply
             content: "Nothing is playing!"
             ephemeral: true
           - action: abort
-
       - action: voice_skip
-
       - action: reply
-        content: "Skipped! Now playing: **${voiceState.queue.tracks[1]?.title || 'Nothing'}**"
+        content: "Skipped **${state.currentTrack.title}**."
 
   - name: queue
     description: Show the queue
@@ -563,46 +506,30 @@ commands:
   - name: nowplaying
     description: Show current track
     actions:
-      - action: voice_get_state
+      - action: queue_get
         guild: "${guild.id}"
-        as: voiceState
-
+        as: state
       - action: flow_if
-        condition: "!voiceState.current"
+        condition: "!state.currentTrack"
         then:
           - action: reply
-            content: "Nothing is playing!"
+            content: "Nothing is playing."
             ephemeral: true
           - action: abort
-
-      - action: set
-        key: track
-        value: "${voiceState.current}"
-
-      - action: set
-        key: progress
-        value: "${voiceState.position / track.duration}"
-
-      - action: set
-        key: progressBar
-        value: "${'▓'.repeat(Math.floor(progress * 20))}${'░'.repeat(20 - Math.floor(progress * 20))}"
-
       - action: reply
-        embed:
-          color: "#5865F2"
-          title: "Now Playing"
-          description: "[${track.title}](${track.url})"
-          thumbnail:
-            url: "${track.thumbnail}"
-          fields:
-            - name: Progress
-              value: "`${progressBar}` ${duration(voiceState.position)} / ${duration(track.duration)}"
-            - name: Requested by
-              value: "<@${track.requester}>"
-              inline: true
-            - name: Volume
-              value: "${voiceState.volume}%"
-              inline: true
+        embeds:
+          - color: "#5865F2"
+            title: "Now Playing"
+            description: "[${state.currentTrack.title}](${state.currentTrack.url})"
+            thumbnail:
+              url: "${state.currentTrack.thumbnail}"
+            fields:
+              - name: Duration
+                value: "${duration(state.currentTrack.duration)}"
+                inline: true
+              - name: Requested by
+                value: "<@${state.currentTrack.requester}>"
+                inline: true
 
   - name: seek
     description: Seek to a position
@@ -619,11 +546,11 @@ commands:
         content: "Seeked to **${options.position}**"
 
   - name: filter
-    description: Apply audio filter
+    description: Toggle an audio filter
     options:
       - name: filter
         type: string
-        description: Filter to apply
+        description: Filter name
         required: true
         choices:
           - name: Bassboost
@@ -634,38 +561,14 @@ commands:
             value: "vaporwave"
           - name: 8D
             value: "8d"
-          - name: Clear
-            value: "clear"
+          - name: Normalizer
+            value: "normalizer"
     actions:
-      - action: flow_switch
-        value: "${options.filter}"
-        cases:
-          bassboost:
-            - action: voice_filter
-              filters:
-                - type: bassboost
-                  gain: 10
-          nightcore:
-            - action: voice_filter
-              filters:
-                - type: nightcore
-                  rate: 1.25
-          vaporwave:
-            - action: voice_filter
-              filters:
-                - type: vaporwave
-                  rate: 0.8
-          8d:
-            - action: voice_filter
-              filters:
-                - type: 8d
-                  depth: 0.5
-          clear:
-            - action: voice_filter
-              filters: []
-
+      - action: voice_set_filter
+        filter: "${options.filter}"
+        enabled: true
       - action: reply
-        content: "Filter **${options.filter}** ${options.filter === 'clear' ? 'cleared' : 'applied'}!"
+        content: "Filter **${options.filter}** enabled."
 
   - name: disconnect
     description: Disconnect from voice
@@ -678,61 +581,46 @@ commands:
 
 events:
   - event: voice_state_update
-    when: "member.id == client.id && !new_state.channel_id"
+    when: "member.id == client.user.id && !new_voice_state.channelId"
     actions:
-      # Bot was disconnected - clean up queue
-      - voice_stop:
+      # Bot was disconnected - clean up playback
+      - voice_stop: {}
 ```
 
 ## Voice Events
 
-Listen to voice-related events:
+Listen to voice-related events. FURLOW emits the following voice events:
 
 ```yaml
 events:
-  # Track starts playing
-  - event: track_start
+  # A track started playing (emitted by the voice manager)
+  - event: voice_track_start
     actions:
-      - action: send_message
-        channel: "${musicChannel}"
-        embed:
-          title: "Now Playing"
-          description: "${track.title}"
+      - action: log
+        message: "Now playing: ${track.title}"
 
-  # Track ends
-  - event: track_end
+  # A track finished (emitted by the voice manager)
+  - event: voice_track_end
     actions:
       - action: log
         message: "Track ended: ${track.title}"
 
-  # Queue ends
-  - event: queue_end
-    actions:
-      - action: send_message
-        channel: "${musicChannel}"
-        content: "Queue finished!"
-
-  # Voice connection error
-  - event: voice_error
-    actions:
-      - action: log
-        level: error
-        message: "Voice error: ${error.message}"
-
-  # User joins voice
+  # A user joined any voice channel (derived from voice_state_update)
   - event: voice_join
-    condition: "!member.user.bot"
+    when: "!member.user.bot"
     actions:
       - action: log
-        message: "${member.display_name} joined ${channel.name}"
+        message: "${member.displayName} joined voice"
 
-  # User leaves voice
+  # A user left voice (derived from voice_state_update)
   - event: voice_leave
-    condition: "!member.user.bot"
+    when: "!member.user.bot"
     actions:
       - action: log
-        message: "${member.display_name} left voice"
+        message: "${member.displayName} left voice"
 ```
+
+The full voice event set is `voice_state_update`, `voice_join`, `voice_leave`, `voice_move`, `voice_stream_start`, `voice_stream_stop`, `voice_track_start`, `voice_track_end`. See the [events reference](events.md) for context fields.
 
 ## Best Practices
 

@@ -120,12 +120,15 @@ export class StateManager {
   }
 
   /**
-   * Set a variable value
+   * Set a variable value. The optional third-argument `options.ttl`
+   * overrides any TTL declared on the variable definition. Values pass
+   * through `parseDuration`; numbers are treated as milliseconds.
    */
   async set(
     name: string,
     value: unknown,
-    context: { guildId?: string; channelId?: string; userId?: string }
+    context: { guildId?: string; channelId?: string; userId?: string },
+    options: { ttl?: string | number } = {}
   ): Promise<void> {
     const def = this.variables.get(name);
     const scope = def?.scope ?? 'guild';
@@ -150,10 +153,15 @@ export class StateManager {
       updatedAt: now,
     };
 
-    // Calculate TTL if defined
-    if (def?.ttl) {
-      const ttlMs = typeof def.ttl === 'number' ? def.ttl : parseDuration(def.ttl);
-      stored.expiresAt = now + ttlMs;
+    // Per-call TTL wins; fall back to the variable definition's TTL.
+    const ttlSource = options.ttl ?? def?.ttl;
+    let effectiveTtlMs: number | undefined;
+    if (ttlSource !== undefined && ttlSource !== null) {
+      const ttlMs = typeof ttlSource === 'number' ? ttlSource : parseDuration(ttlSource);
+      if (ttlMs > 0) {
+        stored.expiresAt = now + ttlMs;
+        effectiveTtlMs = ttlMs;
+      }
     }
 
     // Save to storage if persistent
@@ -161,8 +169,45 @@ export class StateManager {
       await this.storage.set(key, stored);
     }
 
-    // Update cache
-    this.updateCache(key, value);
+    // Update cache. When a storage-level TTL applies, pass the same TTL to
+    // the in-memory cache so reads do not see stale values after storage
+    // expiration.
+    this.updateCache(key, value, effectiveTtlMs);
+  }
+
+  /**
+   * Raw key/value set bypassing variable-definition lookup. Used by
+   * infrastructure that manages its own key namespace (cooldowns, M5). The
+   * `ttlMs` is required; pass 0 for no expiration.
+   */
+  async setRaw(key: string, value: unknown, ttlMs: number = 0): Promise<void> {
+    const now = Date.now();
+    const stored: StoredValue = {
+      value,
+      type: typeof value,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (ttlMs > 0) stored.expiresAt = now + ttlMs;
+    await this.storage.set(key, stored);
+    this.updateCache(key, value, ttlMs > 0 ? ttlMs : undefined);
+  }
+
+  /**
+   * Raw key/value get bypassing variable-definition lookup. Returns the
+   * stored `value` payload (not the `StoredValue` envelope), or `null` when
+   * the key does not exist or has expired.
+   */
+  async getRaw<T = unknown>(key: string): Promise<T | null> {
+    const cached = this.cache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+
+    const stored = await this.storage.get(key);
+    if (!stored) return null;
+    if (stored.expiresAt && stored.expiresAt < Date.now()) return null;
+
+    this.updateCache(key, stored.value);
+    return stored.value as T;
   }
 
   /**

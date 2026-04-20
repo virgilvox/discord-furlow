@@ -9,6 +9,9 @@ export * from './actions/index.js';
 export * from './events/index.js';
 export * from './flows/index.js';
 export * from './state/index.js';
+export * from './plugins/index.js';
+export * from './cooldowns/index.js';
+export * from './observability/index.js';
 
 // Re-export types from schema
 export type {

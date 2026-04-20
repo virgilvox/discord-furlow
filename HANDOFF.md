@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is a declarative Discord bot framework built as a TypeScript monorepo with pnpm workspaces and Turborepo. Bot behavior is described in YAML. The runtime (parser, expression evaluator, action executor, flow engine, event router, state manager, automod, scheduler, canvas, pipes) is fully implemented.
+FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers, and a nod to the ship scrap builder in Farscape) is a declarative Discord bot framework built as a TypeScript monorepo with pnpm workspaces and Turborepo. Bot behavior is described in YAML. The runtime (parser, expression evaluator, action executor, flow engine, event router, state manager, automod, scheduler, canvas, pipes) is fully implemented.
 
 ## Current State
 
@@ -16,17 +16,18 @@ the code. Event names declared by every builtin are guarded by a test.
 
 | Package | Version | Tests | Notes |
 |---------|---------|-------|-------|
-| `@furlow/schema` | 1.0.5 | none | Type definitions + JSON schema |
-| `@furlow/storage` | 1.0.4 | 226 (50 skipped on Docker) | Memory, SQLite, PostgreSQL |
-| `@furlow/core` | 1.0.12 | 1,342 | Parser, evaluator, flow engine, state, automod, scheduler, canvas, depth guard surfaces failures |
-| `@furlow/discord` | 1.0.7 | 207 | Client, voice (with track lifecycle events), video, interactions, declarative event router |
+| `@furlow/schema` | 1.0.8 | none | Type definitions + JSON schema |
+| `@furlow/storage` | 1.0.5 | 258 (50 skipped on Docker) | Memory, SQLite, PostgreSQL; size caps (M2), LIKE queries (M7) |
+| `@furlow/core` | 1.0.15 | 1,418 | Parser, evaluator, flow engine, state + TTL (M4), automod, scheduler + cron event handlers (M6), canvas, per-handler quotas (M1), fan-out cap (M3), cooldowns (M5), observability (M8), plugin loader |
+| `@furlow/discord` | 1.0.8 | 207 | Client, voice (with track lifecycle events), video, interactions, declarative event router |
 | `@furlow/pipes` | 1.0.5 | 273 | HTTP, WebSocket, MQTT, TCP/UDP, Webhook, Database (with SQL-injection test suite), File |
-| `@furlow/testing` | 1.0.6 | 301 | MockClient, ActionTracker, E2E runtime with 85 action stubs, complex-bot integration |
-| `@furlow/builtins` | 1.0.8 | 449 | 14 modules; event-name guard test catches the kind of bug that shipped in 1.0.6 |
-| `@furlow/cli` | 1.0.15 | 4 | Wires cron scheduler, forwards voice track events, smoke tests for `validate` and `export` |
-| `@furlow/dashboard` | 1.0.3 | none | Express + React (private app, not published) |
+| `@furlow/testing` | 1.0.7 | 309 | MockClient, ActionTracker, E2E runtime with 85 action stubs, complex-bot integration, per-builtin behavioral tests |
+| `@furlow/builtins` | 1.0.9 | 449 | 14 modules; event-name guard test catches the kind of bug that shipped in 1.0.6 |
+| `@furlow/cli` | 1.0.18 | 5 | Wires cron scheduler, forwards voice track events, FlowQuota on slash-command dispatch, plugin loading, cooldown middleware |
+| `@furlow/dashboard` | 1.0.6 | 9 | Express + React (private app); real `/metrics` + `/api/handlers` sourced from core observability |
+| `@furlow/mcp` | 1.0.0 | 8 | MCP server: `validate_spec`, `list_actions`, `list_events`, `list_builtins`, `scaffold_bot` |
 
-**Total Tests: 2,802 passing (50 storage tests skipped, gated on testcontainers).**
+**Total Tests: 2,936 passing (50 storage tests skipped, gated on testcontainers).**
 
 ### Verification commands
 
@@ -186,7 +187,6 @@ furlow/
 │   ├── guides/                    # Installation, quickstart, configuration
 │   ├── builtins/                  # Per-builtin docs
 │   ├── packages/pipes/            # Per-pipe docs
-│   ├── advanced/                  # Performance, scaling, debugging, custom actions, custom expressions
 │   └── manifest.json              # Drives the docs site nav; keep in sync with /docs structure
 ├── RUNTIME_SPEC.md                # Language-agnostic runtime spec
 └── HANDOFF.md                     # This file
@@ -265,7 +265,7 @@ tracked as separate follow-ups below.
 
 ### Test-quality weaknesses the audit documented
 
-The suite is 2,764 passing but several categories of test do not prove
+The suite is 2,829 passing but several categories of test do not prove
 the behavior they claim. This was documented so future passes can harden
 them. The full list (severity, file:line, concrete quote) lives in this
 commit's message and the PR history.

@@ -34,7 +34,7 @@ This document defines the requirements for a compliant FURLOW runtime implementa
 
 ### 1.1 What is FURLOW?
 
-FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers) is a declarative Discord bot framework. Bot behavior is defined in YAML specifications, not code. The runtime interprets these specifications to create fully functional Discord bots.
+FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers, and a nod to the ship scrap builder in Farscape) is a declarative Discord bot framework. Bot behavior is defined in YAML specifications, not code. The runtime interprets these specifications to create fully functional Discord bots.
 
 ### 1.2 What is a FURLOW Runtime?
 
@@ -125,11 +125,11 @@ commands:
 
 # OPTIONAL: Event handlers
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome, ${member.display_name}!"
+          content: "Welcome, ${member.displayName}!"
 
 # OPTIONAL: Button handlers
 buttons:
@@ -362,7 +362,7 @@ During action execution, expressions have access to:
 | `config` | Spec configuration |
 | `result` | Result of previous action |
 
-### 3.3 Required Functions (69)
+### 3.3 Required Functions (71)
 
 Runtimes MUST implement all functions for their compliance level. All runtimes MUST implement at least the Minimal level functions.
 
@@ -472,8 +472,6 @@ Runtimes MUST implement all functions for their compliance level. All runtimes M
 |----------|-----------|-------------|
 | `mention` | `mention(type, id) → string` | Create mention (user/role/channel/emoji) |
 | `pluralize` | `pluralize(count, singular, plural?) → string` | Pluralize text |
-| `hash` | `hash(s) → string` | Hash string to hex |
-| `snowflakeToDate` | `snowflakeToDate(id) → Date` | Extract timestamp from Discord snowflake |
 
 #### 3.3.9 Utility Functions (4)
 
@@ -482,29 +480,29 @@ Runtimes MUST implement all functions for their compliance level. All runtimes M
 | `default` | `default(value, defaultValue) → any` | Return default if falsy |
 | `coalesce` | `coalesce(...values) → any` | Return first non-null value |
 | `uuid` | `uuid() → string` | Generate UUID v4 |
-| `env` | `env(key) → string` | Get environment variable |
+| `hash` | `hash(s) → string` | Hash string to hex |
 
-### 3.4 Required Transforms (48)
+### 3.4 Required Transforms (50)
 
 Transforms are applied using pipe syntax: `value | transform(args)`.
 
-#### String Transforms
-`lower`, `upper`, `capitalize`, `titleCase`, `trim`, `truncate`, `split`, `replace`, `padStart`, `padEnd`, `includes`, `startsWith`, `endsWith`, `contains`
+#### String Transforms (13)
+`lower`, `upper`, `capitalize`, `trim`, `truncate`, `split`, `replace`, `padStart`, `padEnd`, `includes`, `startsWith`, `endsWith`, `contains`
 
-#### Array Transforms
-`join`, `first`, `last`, `nth`, `slice`, `reverse`, `sort`, `unique`, `flatten`, `filter`, `map`, `pluck`, `pick`, `shuffle`, `length`, `size`
+#### Array Transforms (14)
+`join`, `first`, `last`, `nth`, `slice`, `reverse`, `sort`, `unique`, `flatten`, `filter`, `map`, `pluck`, `pick`, `shuffle`
 
-#### Number Transforms
+#### Number Transforms (6)
 `round`, `floor`, `ceil`, `abs`, `format`, `ordinal`
 
-#### Object Transforms
+#### Object Transforms (4)
 `keys`, `values`, `entries`, `get`
 
-#### Type Transforms
-`string`, `number`, `int`, `float`, `boolean`, `json`, `parseJson`
+#### Conversion Transforms (6)
+`string`, `number`, `int`, `float`, `boolean`, `json`
 
-#### Utility Transforms
-`default`, `timestamp`, `duration`, `mention`, `pluralize`
+#### Utility Transforms (7)
+`default`, `length`, `size`, `timestamp`, `duration`, `mention`, `pluralize`
 
 ### 3.5 Expression Caching
 
@@ -2365,7 +2363,6 @@ Render inline canvas layers without a pre-defined generator.
 | `mention(t, id)` | Create mention | `mention("user", "123")` → `"<@123>"` |
 | `pluralize(n, s, p?)` | Pluralize | `pluralize(5, "item", "items")` → `"5 items"` |
 | `hash(s)` | Hash string | `hash("test")` → `"9f86d08..."` |
-| `snowflakeToDate(id)` | ID to date | `snowflakeToDate("123...")` → `Date` |
 
 ### B.9 Utility Functions
 
@@ -2389,7 +2386,6 @@ Transforms use pipe syntax: `value | transform(args)`
 | `lower` | Lowercase | `"HELLO" \| lower` → `"hello"` |
 | `upper` | Uppercase | `"hello" \| upper` → `"HELLO"` |
 | `capitalize` | Capitalize | `"hello" \| capitalize` → `"Hello"` |
-| `titleCase` | Title case | `"hello world" \| titleCase` |
 | `trim` | Trim whitespace | `"  hi  " \| trim` → `"hi"` |
 | `truncate` | Truncate | `"hello" \| truncate(3)` → `"hel..."` |
 | `split` | Split | `"a,b" \| split(",")` → `["a","b"]` |

@@ -63,7 +63,7 @@ Remove the `canvas` section and the `canvas_render` action.
 
 ```yaml
 events:
-  - event: guild_member_add
+  - event: member_join
     actions:
       - assign_role:
           role: "${env.AUTO_ROLE_1}"

@@ -142,8 +142,8 @@ events:
 
   # Welcome new members (if you want this feature)
   # Uncomment the following:
-  # - event: guild_member_add
+  # - event: member_join
   #   actions:
   #     - send_message:
   #         channel: "${env.WELCOME_CHANNEL}"
-  #         content: "Welcome to the server, ${member.display_name}!"
+  #         content: "Welcome to the server, ${member.displayName}!"

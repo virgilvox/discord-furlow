@@ -28,6 +28,7 @@ interface StartOptions {
   validate: boolean;
   guild?: string;
   verbose?: boolean;
+  plugin?: string[];
 }
 
 let verboseMode = false;
@@ -169,6 +170,28 @@ export async function startCommand(path: string | undefined, options: StartOptio
       voiceManager,
     });
 
+    // Load user plugins (custom actions, expression functions, transforms).
+    // Plugins from spec.plugins run first, then any from --plugin CLI flags.
+    const pluginSources: string[] = [
+      ...(spec.plugins ?? []),
+      ...(options.plugin ?? []),
+    ];
+    if (pluginSources.length > 0) {
+      const pluginSpinner = ora(`Loading ${pluginSources.length} plugin(s)...`).start();
+      try {
+        const { loadPlugins } = await import('@furlow/core/plugins');
+        const loaded = await loadPlugins(pluginSources, actionRegistry, evaluator as never, {
+          baseDir: specPath,
+          log: verboseMode ? log : undefined,
+        });
+        pluginSpinner.succeed(`Loaded ${loaded.length} plugin(s): ${loaded.map((p) => p.name).join(', ')}`);
+      } catch (err) {
+        pluginSpinner.fail('Plugin loading failed');
+        console.error(chalk.red(`  ${err instanceof Error ? err.message : String(err)}`));
+        process.exit(1);
+      }
+    }
+
     const actionExecutor = createActionExecutor(actionRegistry, evaluator);
 
     const coreEventRouter = createEventRouter();
@@ -232,6 +255,17 @@ export async function startCommand(path: string | undefined, options: StartOptio
     // polls, reminders) that poll state tables via `event: 'scheduler_tick'`.
     const scheduler = createCronScheduler();
     if (spec.scheduler) scheduler.configure(spec.scheduler);
+
+    // M6: register event handlers that declare `cron:` or `interval:` as
+    // synthetic scheduler jobs so they fire on schedule. The cron scheduler
+    // already handles `when:` filtering and normalization of shorthand
+    // actions; we only forward the compiled spec.
+    const { collectCronHandlers, synthesizeCronJobs } = await import('@furlow/core/scheduler');
+    const cronEventHandlers = collectCronHandlers(spec.events);
+    if (cronEventHandlers.length > 0) {
+      for (const job of synthesizeCronJobs(cronEventHandlers)) scheduler.register(job);
+      if (verboseMode) log('scheduler', `registered ${cronEventHandlers.length} cron event handler(s)`);
+    }
 
     const discordEventRouter = new DiscordEventRouter({
       client: discordClient,
@@ -369,12 +403,41 @@ interface CommandDispatcherDeps {
  */
 function createCommandDispatcher(deps: CommandDispatcherDeps) {
   return async function dispatch(
-    cmd: { name: string; options?: Array<{ name: string; type: string }>; actions?: unknown[] },
+    cmd: {
+      name: string;
+      options?: Array<{ name: string; type: string }>;
+      actions?: unknown[];
+      cooldown?: { per: 'user' | 'channel' | 'guild' | 'global'; duration: string | number; message?: string };
+    },
     interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     log('command', `Executing command: /${cmd.name}`);
 
     try {
+      // M5: check the cooldown before doing any work. If blocked, reply with
+      // the cooldown message (or a default) and skip the action sequence.
+      if (cmd.cooldown) {
+        const { checkAndConsumeCooldown } = await import('@furlow/core/cooldowns');
+        const result = await checkAndConsumeCooldown(
+          deps.stateManager as never,
+          `cmd:${cmd.name}`,
+          cmd.cooldown,
+          {
+            userId: interaction.user?.id,
+            channelId: interaction.channelId ?? undefined,
+            guildId: interaction.guildId ?? undefined,
+          },
+        );
+        if (!result.allowed) {
+          const seconds = Math.ceil((result.remainingMs ?? 0) / 1000);
+          const defaultMsg = `You're on cooldown. Try again in ${seconds}s.`;
+          await interaction
+            .reply({ content: result.message ?? defaultMsg, ephemeral: true })
+            .catch(() => {});
+          return;
+        }
+      }
+
       const { buildBaseContext, withInteraction } = await import('@furlow/discord/events');
       const context = withInteraction(
         buildBaseContext({

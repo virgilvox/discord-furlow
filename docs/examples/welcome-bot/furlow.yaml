@@ -131,7 +131,7 @@ embeds:
 # Events
 events:
   # Welcome new members
-  - event: guild_member_add
+  - event: member_join
     actions:
       # Generate welcome card
       - canvas_render:
@@ -174,7 +174,7 @@ events:
                 url: "${guild.icon}"
 
   # Goodbye messages
-  - event: guild_member_remove
+  - event: member_leave
     when: "env.GOODBYE_CHANNEL"
     actions:
       - send_message:

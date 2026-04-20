@@ -146,21 +146,30 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Metrics endpoint (for Prometheus)
+// Metrics endpoint (Prometheus-scrape format). Forwards real per-handler
+// counters from `@furlow/core/observability` if the dashboard is running
+// in the same process as the bot (typical self-host); otherwise emits just
+// the dashboard-local counters.
 app.get('/metrics', async (req, res) => {
-  // In production, use prom-client to generate metrics
-  const metrics = [
-    '# HELP furlow_dashboard_requests_total Total HTTP requests',
-    '# TYPE furlow_dashboard_requests_total counter',
-    'furlow_dashboard_requests_total 0',
-    '',
-    '# HELP furlow_dashboard_connected_clients Number of connected WebSocket clients',
-    '# TYPE furlow_dashboard_connected_clients gauge',
-    'furlow_dashboard_connected_clients 0',
-  ].join('\n');
-
+  let body = '';
+  try {
+    const { getHandlerStats, renderPrometheus } = await import('@furlow/core/observability');
+    body += renderPrometheus(getHandlerStats());
+  } catch {
+    // core not loaded (e.g. dashboard running standalone); fall through
+  }
   res.set('Content-Type', 'text/plain');
-  res.send(metrics);
+  res.send(body);
+});
+
+// Handler stats as JSON for the dashboard UI (M8).
+app.get('/api/handlers', async (req, res) => {
+  try {
+    const { getHandlerStats } = await import('@furlow/core/observability');
+    res.json({ handlers: getHandlerStats().snapshot() });
+  } catch {
+    res.json({ handlers: [] });
+  }
 });
 
 // Initialize WebSocket server with session middleware so the upgrade

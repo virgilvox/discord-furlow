@@ -5,6 +5,176 @@ All notable changes to FURLOW will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2026-04-20 parity plan M2-M8 plus @furlow/mcp
+
+Published as `@furlow/core@1.0.15`, `@furlow/schema@1.0.8`,
+`@furlow/storage@1.0.5`, `@furlow/cli@1.0.18`, `@furlow/dashboard@1.0.6`,
+`@furlow/mcp@1.0.0`.
+
+Seven milestones land together because they share test fixtures and none
+of them make sense in isolation: the cooldown system needs the state TTL,
+the scheduler needs the fan-out cap, the dashboard page needs the stats
+it would otherwise render zeros for.
+
+### Added (M2: size caps)
+
+- `@furlow/storage` `limits.ts` with `MAX_STATE_VALUE_BYTES = 1_000_000`,
+  `MAX_ARRAY_LENGTH = 10_000`, `MAX_LOG_MESSAGE_BYTES = 25_000`, plus
+  `ValueTooLargeError` / `ArrayTooLongError` and the helpers
+  `measureBytes`, `assertValueWithinCap`, `assertArrayWithinCap`.
+- All three adapters (memory, sqlite, postgres) reject oversize values
+  on `set()` before touching the store.
+- `list_push`, `set_map`, and `batch.items` now refuse to grow past
+  10,000 entries and surface the real error via the action result.
+- The `log` action truncates messages past 25 KB to prevent a spec from
+  drowning operator logs.
+
+### Added (M3: trigger concurrency cap)
+
+- `EventRouter` now defaults to firing only the first 10 matching
+  handlers per event emission (`maxFiringPerEvent`). Registration cap
+  (`maxHandlersPerEvent`, 100) unchanged.
+- Per-event override via `handler.maxHandlers` for the rare case a spec
+  legitimately needs more.
+- Truncation is warned exactly once per event name so a busy server
+  does not spam stderr.
+
+### Added (M4: state TTL)
+
+- `StateManager.set` gains an optional 4th argument
+  `{ ttl?: string | number }`. Storage TTL and in-memory cache TTL are
+  now kept in sync so reads do not return stale values after expiration.
+- New `setRaw` / `getRaw` escape hatches on `StateManager` for
+  infrastructure that manages its own key namespace (used by the
+  cooldown system).
+- `SetAction.ttl?: string | number` in `@furlow/schema`. Per-call TTL
+  overrides any TTL declared on the variable definition.
+
+### Added (M5: declarative cooldowns)
+
+- New `@furlow/core/cooldowns` module: `parseCooldownDuration`,
+  `buildCooldownKey`, `checkAndConsumeCooldown`, plus `CooldownScope`,
+  `CooldownDefinition`, `CooldownContext`, `CooldownCheckResult` types.
+- CLI command dispatcher honours `cmd.cooldown`. Blocked invocations
+  reply ephemerally with the spec's `message` or a default "try again
+  in Ns" string.
+- Cooldown keys are stored on the state layer with automatic TTL
+  expiration (leans on M4).
+
+### Added (M6: cron triggers on event handlers)
+
+- `EventHandler.cron?: string` and `EventHandler.interval?: string`
+  fields. Handlers declaring either are synthesized into `CronJob`
+  entries at boot and fire on the scheduler's 60-second cadence.
+- `@furlow/core/scheduler/event-cron.ts`: `intervalToMinutes`,
+  `minutesToCron`, `collectCronHandlers`, `synthesizeCronJobs`. Minute
+  granularity; intervals below 60 s snap up to 1 minute.
+- CLI `start` command picks these up automatically during spec load.
+
+### Added (M7: LIKE / pattern queries)
+
+- `@furlow/storage/where.ts`: `WhereOp` type (`eq`, `like`,
+  `startswith`, `endswith`, `contains`), `WhereClauseEntry`,
+  `MAX_WHERE_PATTERN_LENGTH` (256), `escapeLikeLiteral`,
+  `matchWhereValue`, `validateWhereClauseEntry`,
+  `isWhereClauseEntry`, `InvalidWhereClauseError`.
+- Memory, SQLite, and Postgres adapters honour operator entries in
+  `db_query.where`. Plain values still mean equality; passing an
+  operator entry (e.g. `{ op: 'startswith', value: 'admin_' }`) emits
+  a safe `LIKE ? ESCAPE '\\'` with user-supplied metacharacters
+  escaped.
+
+### Added (M8: observability)
+
+- `@furlow/core/observability`: `HandlerStats` store, `getHandlerStats`
+  accessor, `renderPrometheus` exposition helper.
+- `EventRouter.executeHandler` records run count, error count, last
+  run timestamp, last error message (truncated to 500 chars), and
+  total duration per handler id.
+- Dashboard `/metrics` endpoint now returns real Prometheus counters
+  sourced from `HandlerStats` when the dashboard runs in-process with
+  the bot.
+- Dashboard `/api/handlers` JSON endpoint returns the snapshot for UI
+  rendering.
+
+### Added (@furlow/mcp)
+
+- New published package: `@furlow/mcp`. Runs as an MCP stdio server
+  (`furlow-mcp` binary, or `npx -y @furlow/mcp`) so LLM clients can
+  validate specs and enumerate canonical actions / events / builtins
+  without hallucinating.
+- Five tools: `validate_spec`, `list_actions`, `list_events`,
+  `list_builtins`, `scaffold_bot`.
+- Exports `FURLOW_ACTIONS`, `FURLOW_EVENTS`, `FURLOW_BUILTINS`,
+  `validateSpec`, `scaffoldBot`, `createServer` for programmatic use.
+
+### Changed
+
+- `@furlow/core` promotes `@furlow/storage` from `peerDependencies` to
+  `dependencies`. Core now has a hard dependency on the limits and
+  where-clause helpers, so the optional-peer pattern no longer fits.
+- `@furlow/schema` `EventHandler` gains `maxHandlers`, `cron`,
+  `interval` fields (all optional). `SetAction` gains `ttl`.
+
+### Tests
+
+- +14 storage tests (limits), +18 storage tests (where-clause
+  operators), +7 core tests (fan-out cap), +6 core tests (state TTL),
+  +13 core tests (event-cron helpers), +13 core tests (cooldowns),
+  +8 core tests (observability), +8 MCP tests. Existing tests
+  unchanged.
+- Two call sites in `state-handlers.test.ts` updated to reflect the
+  new optional 4th argument on `stateManager.set`.
+
+## 2026-04-20 plugin system for custom actions, functions, and transforms
+
+Published as `@furlow/core@1.0.14`, `@furlow/schema@1.0.7`,
+`@furlow/cli@1.0.17`.
+
+Adds a first-class extension point. Users can now ship custom action
+handlers, expression functions, and expression transforms from their
+own JavaScript files without forking the framework. Closes the "what
+do I do when FURLOW doesn't have the action I need" gap that previously
+forced users onto a bespoke node host script.
+
+### Added
+
+- `@furlow/core` `plugins/` module exporting `Plugin`, `PluginContext`,
+  `PluginModule`, `LoadedPlugin`, `PluginLoadError`, `loadPlugin()`,
+  and `loadPlugins()`. Available as `@furlow/core/plugins` or
+  re-exported from the root. `PluginContext` surfaces
+  `registerAction`, `registerFunction`, `registerTransform`, a
+  plugin-scoped `log`, and a read-only `env` view.
+- `@furlow/schema` `FurlowSpec.plugins?: string[]` top-level field.
+  JSON schema allows plugin paths under `plugins:`.
+- `@furlow/cli` `furlow start --plugin <path...>` flag. The CLI loads
+  plugins in order: spec-declared first, then CLI-declared. Plugins
+  resolve relative to the spec file's directory. Absolute paths also
+  work.
+- `docs/advanced/custom-actions.md` documenting the full plugin API
+  with action / function / transform examples, cooperation with the
+  execution quota (`context.signal`, `context.quota?.chargeApi()`),
+  and testing patterns.
+- 10 new tests in `packages/core/src/plugins/__tests__/plugins.test.ts`
+  and a CLI smoke test in `apps/cli/src/__tests__/plugins.test.ts`.
+  Cover default-function / default-object / named-export shapes,
+  path resolution relative to a spec file, async register hooks,
+  argument validation, and error propagation.
+
+### Notes
+
+- Plugins run in-process with full Node.js access. The docs call this
+  out; no sandboxing is attempted. This is a self-hosted framework so
+  the operator controls which plugins load.
+- Name collisions overwrite silently with a `console.warn`. Built-in
+  actions can therefore be patched by plugins for testing or special
+  cases.
+- Plugin errors fail `furlow start` before Discord connects. A missing
+  custom action is a fatal boot condition, not a silent no-op.
+- TypeScript plugins work via prebuilt ESM output. The loader uses
+  `import()` and does not transpile on load; ship `.mjs` or `.js`
+  with `"type": "module"`.
+
 ## 2026-04-20 per-handler execution quotas (M1)
 
 Published as `@furlow/core@1.0.13`, `@furlow/schema@1.0.6`,

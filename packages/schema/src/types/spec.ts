@@ -150,4 +150,11 @@ export interface FurlowSpec {
 
   /** Error handling */
   errors?: ErrorConfig;
+
+  /**
+   * Plugin files (JavaScript / ESM) loaded at startup for custom actions,
+   * expression functions, and transforms. Paths resolve relative to the
+   * spec file. See docs/advanced/custom-actions.md.
+   */
+  plugins?: string[];
 }

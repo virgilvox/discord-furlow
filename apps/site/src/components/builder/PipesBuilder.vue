@@ -33,10 +33,8 @@ const authTypes = [
 
 const dbAdapters = [
   { value: 'postgres', label: 'PostgreSQL' },
-  { value: 'mysql', label: 'MySQL' },
   { value: 'sqlite', label: 'SQLite' },
-  { value: 'mongodb', label: 'MongoDB' },
-  { value: 'redis', label: 'Redis' },
+  { value: 'memory', label: 'Memory (testing)' },
 ];
 
 const mqttQos = [

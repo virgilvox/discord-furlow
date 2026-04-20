@@ -82,7 +82,11 @@ pipes:
 
 ### Request-Response Pattern
 
-For WebSocket servers that use request-response:
+For WebSocket servers that use request-response, send the request via
+`pipe_send` and read the response asynchronously in a matching
+`handlers:` entry on the pipe. `pipe_send` is fire-and-forget; it does
+not block on a reply. Use a correlation id in the payload if you need
+to pair responses with requests.
 
 ```yaml
 commands:
@@ -92,12 +96,10 @@ commands:
           pipe: chat_server
           data:
             type: "query"
-            id: "${random_id()}"
+            id: "${uuid()}"
             query: "${options.query}"
-          wait_for: "response"
-          timeout: "10s"
       - reply:
-          content: "${pipe_result.data.result}"
+          content: "Sent. Watching for response."
 ```
 
 ### Sending Messages

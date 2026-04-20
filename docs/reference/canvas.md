@@ -1,637 +1,231 @@
 # Canvas Reference
 
-Generate dynamic images for welcome cards, rank cards, leaderboards, and more using FURLOW's Canvas system.
+FURLOW generates dynamic images (welcome cards, rank cards, banners) via [node-canvas](https://github.com/Automattic/node-canvas). Canvas is an optional peer dependency; install `canvas` in your bot project to enable it.
 
-## Overview
-
-FURLOW includes a powerful canvas system built on [node-canvas](https://github.com/Automattic/node-canvas) that lets you create custom images directly from your YAML configuration. Common use cases include:
-
-- Welcome/goodbye cards with user avatars
-- Rank and level-up cards
-- Leaderboard images
-- Achievement badges
-- Custom memes and templates
-
-## Configuration
-
-Enable canvas in your bot configuration:
-
-```yaml
-canvas:
-  enabled: true
-  fonts_dir: ./fonts    # Optional: directory for custom fonts
-  cache:
-    enabled: true
-    max_size: 100       # Max cached images
-    ttl: 3600           # Cache TTL in seconds
+```bash
+npm install canvas
 ```
 
 ## Canvas Actions
 
-### `canvas_create`
-
-Create a new canvas with specified dimensions.
-
-```yaml
-- action: canvas_create
-  width: 800
-  height: 400
-  background: "#2f3136"    # Color or gradient
-  as: canvas               # Variable name to store canvas
-```
-
-**Background options:**
-
-```yaml
-# Solid color
-background: "#5865F2"
-
-# Linear gradient
-background:
-  type: linear
-  start: [0, 0]
-  end: [800, 0]
-  stops:
-    - [0, "#5865F2"]
-    - [1, "#eb459e"]
-
-# Radial gradient
-background:
-  type: radial
-  center: [400, 200]
-  radius: 300
-  stops:
-    - [0, "#5865F2"]
-    - [1, "#23272a"]
-
-# Image
-background:
-  type: image
-  url: "https://example.com/background.png"
-  fit: cover    # cover, contain, fill, none
-```
-
-### `canvas_draw_rect`
-
-Draw a rectangle on the canvas.
-
-```yaml
-- action: canvas_draw_rect
-  canvas: "${canvas}"
-  x: 20
-  y: 20
-  width: 760
-  height: 360
-  fill: "#23272a"
-  radius: 20              # Corner radius (optional)
-  stroke: "#5865F2"       # Border color (optional)
-  stroke_width: 3         # Border width (optional)
-```
-
-### `canvas_draw_circle`
-
-Draw a circle on the canvas.
-
-```yaml
-- action: canvas_draw_circle
-  canvas: "${canvas}"
-  x: 100
-  y: 200
-  radius: 60
-  fill: "#5865F2"
-  stroke: "#ffffff"
-  stroke_width: 4
-```
-
-### `canvas_draw_text`
-
-Draw text on the canvas.
-
-```yaml
-- action: canvas_draw_text
-  canvas: "${canvas}"
-  text: "Welcome, ${member.display_name}!"
-  x: 200
-  y: 180
-  font: "bold 32px Inter"
-  color: "#ffffff"
-  align: left             # left, center, right
-  baseline: middle        # top, middle, bottom
-  max_width: 400          # Optional: wrap or truncate
-```
-
-**Font format:** `[style] [weight] size family`
-- Style: `normal`, `italic`
-- Weight: `normal`, `bold`, or numeric (`100`-`900`)
-- Size: pixels (`24px`) or points (`18pt`)
-- Family: Font name (must be installed or in fonts_dir)
-
-### `canvas_draw_image`
-
-Draw an image on the canvas.
-
-```yaml
-- action: canvas_draw_image
-  canvas: "${canvas}"
-  url: "${member.avatar}"
-  x: 40
-  y: 140
-  width: 120
-  height: 120
-  radius: 60              # Make circular avatar
-  border: "#5865F2"
-  border_width: 4
-```
-
-**Image options:**
-
-```yaml
-# Basic image
-url: "https://example.com/image.png"
-
-# Resize modes
-fit: cover      # Crop to fill (default)
-fit: contain    # Fit inside bounds
-fit: fill       # Stretch to fill
-fit: none       # No resize
-
-# Position within bounds (for contain/cover)
-position: center    # center, top, bottom, left, right
-```
-
-### `canvas_draw_progress`
-
-Draw a progress bar.
-
-```yaml
-- action: canvas_draw_progress
-  canvas: "${canvas}"
-  x: 200
-  y: 280
-  width: 560
-  height: 30
-  progress: "${xp / xpNeeded}"    # 0-1
-  background: "#23272a"
-  fill: "#5865F2"
-  radius: 15
-  border: "#3c4043"
-  border_width: 2
-```
-
-**Gradient fill:**
-
-```yaml
-fill:
-  type: linear
-  start: [0, 0]
-  end: [560, 0]
-  stops:
-    - [0, "#5865F2"]
-    - [1, "#57f287"]
-```
-
-### `canvas_draw_line`
-
-Draw a line on the canvas.
-
-```yaml
-- action: canvas_draw_line
-  canvas: "${canvas}"
-  start: [100, 200]
-  end: [700, 200]
-  color: "#5865F2"
-  width: 3
-  dash: [10, 5]           # Optional: dashed line
-```
-
-### `canvas_draw_polygon`
-
-Draw a polygon shape.
-
-```yaml
-- action: canvas_draw_polygon
-  canvas: "${canvas}"
-  points:
-    - [400, 50]
-    - [450, 150]
-    - [350, 150]
-  fill: "#faa61a"
-  stroke: "#ffffff"
-  stroke_width: 2
-```
-
-### `canvas_apply_filter`
-
-Apply visual filters to the canvas.
-
-```yaml
-- action: canvas_apply_filter
-  canvas: "${canvas}"
-  filter: blur
-  value: 5
-```
-
-**Available filters:**
-- `blur` - Gaussian blur (value: radius)
-- `brightness` - Adjust brightness (value: 0-200, 100 = normal)
-- `contrast` - Adjust contrast (value: 0-200, 100 = normal)
-- `grayscale` - Convert to grayscale (value: 0-100)
-- `saturate` - Adjust saturation (value: 0-200, 100 = normal)
-- `sepia` - Apply sepia tone (value: 0-100)
-- `invert` - Invert colors (value: 0-100)
-- `opacity` - Adjust opacity (value: 0-100)
-
-### `canvas_clip`
-
-Apply a clipping mask.
-
-```yaml
-- action: canvas_clip
-  canvas: "${canvas}"
-  shape: circle
-  x: 100
-  y: 200
-  radius: 60
-```
-
-**Clip shapes:**
-
-```yaml
-# Circle
-shape: circle
-x: 100
-y: 200
-radius: 60
-
-# Rectangle
-shape: rect
-x: 50
-y: 50
-width: 200
-height: 100
-radius: 20    # Optional: rounded corners
-
-# Path
-shape: path
-points:
-  - [100, 50]
-  - [150, 150]
-  - [50, 150]
-```
+There are exactly two canvas actions. Everything else is expressed through layers.
 
 ### `canvas_render`
 
-Render the canvas to an image buffer.
+Renders a generator defined in `spec.canvas.generators`. Use this for reusable templates.
 
 ```yaml
-- action: canvas_render
-  canvas: "${canvas}"
-  format: png             # png, jpeg, webp
-  quality: 90             # For jpeg/webp (0-100)
-  as: imageBuffer
+- canvas_render:
+    generator: welcome_card        # generator key
+    context:
+      avatar_url: "${avatar_url}"  # values passed into the generator
+      display_name: "${member.displayName}"
+    as: welcome_image              # variable that receives the Buffer result
 ```
 
-### `canvas_to_attachment`
+Generator definitions do not have automatic access to runtime context. Everything a layer references must be passed explicitly via `context:`.
 
-Convert canvas to a Discord attachment.
+### `render_layers`
 
-```yaml
-- action: canvas_to_attachment
-  canvas: "${canvas}"
-  filename: "welcome.png"
-  as: attachment
-```
-
-## Complete Example: Welcome Card
+Renders layers inline without a pre-defined generator. Useful for one-off images.
 
 ```yaml
-commands:
-  - name: testwelcome
-    description: Preview the welcome card
-    options:
-      - name: user
-        type: user
-        description: User to preview
-    actions:
-      - action: set
-        key: target
-        value: "${options.user || member}"
-
-      # Create canvas
-      - action: canvas_create
-        width: 800
-        height: 300
-        background:
-          type: linear
-          start: [0, 0]
-          end: [800, 300]
-          stops:
-            - [0, "#1a1c2e"]
-            - [1, "#2d3250"]
-        as: canvas
-
-      # Draw decorative accent
-      - action: canvas_draw_rect
-        canvas: "${canvas}"
-        x: 0
-        y: 0
-        width: 8
-        height: 300
-        fill: "#5865F2"
-
-      # Draw avatar circle background
-      - action: canvas_draw_circle
-        canvas: "${canvas}"
-        x: 120
+- render_layers:
+    width: 800
+    height: 300
+    background: "#23272A"
+    format: png                    # png | jpeg (optional; default png)
+    quality: 0.92                  # 0..1 for jpeg
+    layers:
+      - type: text
+        x: 400
         y: 150
-        radius: 68
-        fill: "#5865F2"
-
-      # Draw user avatar
-      - action: canvas_draw_image
-        canvas: "${canvas}"
-        url: "${target.avatar}"
-        x: 56
-        y: 86
-        width: 128
-        height: 128
-        radius: 64
-
-      # Draw welcome text
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "WELCOME"
-        x: 220
-        y: 100
-        font: "bold 14px Inter"
-        color: "#5865F2"
-        align: left
-
-      # Draw username
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "${target.display_name}"
-        x: 220
-        y: 140
-        font: "bold 36px Inter"
-        color: "#ffffff"
-        max_width: 500
-
-      # Draw member count
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "You are member #${guild.member_count|format}"
-        x: 220
-        y: 180
-        font: "18px Inter"
-        color: "#99aab5"
-
-      # Draw server name
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "${guild.name}"
-        x: 220
-        y: 220
-        font: "16px Inter"
-        color: "#72767d"
-
-      # Render to attachment
-      - action: canvas_to_attachment
-        canvas: "${canvas}"
-        filename: "welcome.png"
-        as: welcomeImage
-
-      - action: reply
-        files:
-          - "${welcomeImage}"
-
-events:
-  - event: member_join
-    actions:
-      # ... same canvas code as above ...
-      - action: send_message
-        channel: "${env.WELCOME_CHANNEL}"
-        content: "Welcome to the server, ${member.mention}!"
-        files:
-          - "${welcomeImage}"
+        text: "Hello, ${user.username}!"
+        font: sans-serif
+        size: 32
+        color: "#FFFFFF"
+        align: center
+    as: banner_image
 ```
 
-## Complete Example: Rank Card
+Attach the rendered buffer to a Discord message:
 
 ```yaml
-commands:
-  - name: rank
-    description: Show your rank card
-    options:
-      - name: user
-        type: user
-        description: User to check
-    actions:
-      - action: set
-        key: target
-        value: "${options.user || member}"
-
-      # Get user's level data
-      - action: db_query
-        table: levels
-        where:
-          user_id: "${target.id}"
-          guild_id: "${guild.id}"
-        as: levelData
-
-      - action: set
-        key: data
-        value:
-          level: "${levelData[0]?.level || 1}"
-          xp: "${levelData[0]?.xp || 0}"
-          xpNeeded: "${100 * (levelData[0]?.level || 1) * 1.5}"
-
-      # Create canvas
-      - action: canvas_create
-        width: 934
-        height: 282
-        background: "#23272a"
-        as: canvas
-
-      # Draw background panel
-      - action: canvas_draw_rect
-        canvas: "${canvas}"
-        x: 20
-        y: 20
-        width: 894
-        height: 242
-        fill: "#2f3136"
-        radius: 20
-
-      # Draw avatar
-      - action: canvas_draw_image
-        canvas: "${canvas}"
-        url: "${target.avatar}"
-        x: 50
-        y: 50
-        width: 180
-        height: 180
-        radius: 90
-        border: "#5865F2"
-        border_width: 6
-
-      # Draw username
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "${target.display_name}"
-        x: 270
-        y: 100
-        font: "bold 40px Inter"
-        color: "#ffffff"
-        max_width: 400
-
-      # Draw discriminator/tag
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "#${target.discriminator || '0000'}"
-        x: "${270 + measureText(target.display_name, 'bold 40px Inter').width + 10}"
-        y: 100
-        font: "28px Inter"
-        color: "#72767d"
-
-      # Draw level label
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "LEVEL"
-        x: 750
-        y: 80
-        font: "bold 16px Inter"
-        color: "#72767d"
-        align: center
-
-      # Draw level number
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "${data.level}"
-        x: 750
-        y: 120
-        font: "bold 48px Inter"
-        color: "#5865F2"
-        align: center
-
-      # Draw rank label
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "RANK"
-        x: 850
-        y: 80
-        font: "bold 16px Inter"
-        color: "#72767d"
-        align: center
-
-      # Draw rank number
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "#${rank}"
-        x: 850
-        y: 120
-        font: "bold 48px Inter"
-        color: "#57f287"
-        align: center
-
-      # Draw XP text
-      - action: canvas_draw_text
-        canvas: "${canvas}"
-        text: "${data.xp|format} / ${data.xpNeeded|format} XP"
-        x: 864
-        y: 170
-        font: "18px Inter"
-        color: "#99aab5"
-        align: right
-
-      # Draw progress bar background
-      - action: canvas_draw_progress
-        canvas: "${canvas}"
-        x: 270
-        y: 200
-        width: 594
-        height: 30
-        progress: "${data.xp / data.xpNeeded}"
-        background: "#484b51"
-        fill:
-          type: linear
-          start: [0, 0]
-          end: [594, 0]
-          stops:
-            - [0, "#5865F2"]
-            - [1, "#eb459e"]
-        radius: 15
-
-      # Render
-      - action: canvas_to_attachment
-        canvas: "${canvas}"
-        filename: "rank.png"
-        as: rankCard
-
-      - action: reply
-        files:
-          - "${rankCard}"
+- reply:
+    files:
+      - attachment: "${banner_image}"
+        name: welcome.png
 ```
 
-## Custom Fonts
+## Layer Types
 
-To use custom fonts, place them in the `fonts_dir` directory:
+Six layer types are implemented. Any other `type:` value is silently skipped.
 
+| Type | Purpose |
+|------|---------|
+| `image` | Draws an image from a URL or local path. |
+| `circle_image` | Draws an image clipped to a circle (avatars). |
+| `text` | Draws a string with font, size, color, alignment, baseline, and max width. |
+| `rect` | Draws a filled or outlined rectangle, optionally rounded. |
+| `progress_bar` | Draws a two-tone progress bar with a 0..1 value. |
+| `gradient` | Draws a linear or radial gradient fill. |
+
+### Common Fields
+
+Every layer supports:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | enum | One of the six types above. |
+| `x`, `y` | number | Position (interpolation allowed). |
+| `when` | expression | If set and falsy, layer is skipped. |
+| `opacity` | 0..1 | Applied to image layers. |
+
+### `image`
+
+```yaml
+- type: image
+  x: 0
+  y: 0
+  src: "${background_url}"
+  width: 800        # optional; defaults to image natural width
+  height: 300       # optional; defaults to image natural height
+  opacity: 1.0
 ```
-my-bot/
-├── furlow.yaml
-└── fonts/
-    ├── Inter-Regular.ttf
-    ├── Inter-Bold.ttf
-    └── Montserrat-Black.ttf
+
+### `circle_image`
+
+```yaml
+- type: circle_image
+  x: 320            # top-left corner of the bounding box
+  y: 40
+  radius: 80
+  src: "${avatar_url}"
+  border_color: "#FFFFFF"   # optional
+  border_width: 4           # optional
 ```
 
-Configure fonts:
+Canvas does not decode WebP. Pass a `.png` URL. For Discord avatars, construct the URL manually:
+
+```yaml
+- set:
+    var: avatar_url
+    value: "https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256"
+```
+
+### `text`
+
+```yaml
+- type: text
+  x: 400
+  y: 150
+  text: "Welcome, ${display_name}!"
+  font: sans-serif
+  size: 32
+  color: "#FFFFFF"
+  weight: bold            # optional
+  align: center           # left | center | right
+  baseline: middle        # top | middle | bottom | alphabetic
+  max_width: 700          # optional; truncates to this width
+```
+
+### `rect`
+
+```yaml
+- type: rect
+  x: 10
+  y: 10
+  width: 780
+  height: 280
+  color: "#2C2F33"
+  radius: 16              # optional rounded corners
+  stroke_color: "#FFFFFF" # optional outline
+  stroke_width: 2
+```
+
+### `progress_bar`
+
+```yaml
+- type: progress_bar
+  x: 100
+  y: 200
+  width: 600
+  height: 40
+  value: "${current_xp / needed_xp}"   # 0..1
+  background_color: "#2C2F33"
+  fill_color: "#5865F2"
+  radius: 20                           # optional rounded corners
+```
+
+### `gradient`
+
+```yaml
+- type: gradient
+  x: 0
+  y: 0
+  width: 800
+  height: 300
+  kind: linear            # linear | radial
+  direction: horizontal   # linear only: horizontal | vertical | diagonal
+  stops:
+    - { offset: 0, color: "#5865F2" }
+    - { offset: 1, color: "#EB459E" }
+```
+
+## Generators
+
+Generators are reusable named layer stacks declared once in `spec.canvas.generators`:
 
 ```yaml
 canvas:
   enabled: true
-  fonts_dir: ./fonts
-  fonts:
-    - family: "Inter"
-      path: "./fonts/Inter-Regular.ttf"
-      weight: normal
-    - family: "Inter"
-      path: "./fonts/Inter-Bold.ttf"
-      weight: bold
-    - family: "Montserrat"
-      path: "./fonts/Montserrat-Black.ttf"
-      weight: 900
+  fonts_dir: ./fonts          # optional; loads every .ttf/.otf on startup
+  generators:
+    welcome_card:
+      width: 800
+      height: 300
+      background: "#23272A"
+      layers:
+        - type: circle_image
+          x: 40
+          y: 40
+          radius: 100
+          src: "${avatar_url}"
+        - type: text
+          x: 400
+          y: 150
+          text: "Welcome, ${display_name}!"
+          font: sans-serif
+          size: 32
+          color: "#FFFFFF"
+          align: center
+
+commands:
+  - name: welcome
+    actions:
+      - set:
+          var: avatar_url
+          value: "https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=256"
+      - canvas_render:
+          generator: welcome_card
+          context:
+            avatar_url: "${avatar_url}"
+            display_name: "${member.displayName}"
+          as: welcome_image
+      - reply:
+          files:
+            - attachment: "${welcome_image}"
+              name: welcome.png
 ```
 
-Use in draw actions:
+### Why `context:` is required
 
-```yaml
-font: "bold 32px Inter"
-font: "900 48px Montserrat"
-```
+The canvas renderer evaluates layer fields in an isolated context. It does not inherit `user`, `member`, `guild`, or `state` from the triggering event. Anything a layer reads must be passed through the `context:` block of `canvas_render`. Mixing in `${user.displayName}` directly in a generator field evaluates to `undefined`.
 
-## Performance Tips
+## Welcome and Rank Card Presets
 
-1. **Cache frequently-used images** - Enable caching for backgrounds and templates
-2. **Use appropriate image sizes** - Don't load 4K images for 128px avatars
-3. **Minimize canvas operations** - Combine operations where possible
-4. **Use WebP format** - Smaller file sizes than PNG
-5. **Pre-render static elements** - Cache background templates
+The built-in `welcome` and `leveling` builtins ship rank- and welcome-card generators you can enable via their config blocks. See [Welcome](../builtins/welcome.md) and [Leveling](../builtins/leveling.md).
 
-```yaml
-canvas:
-  cache:
-    enabled: true
-    max_size: 100
-    ttl: 3600
-  preload:
-    - "./assets/welcome-bg.png"
-    - "./assets/rank-bg.png"
-```
+## Cost
 
-## Next Steps
-
-- [Voice Reference](voice.md) - Voice and music features
-- [Actions Reference](actions/_index.md) - All available actions
-- [Leveling Builtin](../builtins/leveling.md) - Pre-built leveling system with rank cards
+Both `canvas_render` and `render_layers` are weighted 50 credits in the per-handler execution quota. A handler that renders more than a couple of images within a single invocation will hit the default 100,000 credit cap.

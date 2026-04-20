@@ -22,7 +22,7 @@ These rules apply to every assistant interaction with this repository. No except
 
 ## Project Overview
 
-FURLOW (named after the ship scrap builder in Farscape) is a declarative Discord bot framework that uses YAML specifications. The framework consists of:
+FURLOW (**F**lexible **U**ser **R**ules for **L**ive **O**nline **W**orkers, and a nod to the ship scrap builder in Farscape) is a declarative Discord bot framework that uses YAML specifications. The framework consists of:
 
 - **@furlow/core** - Runtime engine (parser, expression evaluator, actions, flows, state)
 - **@furlow/discord** - Discord.js adapter (client, gateway, interactions, voice)
@@ -37,7 +37,7 @@ FURLOW (named after the ship scrap builder in Farscape) is a declarative Discord
 
 1. **YAML is the source of truth** - Bot behavior is defined in YAML, not code
 2. **Expression language for logic** - Jexl-based expressions for conditions and transforms
-3. **Actions as primitives** - 100+ discrete actions that can be composed
+3. **Actions as primitives** - 85 discrete actions that can be composed
 4. **Scoped state** - Variables scoped to global, guild, channel, user, or member
 5. **Flows for reuse** - Named action sequences that can be called
 

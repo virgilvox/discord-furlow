@@ -1,331 +1,334 @@
-# Custom Actions
+# Custom Actions, Functions, and Transforms
 
-Learn how to create custom action handlers for FURLOW.
+FURLOW loads user-supplied JavaScript plugins at startup. A plugin can
+register new actions (the things that appear in `actions:` lists), new
+expression functions (callable with `${myFn(x)}`), and new expression
+transforms (usable with the pipe syntax `${x | myTransform}`).
 
-## Overview
+Plugins run in-process with full Node.js access. Only load plugins you
+trust. The framework does not sandbox them.
 
-While FURLOW provides 84+ built-in actions, you may need custom functionality. Custom actions let you:
+## Declaring Plugins
 
-- Integrate with external services
-- Implement complex business logic
-- Add domain-specific operations
-- Extend the action system
+Two ways to declare plugins. They compose: spec-declared plugins load
+first, then anything passed through the CLI flag.
 
-## Creating a Custom Action
+### From the spec
 
-### Basic Structure
+```yaml
+version: "0.1"
 
-```typescript
-import { ActionHandler, ActionContext } from '@furlow/core';
+plugins:
+  - ./plugins/ai-actions.mjs
+  - ./plugins/shout-transform.mjs
 
-export const myCustomAction: ActionHandler<MyActionConfig> = {
-  name: 'my_action',
-  schema: myActionSchema,
-  async execute(config, context) {
-    // Your action logic here
-    return result;
-  },
-};
+commands:
+  - name: ask
+    description: Ask the AI
+    options:
+      - name: question
+        type: string
+        required: true
+    actions:
+      - ai_completion:
+          prompt: "${options.question}"
+          as: answer
+      - reply:
+          content: "${answer}"
 ```
 
-### Type Definition
+Paths resolve relative to the spec file. `./plugins/ai-actions.mjs` in
+`furlow.yaml` means the file at `{specDir}/plugins/ai-actions.mjs`.
 
-```typescript
-interface MyActionConfig {
-  required_field: string;
-  optional_field?: number;
-}
+### From the CLI
 
-const myActionSchema = {
-  type: 'object',
-  properties: {
-    required_field: { type: 'string' },
-    optional_field: { type: 'number' },
-  },
-  required: ['required_field'],
-};
+```bash
+furlow start --plugin ./plugins/ai-actions.mjs --plugin ./plugins/shout.mjs
 ```
 
-### Full Example
+Useful for plugins that should only load in certain environments (for
+example, a test-only plugin that stubs an external API).
 
-```typescript
-import { ActionHandler, ActionContext } from '@furlow/core';
-import { z } from 'zod';
+## Plugin File Shapes
 
-// Schema for validation
-const translateSchema = z.object({
-  text: z.string(),
-  from: z.string().optional().default('auto'),
-  to: z.string(),
-  as: z.string().optional(),
-});
+A plugin is a JavaScript ESM file (`.mjs` or `.js` with
+`"type": "module"`). FURLOW accepts three export shapes; pick whichever
+fits your style.
 
-type TranslateConfig = z.infer<typeof translateSchema>;
+### 1. Default function
 
-export const translateAction: ActionHandler<TranslateConfig> = {
-  name: 'translate',
+Simplest form. The function receives a `PluginContext` and registers its
+handlers.
 
-  // JSON Schema for YAML validation
-  schema: {
-    type: 'object',
-    properties: {
-      text: { type: 'string', description: 'Text to translate' },
-      from: { type: 'string', default: 'auto' },
-      to: { type: 'string', description: 'Target language code' },
-      as: { type: 'string', description: 'Variable name to store result' },
+```js
+// plugins/my-plugin.mjs
+export default function (ctx) {
+  ctx.registerAction({
+    name: 'greet_user',
+    async execute(config, context) {
+      const { evaluator } = context._deps;
+      const name = await evaluator.interpolate(config.name, context);
+      return { success: true, data: `Hello, ${name}!` };
     },
-    required: ['text', 'to'],
-  },
-
-  async execute(config, context: ActionContext) {
-    // Resolve expressions in config
-    const text = await context.resolveExpression(config.text);
-    const from = await context.resolveExpression(config.from);
-    const to = await context.resolveExpression(config.to);
-
-    // Call translation API
-    const response = await fetch('https://api.example.com/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, from, to }),
-    });
-
-    const result = await response.json();
-
-    // Store in variable if requested
-    if (config.as) {
-      context.setVariable(config.as, result.translation);
-    }
-
-    return result.translation;
-  },
-};
-```
-
-## Registering Custom Actions
-
-### In Code
-
-```typescript
-import { Furlow } from '@furlow/core';
-import { translateAction } from './actions/translate';
-
-const furlow = new Furlow({
-  token: process.env.DISCORD_TOKEN,
-});
-
-// Register custom action
-furlow.registerAction(translateAction);
-
-await furlow.start();
-```
-
-### As a Plugin
-
-```typescript
-import { FurlowPlugin } from '@furlow/core';
-import { translateAction } from './actions/translate';
-import { summarizeAction } from './actions/summarize';
-
-export const aiPlugin: FurlowPlugin = {
-  name: 'ai-tools',
-  version: '1.0.0',
-  actions: [translateAction, summarizeAction],
-};
-
-// Usage
-furlow.use(aiPlugin);
-```
-
-## Action Context
-
-The `ActionContext` provides access to:
-
-### Discord Objects
-
-```typescript
-context.guild      // Current guild
-context.channel    // Current channel
-context.user       // Triggering user
-context.member     // Guild member
-context.message    // Triggering message (if applicable)
-context.interaction // Interaction (if applicable)
-```
-
-### Expression Resolution
-
-```typescript
-// Resolve a single expression
-const value = await context.resolveExpression('${user.id}');
-
-// Resolve all expressions in an object
-const resolved = await context.resolveConfig(config);
-```
-
-### State Management
-
-```typescript
-// Get state
-const count = context.getState('guild', 'counter');
-
-// Set state
-context.setState('guild', 'counter', count + 1);
-
-// Get scoped state
-const userPrefs = context.getState('user', 'preferences');
-```
-
-### Variable Management
-
-```typescript
-// Set a local variable (available in subsequent actions)
-context.setVariable('result', value);
-
-// Get a variable
-const result = context.getVariable('result');
-```
-
-### Logging
-
-```typescript
-context.log.debug('Debug message');
-context.log.info('Info message');
-context.log.warn('Warning message');
-context.log.error('Error message');
-```
-
-## Error Handling
-
-### Throwing Errors
-
-```typescript
-import { ActionError } from '@furlow/core';
-
-async execute(config, context) {
-  if (!config.required_field) {
-    throw new ActionError('MISSING_FIELD', 'required_field is required');
-  }
-
-  try {
-    // ... action logic
-  } catch (error) {
-    throw new ActionError('API_ERROR', 'Failed to call external API', error);
-  }
-}
-```
-
-### Error Codes
-
-Use consistent error codes:
-
-| Code | Description |
-|------|-------------|
-| `VALIDATION_ERROR` | Invalid configuration |
-| `PERMISSION_ERROR` | Missing permissions |
-| `NOT_FOUND` | Resource not found |
-| `API_ERROR` | External API failure |
-| `RATE_LIMITED` | Rate limit exceeded |
-
-## Best Practices
-
-### 1. Validate Input
-
-```typescript
-async execute(config, context) {
-  const validated = translateSchema.parse(config);
-  // Use validated config
-}
-```
-
-### 2. Handle Rate Limits
-
-```typescript
-import { RateLimiter } from '@furlow/core';
-
-const limiter = new RateLimiter({ requests: 10, per: '1m' });
-
-async execute(config, context) {
-  await limiter.acquire();
-  // ... make API call
-}
-```
-
-### 3. Cache Results
-
-```typescript
-import { Cache } from '@furlow/core';
-
-const cache = new Cache({ ttl: '5m' });
-
-async execute(config, context) {
-  const cacheKey = `translate:${config.text}:${config.to}`;
-  const cached = cache.get(cacheKey);
-  if (cached) return cached;
-
-  const result = await translate(config);
-  cache.set(cacheKey, result);
-  return result;
-}
-```
-
-### 4. Support Expressions
-
-Always resolve expressions in config values:
-
-```typescript
-const text = await context.resolveExpression(config.text);
-// NOT: const text = config.text;
-```
-
-### 5. Document Your Action
-
-Add JSDoc comments:
-
-```typescript
-/**
- * Translates text between languages using an external API.
- *
- * @example
- * - translate:
- *     text: "${message.content}"
- *     to: "es"
- *     as: translated
- *
- * @param config.text - Text to translate (supports expressions)
- * @param config.from - Source language (default: auto-detect)
- * @param config.to - Target language code
- * @param config.as - Variable name to store result
- */
-export const translateAction: ActionHandler<TranslateConfig> = {
-  // ...
-};
-```
-
-## Testing Custom Actions
-
-```typescript
-import { createTestContext } from '@furlow/testing';
-import { translateAction } from './translate';
-
-describe('translateAction', () => {
-  it('translates text', async () => {
-    const context = createTestContext({
-      guild: { id: '123' },
-      user: { id: '456' },
-    });
-
-    const result = await translateAction.execute(
-      { text: 'Hello', to: 'es' },
-      context
-    );
-
-    expect(result).toBe('Hola');
   });
-});
+}
 ```
 
-## Next Steps
+### 2. Default Plugin object
 
-- [Custom Expressions](custom-expressions.md) - Add custom expression functions
-- [Performance Guide](performance.md) - Optimize your actions
-- [Actions Reference](../reference/actions/_index.md) - Built-in actions
+Use this when you want a named plugin with a version. The name shows up
+in logs; the version is informational.
+
+```js
+// plugins/ai-plugin.mjs
+export default {
+  name: 'furlow-ai',
+  version: '1.2.0',
+  async register(ctx) {
+    ctx.registerAction({ name: 'ai_completion', execute: runAi });
+    ctx.registerAction({ name: 'ai_embedding',  execute: runEmbed });
+  },
+};
+```
+
+### 3. Named `plugin` export
+
+Useful when a file exports helpers alongside the plugin definition.
+
+```js
+// plugins/stats-plugin.mjs
+export const plugin = {
+  name: 'stats',
+  register(ctx) {
+    ctx.registerTransform('format_stat', (value) => value.toFixed(2));
+  },
+};
+```
+
+`register` may be `async`. FURLOW awaits each plugin before loading the
+next, so one plugin's setup can depend on environment variables, file
+reads, or authenticated API warm-ups.
+
+## The Plugin Context
+
+```ts
+interface PluginContext {
+  registerAction(handler: ActionHandler): void;
+  registerFunction(name: string, fn: (...args: unknown[]) => unknown): void;
+  registerTransform(name: string, fn: (value: unknown, ...args: unknown[]) => unknown): void;
+  log(message: string, data?: unknown): void;
+  readonly env: NodeJS.ProcessEnv;
+}
+```
+
+TypeScript users can import the types:
+
+```ts
+import type { PluginContext, Plugin } from '@furlow/core/plugins';
+```
+
+## Writing a Custom Action
+
+Action handlers implement a single `execute(config, context)` method and
+declare a unique `name`.
+
+```js
+// plugins/http-get.mjs
+export default function (ctx) {
+  ctx.registerAction({
+    name: 'http_get',
+    cost: 10, // weighted against the per-handler quota
+    async execute(config, context) {
+      const { evaluator } = context._deps;
+      const url = await evaluator.interpolate(String(config.url), context);
+
+      // Cooperate with the handler quota's abort signal.
+      const res = await fetch(url, { signal: context.signal });
+      if (!res.ok) {
+        return { success: false, error: new Error(`HTTP ${res.status}`) };
+      }
+      const body = await res.json();
+
+      // If the YAML specified `as: foo`, stash the result on the context
+      // so downstream actions can read `${foo}`.
+      if (config.as) {
+        context[config.as] = body;
+      }
+      return { success: true, data: body };
+    },
+  });
+}
+```
+
+YAML:
+
+```yaml
+plugins:
+  - ./plugins/http-get.mjs
+
+commands:
+  - name: weather
+    description: Get the current weather
+    options:
+      - name: city
+        type: string
+        required: true
+    actions:
+      - http_get:
+          url: "https://api.example.com/weather?q=${options.city}"
+          as: forecast
+      - reply:
+          content: "${forecast.temp}C in ${options.city}"
+```
+
+### Key patterns
+
+| Concern | How |
+|---------|-----|
+| Read a config value with interpolation | `await context._deps.evaluator.interpolate(String(config.x), context)` |
+| Read a config value as a raw expression | `await context._deps.evaluator.evaluate(String(config.x), context)` |
+| Write a result back for later actions | `context[config.as] = value` when `config.as` is set |
+| Honor the execution quota abort | pass `context.signal` to `fetch` / `AbortController`-aware APIs |
+| Charge an API bucket for rate limiting | `context.quota?.chargeApi('my_bucket', 1)` |
+| Return failure | `{ success: false, error: new Error('...') }` |
+| Declare cost against the 100k credit cap | `cost: 5` (Discord writes) ... `cost: 50` (canvas) on the handler |
+
+The per-handler execution quota is documented in `HANDOFF.md` under the
+M1 changelog entry. Your custom action participates automatically: each
+call charges `cost` credits, and each bucket charge counts against its
+per-invocation cap.
+
+## Writing a Custom Expression Function
+
+Functions are plain JavaScript. They are callable with `${name(...)}`
+anywhere an interpolation expression is allowed.
+
+```js
+// plugins/math-extras.mjs
+export default function (ctx) {
+  ctx.registerFunction('lerp', (a, b, t) => a + (b - a) * t);
+  ctx.registerFunction('gcd', function gcd(a, b) {
+    return b === 0 ? Math.abs(a) : gcd(b, a % b);
+  });
+}
+```
+
+YAML:
+
+```yaml
+plugins:
+  - ./plugins/math-extras.mjs
+
+commands:
+  - name: blend
+    description: Blend two values
+    options:
+      - name: ratio
+        type: number
+        required: true
+    actions:
+      - reply:
+          content: "Result: ${lerp(0, 100, options.ratio)}"
+```
+
+Functions must be synchronous. Jexl awaits promises that get returned,
+but consistency is simpler if you keep them synchronous and do async
+work inside a dedicated action handler.
+
+## Writing a Custom Expression Transform
+
+Transforms use the pipe syntax and receive the piped value as the first
+argument.
+
+```js
+// plugins/text-transforms.mjs
+export default function (ctx) {
+  ctx.registerTransform('redact', (value, mask = '*') => {
+    if (typeof value !== 'string') return value;
+    return value.length <= 2 ? value : value[0] + mask.repeat(value.length - 2) + value.at(-1);
+  });
+  ctx.registerTransform('bracket', (value, open = '[', close = ']') => `${open}${value}${close}`);
+}
+```
+
+YAML:
+
+```yaml
+commands:
+  - name: showtoken
+    description: Show a redacted token
+    actions:
+      - reply:
+          content: "Token: ${env.API_TOKEN | redact}"
+```
+
+## Name Collisions
+
+Registering a name that already exists (including one of the built-in
+actions, functions, or transforms) prints a warning and overwrites.
+That is allowed on purpose. If you need to patch the behaviour of
+`send_message` for a test harness, overwrite it; the core handler is
+the final default but not the final word.
+
+## Errors
+
+If a plugin file cannot be resolved, fails to import, exports nothing
+recognisable, or throws during `register`, the CLI prints:
+
+```
+  Plugin loading failed
+  Failed to load plugin "./plugins/my-plugin.mjs": <reason>
+```
+
+and exits before starting Discord. This is intentional. A missing
+custom action should fail fast, not deadlock a bot that then can't
+execute its own commands.
+
+## TypeScript Plugins
+
+The loader accepts `.mjs` and `.js` with `"type": "module"`. If you
+prefer TypeScript, compile your plugins first and point FURLOW at the
+output:
+
+```bash
+# author in TypeScript
+plugins/
+  src/
+    ai.ts
+  dist/
+    ai.mjs        # <-- point FURLOW at this
+```
+
+```yaml
+plugins:
+  - ./plugins/dist/ai.mjs
+```
+
+Any bundler (`tsup`, `esbuild`, `swc`) works. Keep the ESM module format.
+
+## Testing a Plugin
+
+Test helpers from `@furlow/testing` work with custom actions the same
+way they work with built-ins. You register your plugin's actions on the
+E2E runtime's registry before running a spec, exactly as the CLI does at
+startup.
+
+```ts
+import { createActionRegistry, createEvaluator, loadPlugin } from '@furlow/core';
+
+const registry = createActionRegistry();
+const evaluator = createEvaluator();
+await loadPlugin('./plugins/my-plugin.mjs', registry, evaluator, { baseDir: __dirname });
+
+expect(registry.has('my_custom_action')).toBe(true);
+```
+
+## What Plugins Cannot Do
+
+- Hook arbitrary Discord.js events that FURLOW does not forward. Use
+  `emit` inside an existing event handler if you need to chain custom
+  events; the router will dispatch any name.
+- Replace the core evaluator or executor. You can overwrite individual
+  functions and actions but not the runtime plumbing.
+- Change the spec after load. Plugins only register handlers; they do
+  not mutate commands, events, or state definitions.

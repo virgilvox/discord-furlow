@@ -122,11 +122,11 @@ Respond to Discord events:
 ```yaml
 events:
   # Welcome new members
-  - event: guild_member_add
+  - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome to the server, ${member.display_name}!"
+          content: "Welcome to the server, ${member.displayName}!"
 
   # Log when bot is ready
   - event: ready
@@ -177,7 +177,7 @@ Reusable action sequences:
 ```yaml
 flows:
   log_action:
-    params:
+    parameters:
       - name: action_name
         type: string
       - name: target

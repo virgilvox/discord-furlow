@@ -115,7 +115,7 @@ apps/site/
 │   │   └── projects.ts          # Dexie/IndexedDB persistence
 │   │
 │   ├── data/
-│   │   ├── action-schemas.ts    # All 84 action field definitions
+│   │   ├── action-schemas.ts    # All 85 action field definitions
 │   │   └── section-schemas.ts   # Form schemas for spec sections
 │   │
 │   ├── pages/

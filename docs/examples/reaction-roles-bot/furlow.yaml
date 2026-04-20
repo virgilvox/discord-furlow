@@ -27,7 +27,7 @@ state:
 # Flows
 flows:
   create_role_buttons:
-    params:
+    parameters:
       - name: roles
         type: array
     actions:

@@ -67,8 +67,6 @@ builtins:
 
     # Restrictions
     ignore_bots: true                  # Don't welcome bots
-    require_avatar: false              # Only welcome users with avatars
-    min_account_age: "0"               # Minimum account age
 ```
 
 ## Message Variables
@@ -360,22 +358,3 @@ events:
           ephemeral: true
 ```
 
-### Account Age Check
-
-```yaml
-builtins:
-  welcome:
-    enabled: true
-    channel: "welcome"
-    min_account_age: "7d"              # 7 day old accounts only
-
-    # New accounts get quarantined
-    quarantine:
-      enabled: true
-      channel: "new-accounts"
-      role: "quarantine"
-      message: |
-        ${user.mention}, your account is less than 7 days old.
-
-        A moderator will verify you shortly.
-```

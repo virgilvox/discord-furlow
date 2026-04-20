@@ -221,14 +221,14 @@ commands:
         description: Who to greet
     actions:
       - reply:
-          content: "Hello, ${options.member.display_name}!"
+          content: "Hello, ${options.user.displayName || options.user.username}!"
 
 events:
   - event: member_join
     actions:
       - send_message:
           channel: "${env.WELCOME_CHANNEL}"
-          content: "Welcome ${member.display_name}!"
+          content: "Welcome ${member.displayName}!"
 ```
 
 Run it:
@@ -242,7 +242,7 @@ furlow start furlow.yaml
 - **Full Documentation**: [github.com/virgilvox/discord-furlow](https://github.com/virgilvox/discord-furlow)
 - **Actions Reference**: [85 available actions](https://github.com/virgilvox/discord-furlow/blob/main/docs/reference/actions/)
 - **Expression Functions**: [71 functions](https://github.com/virgilvox/discord-furlow/blob/main/docs/reference/expressions/)
-- **Pipes Reference**: [External integrations](https://github.com/virgilvox/discord-furlow/blob/main/docs/packages/pipes.md)
+- **Pipes Reference**: [External integrations](https://github.com/virgilvox/discord-furlow/blob/main/docs/packages/pipes/README.md)
 
 ## Related Packages
 
