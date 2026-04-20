@@ -1,6 +1,7 @@
 {
   "name": "@furlow/mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "mcpName": "io.github.virgilvox/furlow-mcp",
   "description": "Model Context Protocol server for FURLOW spec authoring",
   "keywords": [
     "furlow",

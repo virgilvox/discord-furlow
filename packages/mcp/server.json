@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.virgilvox/furlow-mcp",
+  "description": "Author FURLOW Discord bot YAML: validate specs, list actions/events/builtins, scaffold bots.",
+  "version": "1.0.1",
+  "repository": {
+    "url": "https://github.com/virgilvox/discord-furlow",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@furlow/mcp",
+      "version": "1.0.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

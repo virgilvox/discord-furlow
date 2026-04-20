@@ -25,17 +25,28 @@ the code. Event names declared by every builtin are guarded by a test.
 | `@furlow/builtins` | 1.0.9 | 449 | 14 modules; event-name guard test catches the kind of bug that shipped in 1.0.6 |
 | `@furlow/cli` | 1.0.18 | 5 | Wires cron scheduler, forwards voice track events, FlowQuota on slash-command dispatch, plugin loading, cooldown middleware |
 | `@furlow/dashboard` | 1.0.6 | 9 | Express + React (private app); real `/metrics` + `/api/handlers` sourced from core observability |
-| `@furlow/mcp` | 1.0.0 | 8 | MCP server: `validate_spec`, `list_actions`, `list_events`, `list_builtins`, `scaffold_bot` |
+| `@furlow/mcp` | 1.0.1 | 8 | MCP server: `validate_spec`, `list_actions`, `list_events`, `list_builtins`, `scaffold_bot`. Registered on the official MCP registry as `io.github.virgilvox/furlow-mcp`. |
 
-**Total Tests: 2,936 passing (50 storage tests skipped, gated on testcontainers).**
+**Total Tests: 2,943 passing (50 storage tests skipped, gated on testcontainers).**
 
 ### Verification commands
 
 ```bash
-pnpm build        # 10/10 tasks successful
-pnpm typecheck    # 16/16 tasks successful
-pnpm test         # 19/19 tasks successful (serial via --concurrency=1 to avoid OOM)
+pnpm build        # 11/11 tasks successful
+pnpm typecheck    # 17/17 tasks successful
+pnpm test         # serial via --concurrency=1 to avoid OOM; OOM still happens
+                  # in combined runs, so prefer per-package: pnpm --filter <pkg> test
 ```
+
+### Registry and publishing
+
+- **npm.** All ten packages are published. `pnpm -r publish --access public --no-git-checks` from repo root republishes whichever have version bumps.
+- **MCP registry.** `io.github.virgilvox/furlow-mcp` is live at `https://registry.modelcontextprotocol.io` (`/v0.1/servers?search=io.github.virgilvox/furlow-mcp`). Metadata lives in `packages/mcp/server.json`. To publish a new version:
+  1. Bump `version` in `packages/mcp/package.json` AND in `packages/mcp/server.json` (both the top-level `version` and `packages[0].version`).
+  2. Keep `mcpName: "io.github.virgilvox/furlow-mcp"` in `package.json` (required for registry verification).
+  3. `pnpm --filter @furlow/mcp build && npm publish --access public` from `packages/mcp/`.
+  4. `cd packages/mcp && mcp-publisher validate && mcp-publisher publish` (needs `mcp-publisher login github` once; tokens persist).
+- **GitHub.** Tag `v2026.04.20-m8` marks the parity M2-M8 + plugin system + MCP release.
 
 ## Complete Feature List
 
