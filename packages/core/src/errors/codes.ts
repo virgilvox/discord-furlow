@@ -36,6 +36,7 @@ export const ErrorCodes = {
   FLOW_INVALID_ARGS: 'E5002',
   FLOW_MAX_DEPTH: 'E5003',
   FLOW_ABORTED: 'E5004',
+  FLOW_QUOTA_EXCEEDED: 'E5005',
 
   // Discord errors (6xxx)
   DISCORD_API_ERROR: 'E6001',

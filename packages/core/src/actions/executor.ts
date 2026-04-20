@@ -6,7 +6,7 @@ import type { Action, SimpleCondition } from '@furlow/schema';
 import type { ActionContext, ActionResult } from './types.js';
 import type { ActionRegistry } from './registry.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
-import { ActionExecutionError, FlowAbortedError } from '../errors/index.js';
+import { ActionExecutionError, FlowAbortedError, QuotaExceededError } from '../errors/index.js';
 
 export interface ExecutorOptions {
   /** Maximum actions to execute in sequence */
@@ -70,10 +70,21 @@ export class ActionExecutor {
       }
     }
 
+    // Charge the quota before dispatching. A quota exceed propagates as
+    // an abort (throws out of executeOne) so callers can halt cleanly.
+    if (context.quota) {
+      context.quota.charge(handler.cost ?? 1);
+    }
+
     try {
       const result = await handler.execute(action, context);
       return result;
     } catch (err) {
+      // Quota exceeds from inside handlers (e.g. chargeApi) bubble out as
+      // aborts; do not wrap them as ActionExecutionError.
+      if (err instanceof QuotaExceededError) {
+        throw err;
+      }
       const error = err instanceof Error ? err : new Error(String(err));
       return {
         success: false,

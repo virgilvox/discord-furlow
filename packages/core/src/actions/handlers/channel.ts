@@ -144,7 +144,9 @@ async function resolvePermissionOverwrites(
  */
 const createChannelHandler: ActionHandler<CreateChannelAction> = {
   name: 'create_channel',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('edit_channel');
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
@@ -218,7 +220,9 @@ const createChannelHandler: ActionHandler<CreateChannelAction> = {
  */
 const editChannelHandler: ActionHandler<EditChannelAction> = {
   name: 'edit_channel',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('edit_channel');
     const deps = context._deps as HandlerDependencies;
     const { evaluator, client } = deps;
 
@@ -278,7 +282,9 @@ const editChannelHandler: ActionHandler<EditChannelAction> = {
  */
 const deleteChannelHandler: ActionHandler<DeleteChannelAction> = {
   name: 'delete_channel',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('edit_channel');
     const deps = context._deps as HandlerDependencies;
     const { evaluator, client } = deps;
 

@@ -8,7 +8,12 @@ import type { ActionExecutor } from '../actions/executor.js';
 import type { ActionContext, ActionResult } from '../actions/types.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
 import type { StateManager } from '../state/manager.js';
-import { FlowNotFoundError, FlowAbortedError, MaxFlowDepthError } from '../errors/index.js';
+import {
+  FlowNotFoundError,
+  FlowAbortedError,
+  MaxFlowDepthError,
+  QuotaExceededError,
+} from '../errors/index.js';
 import { normalizeActionsDeep } from '../parser/normalize.js';
 
 export interface FlowEngineOptions {
@@ -83,9 +88,15 @@ export class FlowEngine {
     evaluator: ExpressionEvaluator,
     flowContext: FlowExecutionContext = { args: {}, depth: 0 }
   ): Promise<FlowResult> {
-    // Check depth
-    if (flowContext.depth >= this.options.maxDepth) {
-      throw new MaxFlowDepthError(this.options.maxDepth);
+    // Check depth. When a quota is attached, defer to its limit so the
+    // whole handler invocation shares one bound; otherwise fall back to
+    // the engine's own maxDepth.
+    const depthLimit = context.quota?.limits.maxStackDepth ?? this.options.maxDepth;
+    if (flowContext.depth >= depthLimit) {
+      if (context.quota) {
+        context.quota.checkStackDepth(flowContext.depth);
+      }
+      throw new MaxFlowDepthError(depthLimit);
     }
 
     // Get flow
@@ -149,6 +160,10 @@ export class FlowEngine {
         value: returnValue ?? flowCtx.returnValue,
       };
     } catch (err) {
+      // Quota exceeds propagate as handler-wide aborts, not flow results.
+      if (err instanceof QuotaExceededError) {
+        throw err;
+      }
       return {
         success: false,
         error: err instanceof Error ? err : new Error(String(err)),

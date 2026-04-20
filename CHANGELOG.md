@@ -5,6 +5,76 @@ All notable changes to FURLOW will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2026-04-20 per-handler execution quotas (M1)
+
+Published as `@furlow/core@1.0.13`, `@furlow/schema@1.0.6`.
+
+Parity-plan milestone M1. Caps the cost of a single event or command
+handler invocation so a runaway spec (`repeat { times: 1_000_000 }`,
+`flow_while { condition: "true" }`, a stuck `pipe_request`) can no
+longer burn unbounded CPU or fan out into unbounded Discord API calls.
+Modelled on Kite's `FlowContextLimits` and YAGPDB's `MaxOps` /
+`IncreaseCheckCallCounter`.
+
+### Added
+
+- `@furlow/core` `FlowQuota` (packages/core/src/flows/quota.ts) tracks
+  per-invocation operations, weighted credits, a wallclock budget, and
+  per-API-bucket counters. Owns an `AbortController` whose signal is
+  attached to `ActionContext.signal` so in-flight HTTP and voice actions
+  can cooperate with a timeout.
+- `@furlow/core` `QuotaExceededError` (code `E5005`) with `metric`,
+  `limit`, `observed` fields. Thrown by `quota.charge()` and
+  `quota.chargeApi()`; swallowed as an abort at the router boundary and
+  logged via `handleError` at `warn` level.
+- `@furlow/core` `ActionHandler.cost?: number` optional property
+  (default `1`). Expensive handlers declare higher costs:
+  `canvas_render` / `render_layers` 50, `pipe_request` /
+  `voice_search` 20, `voice_play` / `pipe_send` / `webhook_send` 10,
+  `create_channel` / `edit_channel` / `delete_channel` 10, `send_dm` /
+  `kick` / `ban` / `voice_join` / `bulk_delete` 5, Discord message
+  writes (`reply`, `send_message`, `edit_message`, `delete_message`,
+  `update_message`) 3, `timeout` 3, reactions 2.
+- `@furlow/core` per-bucket API caps: `send_dm` handler charges
+  `api:send_dm` (limit 1 per invocation); reactions charge
+  `api:add_reaction` (limit 20); channel mutations charge
+  `api:edit_channel` (limit 10); HTTP pipes and webhook sends charge
+  `api:api_call` (limit 20).
+- `@furlow/core` `EventRouter.executeHandler` creates a `FlowQuota` per
+  invocation, starts the wallclock timer, attaches it and the abort
+  signal to the context, and disposes the timer in `finally`. Router
+  options gain an optional `quotaLimits` override.
+- `@furlow/schema` `EventHandler.timeout?: string | number` and
+  `CommandDefinition.timeout?: string | number` for per-handler
+  wallclock overrides (`"30s"`, `"500ms"`, raw ms).
+- `@furlow/core` 19 new tests in `flows/__tests__/quota.test.ts` cover
+  operations / credits / wallclock / stack-depth / api-bucket
+  enforcement, router lifecycle, and duration parsing.
+
+### Changed
+
+- `@furlow/core` `ActionContext` gains `quota?: FlowQuota`.
+- `@furlow/core` `ActionExecutor.executeOne` charges the quota before
+  dispatching. `QuotaExceededError` thrown from a handler propagates
+  out (not wrapped as `ActionExecutionError`) so the router sees the
+  abort.
+- `@furlow/core` `FlowEngine.execute` prefers `context.quota.limits
+  .maxStackDepth` over its own `options.maxDepth` when a quota is
+  attached; the default (50) is unchanged.
+- `@furlow/core` `FlowEngine.execute` rethrows `QuotaExceededError`
+  from nested `call_flow` instead of wrapping it into the flow result,
+  so one quota exceed aborts the whole handler invocation.
+
+### Notes
+
+- No behaviour change when no quota is attached (`ActionContext.quota`
+  is optional). Existing tests continue to pass unchanged.
+- Default limits: 10,000 operations, 100,000 credits, 30s wallclock,
+  stack depth 50.
+- Depth protection remains backwards compatible: when no quota is
+  present, `FlowEngine` falls back to `MaxFlowDepthError` at its own
+  `options.maxDepth`.
+
 ## 2026-04-20 hardening pass
 
 Published as `@furlow/discord@1.0.8`, `@furlow/dashboard@1.0.5`.

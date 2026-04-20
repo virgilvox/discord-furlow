@@ -4,6 +4,7 @@
 
 import type { Action } from '@furlow/schema';
 import type { FullContext } from '../expression/context.js';
+import type { FlowQuota } from '../flows/quota.js';
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -30,6 +31,8 @@ export interface ActionContext extends FullContext {
   flowExecutor: unknown;
   /** Abort signal for cancellation */
   signal?: AbortSignal;
+  /** Per-invocation execution quota (operations, credits, wallclock, api buckets) */
+  quota?: FlowQuota;
 }
 
 export interface ActionHandler<TConfig extends Action = Action, TResult = unknown> {
@@ -37,6 +40,11 @@ export interface ActionHandler<TConfig extends Action = Action, TResult = unknow
   name: string;
   /** JSON Schema for action configuration */
   schema?: object;
+  /**
+   * Weighted credit cost for quota accounting. Defaults to 1. Expensive
+   * handlers (HTTP, AI, canvas, voice) override upward.
+   */
+  cost?: number;
   /** Execute the action */
   execute(config: TConfig, context: ActionContext): Promise<ActionResult<TResult>>;
   /** Validate action configuration */

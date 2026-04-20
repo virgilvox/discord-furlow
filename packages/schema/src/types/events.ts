@@ -122,6 +122,14 @@ export interface EventHandler {
   debounce?: string;
   throttle?: string;
   once?: boolean;
+  /**
+   * Wallclock timeout for a single invocation of this handler. Accepts
+   * duration strings like "30s", "500ms", "2m", or raw milliseconds.
+   * When the timeout elapses, the context's AbortSignal is tripped so
+   * in-flight actions can cooperate, and any further action dispatch is
+   * refused. Defaults to the per-handler quota wallclock (30s).
+   */
+  timeout?: string | number;
 }
 
 /** Events configuration */

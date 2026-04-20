@@ -231,6 +231,7 @@ const toggleRoleHandler: ActionHandler<ToggleRoleAction> = {
  */
 const kickHandler: ActionHandler<KickAction> = {
   name: 'kick',
+  cost: 5,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -268,6 +269,7 @@ const kickHandler: ActionHandler<KickAction> = {
  */
 const banHandler: ActionHandler<BanAction> = {
   name: 'ban',
+  cost: 5,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -344,6 +346,7 @@ const unbanHandler: ActionHandler<UnbanAction> = {
  */
 const timeoutHandler: ActionHandler<TimeoutAction> = {
   name: 'timeout',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -409,6 +412,7 @@ const removeTimeoutHandler: ActionHandler<RemoveTimeoutAction> = {
  */
 const sendDMHandler: ActionHandler<SendDMAction> = {
   name: 'send_dm',
+  cost: 5,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -417,6 +421,8 @@ const sendDMHandler: ActionHandler<SendDMAction> = {
     if (!user) {
       return { success: false, error: new Error('User not found') };
     }
+
+    context.quota?.chargeApi('send_dm');
 
     const options: Record<string, unknown> = {};
 

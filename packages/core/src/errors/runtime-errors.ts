@@ -83,6 +83,24 @@ export class MaxFlowDepthError extends FurlowError {
   }
 }
 
+export class QuotaExceededError extends FurlowError {
+  public readonly metric: string;
+  public readonly limit: number;
+  public readonly observed: number;
+
+  constructor(metric: string, limit: number, observed: number) {
+    super({
+      code: ErrorCodes.FLOW_QUOTA_EXCEEDED,
+      message: `Handler quota exceeded: ${metric} ${observed} > ${limit}`,
+      context: { metric, limit, observed },
+    });
+    this.name = 'QuotaExceededError';
+    this.metric = metric;
+    this.limit = limit;
+    this.observed = observed;
+  }
+}
+
 export class StateVariableNotFoundError extends FurlowError {
   constructor(varName: string, scope: string) {
     super({

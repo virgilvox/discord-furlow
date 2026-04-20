@@ -63,7 +63,9 @@ function parseDuration(duration: string): number {
  */
 const pipeRequestHandler: ActionHandler<PipeRequestAction> = {
   name: 'pipe_request',
+  cost: 20,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('api_call');
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
@@ -140,7 +142,9 @@ const pipeRequestHandler: ActionHandler<PipeRequestAction> = {
  */
 const pipeSendHandler: ActionHandler<PipeSendAction> = {
   name: 'pipe_send',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('api_call');
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
@@ -179,7 +183,9 @@ const pipeSendHandler: ActionHandler<PipeSendAction> = {
  */
 const webhookSendHandler: ActionHandler<WebhookSendAction> = {
   name: 'webhook_send',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('api_call');
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
 
@@ -413,6 +419,7 @@ const recordMetricHandler: ActionHandler<RecordMetricAction> = {
  */
 const canvasRenderHandler: ActionHandler<CanvasRenderAction> = {
   name: 'canvas_render',
+  cost: 50,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -479,6 +486,7 @@ const canvasRenderHandler: ActionHandler<CanvasRenderAction> = {
  */
 const renderLayersHandler: ActionHandler<RenderLayersAction> = {
   name: 'render_layers',
+  cost: 50,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;

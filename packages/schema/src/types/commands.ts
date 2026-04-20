@@ -86,6 +86,11 @@ export interface CommandDefinition {
   nsfw?: boolean;
   guild_ids?: Snowflake[];
   autocomplete?: AutocompleteHandler[];
+  /**
+   * Wallclock timeout for a single invocation of this command. Accepts
+   * duration strings like "30s" or raw milliseconds. See EventHandler.timeout.
+   */
+  timeout?: string | number;
 }
 
 /** Context menu command (user/message) */

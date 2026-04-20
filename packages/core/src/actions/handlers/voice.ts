@@ -98,6 +98,7 @@ function getVoiceManager(context: ActionContext): VoiceManagerLike | null {
  */
 const voiceJoinHandler: ActionHandler<VoiceJoinAction> = {
   name: 'voice_join',
+  cost: 5,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator, client } = deps;
@@ -165,6 +166,7 @@ const voiceLeaveHandler: ActionHandler<VoiceLeaveAction> = {
  */
 const voicePlayHandler: ActionHandler<VoicePlayAction> = {
   name: 'voice_play',
+  cost: 10,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -423,7 +425,9 @@ const voiceSetFilterHandler: ActionHandler<VoiceSetFilterAction> = {
  */
 const voiceSearchHandler: ActionHandler<VoiceSearchAction> = {
   name: 'voice_search',
+  cost: 20,
   async execute(config, context): Promise<ActionResult> {
+    context.quota?.chargeApi('api_call');
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
     const voiceManager = getVoiceManager(context);

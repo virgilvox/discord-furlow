@@ -214,6 +214,7 @@ async function resolveMessage(
  */
 const replyHandler: ActionHandler<ReplyAction> = {
   name: 'reply',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const interaction = context.interaction as
@@ -248,6 +249,7 @@ const replyHandler: ActionHandler<ReplyAction> = {
  */
 const sendMessageHandler: ActionHandler<SendMessageAction> = {
   name: 'send_message',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
 
@@ -278,6 +280,7 @@ const sendMessageHandler: ActionHandler<SendMessageAction> = {
  */
 const editMessageHandler: ActionHandler<EditMessageAction> = {
   name: 'edit_message',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -331,6 +334,7 @@ const editMessageHandler: ActionHandler<EditMessageAction> = {
  */
 const deleteMessageHandler: ActionHandler<DeleteMessageAction> = {
   name: 'delete_message',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
 
@@ -395,6 +399,7 @@ const deferHandler: ActionHandler<DeferAction> = {
  */
 const updateMessageHandler: ActionHandler<UpdateMessageAction> = {
   name: 'update_message',
+  cost: 3,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -444,6 +449,7 @@ const updateMessageHandler: ActionHandler<UpdateMessageAction> = {
  */
 const addReactionHandler: ActionHandler<AddReactionAction> = {
   name: 'add_reaction',
+  cost: 2,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -461,6 +467,8 @@ const addReactionHandler: ActionHandler<AddReactionAction> = {
 
     const emoji = await evaluator.interpolate(String(config.emoji), context);
 
+    context.quota?.chargeApi('add_reaction');
+
     try {
       await message.react(emoji);
       return { success: true };
@@ -475,6 +483,7 @@ const addReactionHandler: ActionHandler<AddReactionAction> = {
  */
 const addReactionsHandler: ActionHandler<AddReactionsAction> = {
   name: 'add_reactions',
+  cost: 2,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -495,8 +504,11 @@ const addReactionsHandler: ActionHandler<AddReactionsAction> = {
     }
 
     try {
-      // Add reactions sequentially to maintain order
+      // Add reactions sequentially to maintain order. Each reaction charges
+      // against the `add_reaction` bucket so a single handler cannot fan out
+      // past the configured cap.
       for (const emojiExpr of config.emojis) {
+        context.quota?.chargeApi('add_reaction');
         const emoji = await evaluator.interpolate(String(emojiExpr), context);
         await message.react(emoji);
       }
@@ -512,6 +524,7 @@ const addReactionsHandler: ActionHandler<AddReactionsAction> = {
  */
 const removeReactionHandler: ActionHandler<RemoveReactionAction> = {
   name: 'remove_reaction',
+  cost: 2,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -552,6 +565,7 @@ const removeReactionHandler: ActionHandler<RemoveReactionAction> = {
  */
 const clearReactionsHandler: ActionHandler<ClearReactionsAction> = {
   name: 'clear_reactions',
+  cost: 2,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;
@@ -589,6 +603,7 @@ const clearReactionsHandler: ActionHandler<ClearReactionsAction> = {
  */
 const bulkDeleteHandler: ActionHandler<BulkDeleteAction> = {
   name: 'bulk_delete',
+  cost: 5,
   async execute(config, context): Promise<ActionResult> {
     const deps = context._deps as HandlerDependencies;
     const { evaluator } = deps;

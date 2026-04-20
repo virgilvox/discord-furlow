@@ -8,6 +8,12 @@ import type { ActionExecutor } from '../actions/executor.js';
 import type { ActionContext } from '../actions/types.js';
 import type { ExpressionEvaluator } from '../expression/evaluator.js';
 import { handleError } from '../errors/handler.js';
+import { QuotaExceededError } from '../errors/index.js';
+import {
+  FlowQuota,
+  parseQuotaDuration,
+  type QuotaLimits,
+} from '../flows/quota.js';
 
 export interface RouterOptions {
   /** Maximum handlers per event */
@@ -16,9 +22,12 @@ export interface RouterOptions {
   defaultDebounce?: number;
   /** Default throttle time in ms */
   defaultThrottle?: number;
+  /** Default per-invocation quota limits. Individual handlers can override
+   *  the wallclock via `handler.timeout`. */
+  quotaLimits?: Partial<QuotaLimits>;
 }
 
-const DEFAULT_OPTIONS: Required<RouterOptions> = {
+const DEFAULT_OPTIONS: Required<Omit<RouterOptions, 'quotaLimits'>> = {
   maxHandlersPerEvent: 100,
   defaultDebounce: 0,
   defaultThrottle: 0,
@@ -28,11 +37,14 @@ export class EventRouter {
   private handlers: Map<EventName, RegisteredHandler[]> = new Map();
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
   private throttleTimers: Map<string, number> = new Map();
-  private options: Required<RouterOptions>;
+  private options: Required<Omit<RouterOptions, 'quotaLimits'>>;
+  private quotaLimits: Partial<QuotaLimits>;
   private idCounter = 0;
 
   constructor(options: RouterOptions = {}) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    const { quotaLimits, ...rest } = options;
+    this.options = { ...DEFAULT_OPTIONS, ...rest };
+    this.quotaLimits = quotaLimits ?? {};
   }
 
   /**
@@ -176,11 +188,55 @@ export class EventRouter {
       }
     }
 
+    // Build a per-invocation quota. Handler.timeout (if set) overrides the
+    // configured wallclock budget. Existing context.signal and context.quota
+    // are preserved when present so nested dispatch can opt out.
+    const handlerTimeoutMs = parseQuotaDuration(
+      (handler as { timeout?: string | number }).timeout
+    );
+    const effectiveLimits: Partial<QuotaLimits> = { ...this.quotaLimits };
+    if (handlerTimeoutMs !== undefined) {
+      effectiveLimits.wallclockMs = handlerTimeoutMs;
+    }
+
+    const ownsQuota = !context.quota;
+    const quota = context.quota ?? new FlowQuota({ limits: effectiveLimits });
+    const previousSignal = context.signal;
+
+    if (ownsQuota) {
+      context.quota = quota;
+      context.signal = quota.signal;
+      quota.startWallclock();
+    }
+
     // Normalize actions from YAML shorthand to schema format
     const normalizedActions = normalizeActions(handler.actions);
 
-    // Execute actions
-    await executor.executeSequence(normalizedActions, context);
+    try {
+      await executor.executeSequence(normalizedActions, context);
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        handleError(err, 'event', 'warn', {
+          event: handler.event,
+          handlerId: registered.id,
+          metric: err.metric,
+          limit: err.limit,
+          observed: err.observed,
+        });
+      } else {
+        throw err;
+      }
+    } finally {
+      if (ownsQuota) {
+        quota.dispose();
+        delete context.quota;
+        if (previousSignal === undefined) {
+          delete context.signal;
+        } else {
+          context.signal = previousSignal;
+        }
+      }
+    }
 
     // Handle once
     if (registered.once) {

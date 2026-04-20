@@ -1,6 +1,6 @@
 {
   "name": "@furlow/schema",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "JSON Schema definitions and TypeScript types for FURLOW",
   "keywords": [
     "furlow",
