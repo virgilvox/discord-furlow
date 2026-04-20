@@ -1,6 +1,6 @@
 {
   "name": "@furlow/testing",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Test utilities and mocks for FURLOW framework",
   "keywords": [
     "furlow",
@@ -56,6 +56,7 @@
     "@furlow/storage": "workspace:*"
   },
   "devDependencies": {
+    "@furlow/builtins": "workspace:*",
     "@types/node": "^20.11.0",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",

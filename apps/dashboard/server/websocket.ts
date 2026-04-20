@@ -3,7 +3,9 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
-import type { Server } from 'http';
+import type { Server, IncomingMessage } from 'http';
+import type { RequestHandler, Request, Response } from 'express';
+import type { Profile } from 'passport-discord';
 
 export interface WSMessage {
   type: string;
@@ -43,6 +45,9 @@ export interface NowPlaying {
 const guildSubscriptions = new Map<string, Set<WebSocket>>();
 const allClients = new Set<WebSocket>();
 
+// Per-socket auth context. Pulled from the session at upgrade time.
+const socketUsers = new WeakMap<WebSocket, Profile>();
+
 // Current bot status
 let botStatus: BotStatus = {
   online: false,
@@ -52,11 +57,61 @@ let botStatus: BotStatus = {
   ping: 0,
 };
 
+const MANAGE_GUILD = 0x20;
+
+function userCanManageGuild(user: Profile | undefined, guildId: string): boolean {
+  if (!user) return false;
+  const guild = user.guilds?.find((g) => g.id === guildId);
+  if (!guild) return false;
+  return (parseInt(guild.permissions) & MANAGE_GUILD) === MANAGE_GUILD;
+}
+
 /**
- * Initialize WebSocket server
+ * Run express-session against a raw IncomingMessage so we can read the
+ * authenticated user during the WebSocket upgrade. Resolves to the
+ * passport user (if any) or null.
  */
-export function initWebSocket(server: Server): WebSocketServer {
-  const wss = new WebSocketServer({ server, path: '/ws' });
+function authenticateUpgrade(
+  sessionMiddleware: RequestHandler,
+  request: IncomingMessage
+): Promise<Profile | null> {
+  return new Promise((resolve) => {
+    sessionMiddleware(request as Request, {} as Response, () => {
+      const session = (request as Request).session as unknown as
+        | { passport?: { user?: Profile } }
+        | undefined;
+      resolve(session?.passport?.user ?? null);
+    });
+  });
+}
+
+/**
+ * Initialize WebSocket server. The session middleware is required so
+ * connections can be tied to an authenticated dashboard user; clients
+ * without a valid session are rejected at upgrade time.
+ */
+export function initWebSocket(
+  server: Server,
+  sessionMiddleware: RequestHandler
+): WebSocketServer {
+  const wss = new WebSocketServer({ noServer: true });
+
+  server.on('upgrade', (request, socket, head) => {
+    const url = request.url ?? '';
+    if (!url.startsWith('/ws')) return;
+
+    void authenticateUpgrade(sessionMiddleware, request).then((user) => {
+      if (!user) {
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        socketUsers.set(ws, user);
+        wss.emit('connection', ws, request);
+      });
+    });
+  });
 
   wss.on('connection', (ws: WebSocket) => {
     allClients.add(ws);
@@ -99,7 +154,16 @@ export function initWebSocket(server: Server): WebSocketServer {
 function handleMessage(ws: WebSocket, message: WSMessage): void {
   switch (message.type) {
     case 'subscribe_guild': {
-      const guildId = message.payload as string;
+      const guildId = message.payload;
+      if (typeof guildId !== 'string' || guildId.length === 0) {
+        ws.send(JSON.stringify({ type: 'error', payload: 'subscribe_guild: payload must be a guild id' }));
+        return;
+      }
+      const user = socketUsers.get(ws);
+      if (!userCanManageGuild(user, guildId)) {
+        ws.send(JSON.stringify({ type: 'error', payload: 'subscribe_guild: forbidden' }));
+        return;
+      }
       if (!guildSubscriptions.has(guildId)) {
         guildSubscriptions.set(guildId, new Set());
       }
@@ -108,7 +172,8 @@ function handleMessage(ws: WebSocket, message: WSMessage): void {
     }
 
     case 'unsubscribe_guild': {
-      const guildId = message.payload as string;
+      const guildId = message.payload;
+      if (typeof guildId !== 'string') return;
       guildSubscriptions.get(guildId)?.delete(ws);
       break;
     }

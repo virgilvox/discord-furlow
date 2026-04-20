@@ -128,6 +128,84 @@ events:
 | `@furlow/pipes` | HTTP, WebSocket, MQTT, TCP/UDP, webhooks |
 | `@furlow/testing` | Test utilities |
 
+## Production deployment
+
+A short checklist for shipping a bot to production. Each item lines up with
+a runtime guarantee — skipping one usually shows up later as silent data
+loss, an unscheduled feature, or a publicly forgeable session.
+
+### Required environment
+
+```bash
+# Discord
+DISCORD_TOKEN=...
+DISCORD_CLIENT_ID=...
+
+# Storage (pick one)
+DATABASE_URL=postgres://user:pass@host:5432/furlow   # production
+# or for single-server bots:
+SQLITE_PATH=/var/lib/furlow/bot.db
+
+# Dashboard (only if running the web UI)
+DASHBOARD_SECRET=$(openssl rand -hex 32)             # required in NODE_ENV=production
+DISCORD_CLIENT_SECRET=...
+DISCORD_CALLBACK_URL=https://dashboard.example.com/auth/discord/callback
+```
+
+The dashboard refuses to start in `NODE_ENV=production` without
+`DASHBOARD_SECRET` — there is no fallback default. WebSocket connections
+also require an authenticated session; unauthenticated clients are rejected
+at upgrade time and cannot subscribe to guild streams.
+
+### Storage
+
+- Use Postgres for any deployment that runs more than one process or needs
+  point-in-time recovery. The SQLite adapter is fine for single-server bots
+  and tests, but write contention degrades quickly past a few thousand
+  active users.
+- Run database migrations on deploy. The SQLite adapter creates tables on
+  demand; Postgres deployments should pre-create the tables defined in your
+  `state.tables:` block.
+- Back up the database. Builtins persist real state (warnings, levels, AFK
+  status, ticket transcripts); none of this is reconstructible.
+
+### Scheduling and voice
+
+- The CLI starts a `CronScheduler` that emits `scheduler_tick` every 60s.
+  Builtins that rely on it (`giveaways`, `polls`, `reminders`) need the
+  scheduler running — there is no separate cron process.
+- Voice playback requires the `@discordjs/voice` peer plus `ffmpeg` on the
+  PATH. The `voice_track_start` / `voice_track_end` events used by the
+  `music` builtin only fire when the voice manager is initialized.
+
+### Process supervision
+
+- Run `furlow start` under a process supervisor (`systemd`, `pm2`,
+  Kubernetes Deployment) that restarts on exit. The bot does not
+  self-daemonize.
+- Forward `SIGTERM` so the gateway connection closes cleanly. The CLI
+  flushes pending state on shutdown; killing with `SIGKILL` can lose the
+  last batched writes.
+
+### Dashboard hardening
+
+- Terminate TLS in front of the dashboard (nginx, Caddy, a load balancer).
+  The session cookie sets `secure: true` in production and will not be
+  delivered over plain HTTP.
+- Restrict the OAuth callback URL in the Discord developer portal to the
+  exact `DISCORD_CALLBACK_URL` you ship.
+- POST endpoints whitelist their accepted fields and reject unknown or
+  wrong-typed keys with 400. If you extend a settings shape, update the
+  whitelist in `apps/dashboard/server/routes/api.ts`.
+
+### Observability
+
+- `/health` returns process uptime; wire it to your liveness probe.
+- `/metrics` exposes Prometheus-format counters. Add a scrape job pointed
+  at the dashboard process.
+- The CLI honors `--verbose` for structured per-event logging during
+  incident triage.
+
 ## License
 
 MIT

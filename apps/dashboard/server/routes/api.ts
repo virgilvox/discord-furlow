@@ -15,6 +15,41 @@ declare global {
 
 type StorageGetter = () => StorageAdapter | null;
 
+/**
+ * Whitelist a request body to a known set of keys/types. Returns the
+ * filtered object on success, or null on failure (caller responds 400).
+ *
+ * Each schema entry is the JS typeof tag of the allowed value, plus
+ * `'array'` for arrays. Unknown keys are dropped silently; wrong-typed
+ * known keys reject the whole body so we never half-write a settings doc.
+ */
+type FieldType = 'string' | 'boolean' | 'number' | 'object' | 'array';
+function pickFields(
+  body: unknown,
+  schema: Record<string, FieldType>
+): Record<string, unknown> | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const src = body as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [key, type] of Object.entries(schema)) {
+    if (!(key in src)) continue;
+    const v = src[key];
+    if (v === null) {
+      out[key] = null;
+      continue;
+    }
+    const ok =
+      type === 'array'
+        ? Array.isArray(v)
+        : type === 'object'
+          ? typeof v === 'object' && !Array.isArray(v)
+          : typeof v === type;
+    if (!ok) return null;
+    out[key] = v;
+  }
+  return out;
+}
+
 // Middleware to check authentication
 function requireAuth(req: Request, res: Response, next: () => void): void {
   if (!req.user) {
@@ -185,16 +220,19 @@ export function createApiRoutes(getStorage: StorageGetter): RouterType {
    */
   router.post('/guilds/:id/settings', requireAuth, requireGuildAccess, async (req: Request, res: Response): Promise<void> => {
     const guildId = req.params.id;
-    const settings = req.body;
-
-    // Validate settings
-    if (!settings || typeof settings !== 'object') {
+    const settings = pickFields(req.body, {
+      prefix: 'string',
+      language: 'string',
+      timezone: 'string',
+      modules: 'object',
+    });
+    if (!settings) {
       res.status(400).json({ error: 'Invalid settings' });
       return;
     }
 
     // Merge with existing settings
-    const existing = await getStoredValue(`guild:${guildId}:settings`, {});
+    const existing = await getStoredValue<Record<string, unknown>>(`guild:${guildId}:settings`, {});
     const merged = { ...existing, ...settings };
 
     const saved = await setStoredValue(`guild:${guildId}:settings`, merged);
@@ -356,7 +394,12 @@ export function createApiRoutes(getStorage: StorageGetter): RouterType {
    */
   router.post('/guilds/:id/levels/:userId', requireAuth, requireGuildAccess, async (req: Request, res: Response): Promise<void> => {
     const { id: guildId, userId } = req.params;
-    const { xp, level } = req.body;
+    const fields = pickFields(req.body, { xp: 'number', level: 'number' });
+    if (!fields) {
+      res.status(400).json({ error: 'xp and level must be numbers' });
+      return;
+    }
+    const { xp, level } = fields as { xp?: number; level?: number };
 
     const allLevels = await getStoredValue<any[]>(`guild:${guildId}:levels`, []);
     const existingIndex = allLevels.findIndex(e => e.userId === userId);
@@ -414,9 +457,20 @@ export function createApiRoutes(getStorage: StorageGetter): RouterType {
    */
   router.post('/guilds/:id/welcome', requireAuth, requireGuildAccess, async (req: Request, res: Response): Promise<void> => {
     const guildId = req.params.id;
-    const settings = req.body;
+    const settings = pickFields(req.body, {
+      enabled: 'boolean',
+      channel: 'string',
+      message: 'string',
+      dm: 'boolean',
+      dmMessage: 'string',
+      roles: 'array',
+    });
+    if (!settings) {
+      res.status(400).json({ error: 'Invalid welcome settings' });
+      return;
+    }
 
-    const existing = await getStoredValue(`guild:${guildId}:welcome`, {});
+    const existing = await getStoredValue<Record<string, unknown>>(`guild:${guildId}:welcome`, {});
     const merged = { ...existing, ...settings };
 
     await setStoredValue(`guild:${guildId}:welcome`, merged);
@@ -451,9 +505,17 @@ export function createApiRoutes(getStorage: StorageGetter): RouterType {
    */
   router.post('/guilds/:id/logging', requireAuth, requireGuildAccess, async (req: Request, res: Response): Promise<void> => {
     const guildId = req.params.id;
-    const settings = req.body;
+    const settings = pickFields(req.body, {
+      enabled: 'boolean',
+      channels: 'object',
+      events: 'array',
+    });
+    if (!settings) {
+      res.status(400).json({ error: 'Invalid logging settings' });
+      return;
+    }
 
-    const existing = await getStoredValue(`guild:${guildId}:logging`, {});
+    const existing = await getStoredValue<Record<string, unknown>>(`guild:${guildId}:logging`, {});
     const merged = { ...existing, ...settings };
 
     await setStoredValue(`guild:${guildId}:logging`, merged);
@@ -484,9 +546,18 @@ export function createApiRoutes(getStorage: StorageGetter): RouterType {
    */
   router.post('/guilds/:id/automod', requireAuth, requireGuildAccess, async (req: Request, res: Response): Promise<void> => {
     const guildId = req.params.id;
-    const settings = req.body;
+    const settings = pickFields(req.body, {
+      enabled: 'boolean',
+      rules: 'array',
+      exemptRoles: 'array',
+      exemptChannels: 'array',
+    });
+    if (!settings) {
+      res.status(400).json({ error: 'Invalid automod settings' });
+      return;
+    }
 
-    const existing = await getStoredValue(`guild:${guildId}:automod`, {});
+    const existing = await getStoredValue<Record<string, unknown>>(`guild:${guildId}:automod`, {});
     const merged = { ...existing, ...settings };
 
     await setStoredValue(`guild:${guildId}:automod`, merged);

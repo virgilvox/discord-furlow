@@ -1111,6 +1111,159 @@ export async function createE2ERuntimeFromSpec(
     },
   });
 
+  // Flow control handlers. Production registers these via registerCoreHandlers
+  // with full _deps wiring. The E2E runtime needs them at the top level of
+  // event handler action lists (where ActionExecutor dispatches via the
+  // registry, not FlowEngine.executeActions). These stubs cover the surface
+  // used by builtins so handlers run end-to-end instead of throwing
+  // ActionNotFoundError after the first registered action.
+  const runNested = async (
+    actions: unknown,
+    context: ActionContext
+  ): Promise<ActionResult[]> => {
+    if (!Array.isArray(actions) || actions.length === 0) return [];
+    return executor.executeSequence(actions as Action[], context);
+  };
+
+  registerHandler('flow_if', {
+    name: 'flow_if',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const conditionRaw = (cfg.condition ?? cfg.if) as string | undefined;
+      let cond = false;
+      if (conditionRaw) {
+        try {
+          cond = Boolean(await evaluator.evaluate(conditionRaw, context));
+        } catch {
+          cond = false;
+        }
+      }
+      const branch = cond ? cfg.then : cfg.else;
+      await runNested(branch, context);
+      return { success: true, data: { condition: cond } };
+    },
+  });
+
+  registerHandler('flow_switch', {
+    name: 'flow_switch',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const value = await evaluator.evaluate(String(cfg.value ?? ''), context);
+      const cases = (cfg.cases ?? {}) as Record<string, unknown>;
+      const matched = cases[String(value)] ?? cfg.default;
+      await runNested(matched, context);
+      return { success: true, data: { value } };
+    },
+  });
+
+  registerHandler('flow_while', {
+    name: 'flow_while',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const conditionRaw = (cfg.condition ?? cfg.while) as string | undefined;
+      const max = typeof cfg.max === 'number' ? cfg.max : 100;
+      let iterations = 0;
+      while (iterations < max) {
+        let cond = false;
+        try {
+          cond = Boolean(await evaluator.evaluate(String(conditionRaw ?? 'false'), context));
+        } catch {
+          cond = false;
+        }
+        if (!cond) break;
+        await runNested(cfg.do ?? cfg.actions, context);
+        iterations++;
+      }
+      return { success: true, data: { iterations } };
+    },
+  });
+
+  registerHandler('repeat', {
+    name: 'repeat',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const timesRaw = cfg.times;
+      const times = typeof timesRaw === 'number'
+        ? timesRaw
+        : Number(await evaluator.evaluate(String(timesRaw ?? 0), context)) || 0;
+      for (let i = 0; i < times; i++) {
+        await runNested(cfg.do ?? cfg.actions, context);
+      }
+      return { success: true, data: { times } };
+    },
+  });
+
+  registerHandler('parallel', {
+    name: 'parallel',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      const actions = cfg.actions;
+      if (Array.isArray(actions)) {
+        await Promise.all(
+          (actions as Action[]).map((a) =>
+            executor.executeSequence([a], context).catch(() => undefined)
+          )
+        );
+      }
+      return { success: true };
+    },
+  });
+
+  registerHandler('batch', {
+    name: 'batch',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      let items: unknown[] = [];
+      const itemsRaw = cfg.items;
+      if (Array.isArray(itemsRaw)) {
+        items = itemsRaw;
+      } else if (typeof itemsRaw === 'string') {
+        try {
+          const evaluated = await evaluator.evaluate(itemsRaw, context);
+          items = Array.isArray(evaluated) ? evaluated : [];
+        } catch {
+          items = [];
+        }
+      }
+      const itemKey = (cfg.as as string) ?? 'item';
+      for (const item of items) {
+        const childCtx = { ...context, [itemKey]: item } as ActionContext;
+        await runNested(cfg.actions ?? cfg.do, childCtx);
+      }
+      return { success: true, data: { count: items.length } };
+    },
+  });
+
+  registerHandler('try', {
+    name: 'try',
+    async execute(config: Action, context: ActionContext): Promise<ActionResult> {
+      const cfg = config as unknown as Record<string, unknown>;
+      try {
+        await runNested(cfg.try ?? cfg.actions, context);
+      } catch (err) {
+        const errorCtx = { ...context, error: { message: (err as Error).message } } as ActionContext;
+        await runNested(cfg.catch, errorCtx);
+      } finally {
+        if (cfg.finally) await runNested(cfg.finally, context);
+      }
+      return { success: true };
+    },
+  });
+
+  registerHandler('abort', {
+    name: 'abort',
+    async execute(): Promise<ActionResult> {
+      return { success: true };
+    },
+  });
+
+  registerHandler('return', {
+    name: 'return',
+    async execute(): Promise<ActionResult> {
+      return { success: true };
+    },
+  });
+
   // Stub handlers for the remaining production actions. These let E2E tests
   // exercise specs that use the full 85-action surface without every test
   // needing to register its own mocks. Each stub records a tracker entry
@@ -1353,6 +1506,292 @@ export async function createE2ERuntimeFromSpec(
           emojiId: reaction.emoji.id,
         };
         await eventRouter.emit('reaction_remove', context, executor, evaluator);
+        await eventRouter.emit('message_reaction_remove', context, executor, evaluator);
+      });
+
+      // Emit both canonical and legacy reaction_add event names (parity with
+      // production DiscordEventRouter bindings).
+      client.on('messageReactionAddCanonical', async (reaction: MockReaction) => {
+        const context = createContext({
+          user: reaction.user,
+          message: reaction.message,
+        });
+        (context as any).reaction = {
+          emoji: reaction.emoji.name,
+          emojiId: reaction.emoji.id,
+        };
+        await eventRouter.emit('message_reaction_add', context, executor, evaluator);
+      });
+
+      // Upgrade messageReactionAdd to also emit message_reaction_add alongside
+      // the legacy reaction_add. Re-emit the same reaction event to the
+      // canonical listener we just added.
+      client.on('messageReactionAdd', (reaction: MockReaction) => {
+        client.emit('messageReactionAddCanonical', reaction);
+      });
+
+      // === Missing Discord event wiring (parity with production BINDINGS) ===
+      // Each block mirrors what @furlow/discord/events bindings do: build a
+      // context appropriate to the event, then emit the canonical FURLOW
+      // event through the core EventRouter.
+
+      // Message events
+      client.on('messageUpdate', async (oldMessage: MockMessage, newMessage: MockMessage) => {
+        const context = createContext({ user: newMessage.author, message: newMessage });
+        (context as any).old_message = oldMessage;
+        await eventRouter.emit('message_update', context, executor, evaluator);
+      });
+
+      client.on('messageDelete', async (message: MockMessage) => {
+        const context = createContext({ user: message.author, message });
+        await eventRouter.emit('message_delete', context, executor, evaluator);
+      });
+
+      client.on('messageDeleteBulk', async (messages: unknown, channel: unknown) => {
+        const context = createContext();
+        const asArray = messages instanceof Map ? Array.from(messages.values()) : [];
+        (context as any).messages = asArray;
+        (context as any).message_count = asArray.length;
+        if (channel) (context as any).channel = channel;
+        await eventRouter.emit('message_delete_bulk', context, executor, evaluator);
+      });
+
+      client.on('messageReactionRemoveAll', async (message: MockMessage) => {
+        const context = createContext({ user: message.author, message });
+        await eventRouter.emit('message_reaction_remove_all', context, executor, evaluator);
+      });
+
+      // Member events
+      client.on('guildMemberUpdate', async (oldMember: MockMember, newMember: MockMember) => {
+        const context = createContext({ user: newMember.user, member: newMember });
+        (context as any).old_member = oldMember;
+        await eventRouter.emit('member_update', context, executor, evaluator);
+
+        // Derived boost / unboost transitions, matching production bindings.
+        const wasBooster = Boolean((oldMember as any).premiumSince);
+        const isBooster = Boolean((newMember as any).premiumSince);
+        if (!wasBooster && isBooster) {
+          (context as any).boost_since = (newMember as any).premiumSince;
+          await eventRouter.emit('member_boost', context, executor, evaluator);
+        } else if (wasBooster && !isBooster) {
+          (context as any).boost_ended = (oldMember as any).premiumSince;
+          await eventRouter.emit('member_unboost', context, executor, evaluator);
+        }
+      });
+
+      client.on('guildBanAdd', async (ban: { user: MockUser; guild: MockGuild; reason?: string }) => {
+        const context = createContext({ user: ban.user });
+        (context as any).guild = ban.guild;
+        (context as any).guildId = ban.guild?.id;
+        (context as any).reason = ban.reason;
+        await eventRouter.emit('member_ban', context, executor, evaluator);
+      });
+
+      client.on('guildBanRemove', async (ban: { user: MockUser; guild: MockGuild }) => {
+        const context = createContext({ user: ban.user });
+        (context as any).guild = ban.guild;
+        (context as any).guildId = ban.guild?.id;
+        await eventRouter.emit('member_unban', context, executor, evaluator);
+      });
+
+      // Guild events
+      client.on('guildCreate', async (targetGuild: MockGuild) => {
+        const context = createContext();
+        (context as any).guild = targetGuild;
+        (context as any).guildId = targetGuild?.id;
+        await eventRouter.emit('guild_create', context, executor, evaluator);
+      });
+
+      client.on('guildDelete', async (targetGuild: MockGuild) => {
+        const context = createContext();
+        (context as any).guild = targetGuild;
+        (context as any).guildId = targetGuild?.id;
+        await eventRouter.emit('guild_delete', context, executor, evaluator);
+      });
+
+      client.on('guildUpdate', async (oldGuild: MockGuild, newGuild: MockGuild) => {
+        const context = createContext();
+        (context as any).guild = newGuild;
+        (context as any).old_guild = oldGuild;
+        (context as any).guildId = newGuild?.id;
+        await eventRouter.emit('guild_update', context, executor, evaluator);
+      });
+
+      // Channel events
+      const emitChannelEvent = async (name: string, channelArg: unknown, oldChannelArg?: unknown) => {
+        const context = createContext();
+        (context as any).channel = channelArg;
+        (context as any).channelId = (channelArg as { id?: string })?.id;
+        if (oldChannelArg) (context as any).old_channel = oldChannelArg;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('channelCreate', (ch: unknown) => emitChannelEvent('channel_create', ch));
+      client.on('channelDelete', (ch: unknown) => emitChannelEvent('channel_delete', ch));
+      client.on('channelUpdate', (oldCh: unknown, newCh: unknown) => emitChannelEvent('channel_update', newCh, oldCh));
+      client.on('channelPinsUpdate', (ch: unknown, date: unknown) => {
+        const context = createContext();
+        (context as any).channel = ch;
+        (context as any).channelId = (ch as { id?: string })?.id;
+        (context as any).pins_updated_at = date;
+        void eventRouter.emit('channel_pins_update', context, executor, evaluator);
+      });
+
+      // Thread events
+      const emitThreadEvent = async (name: string, thread: unknown, oldThread?: unknown) => {
+        const context = createContext();
+        (context as any).thread = thread;
+        (context as any).channel = thread;
+        (context as any).channelId = (thread as { id?: string })?.id;
+        if (oldThread) (context as any).old_thread = oldThread;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('threadCreate', (t: unknown) => emitThreadEvent('thread_create', t));
+      client.on('threadDelete', (t: unknown) => emitThreadEvent('thread_delete', t));
+      client.on('threadUpdate', (oldT: unknown, newT: unknown) => emitThreadEvent('thread_update', newT, oldT));
+      client.on('threadMemberUpdate', async (oldTM: unknown, newTM: unknown) => {
+        const context = createContext();
+        (context as any).old_thread_member = oldTM;
+        (context as any).new_thread_member = newTM;
+        await eventRouter.emit('thread_member_update', context, executor, evaluator);
+      });
+
+      // Role events
+      const emitRoleEvent = async (name: string, role: unknown, oldRole?: unknown) => {
+        const context = createContext();
+        (context as any).role = role;
+        if (oldRole) (context as any).old_role = oldRole;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('roleCreate', (r: unknown) => emitRoleEvent('role_create', r));
+      client.on('roleDelete', (r: unknown) => emitRoleEvent('role_delete', r));
+      client.on('roleUpdate', (oldR: unknown, newR: unknown) => emitRoleEvent('role_update', newR, oldR));
+
+      // Emoji events
+      const emitEmojiEvent = async (name: string, emoji: unknown, oldEmoji?: unknown) => {
+        const context = createContext();
+        (context as any).emoji = emoji;
+        if (oldEmoji) (context as any).old_emoji = oldEmoji;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('emojiCreate', (e: unknown) => emitEmojiEvent('emoji_create', e));
+      client.on('emojiDelete', (e: unknown) => emitEmojiEvent('emoji_delete', e));
+      client.on('emojiUpdate', (oldE: unknown, newE: unknown) => emitEmojiEvent('emoji_update', newE, oldE));
+
+      // Sticker events
+      const emitStickerEvent = async (name: string, sticker: unknown, oldSticker?: unknown) => {
+        const context = createContext();
+        (context as any).sticker = sticker;
+        if (oldSticker) (context as any).old_sticker = oldSticker;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('stickerCreate', (s: unknown) => emitStickerEvent('sticker_create', s));
+      client.on('stickerDelete', (s: unknown) => emitStickerEvent('sticker_delete', s));
+      client.on('stickerUpdate', (oldS: unknown, newS: unknown) => emitStickerEvent('sticker_update', newS, oldS));
+
+      // Invite events
+      const emitInviteEvent = async (name: string, invite: unknown) => {
+        const context = createContext();
+        (context as any).invite = invite;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('inviteCreate', (i: unknown) => emitInviteEvent('invite_create', i));
+      client.on('inviteDelete', (i: unknown) => emitInviteEvent('invite_delete', i));
+
+      // Voice events - voiceStateUpdate derives voice_join/leave/move/stream_*.
+      client.on('voiceStateUpdate', async (oldState: unknown, newState: unknown) => {
+        const oldChannel = (oldState as { channel?: unknown; streaming?: boolean })?.channel;
+        const newChannel = (newState as { channel?: unknown; streaming?: boolean })?.channel;
+        const wasStreaming = (oldState as { streaming?: boolean })?.streaming;
+        const isStreaming = (newState as { streaming?: boolean })?.streaming;
+        const member = (newState as { member?: MockMember })?.member;
+        const context = createContext({ user: member?.user, member });
+        (context as any).old_voice_state = oldState;
+        (context as any).new_voice_state = newState;
+
+        if (!oldChannel && newChannel) {
+          await eventRouter.emit('voice_join', context, executor, evaluator);
+        } else if (oldChannel && !newChannel) {
+          await eventRouter.emit('voice_leave', context, executor, evaluator);
+        } else if ((oldChannel as { id?: string })?.id !== (newChannel as { id?: string })?.id) {
+          await eventRouter.emit('voice_move', context, executor, evaluator);
+        }
+
+        if (!wasStreaming && isStreaming) {
+          (context as any).streaming = true;
+          (context as any).voice_channel = newChannel;
+          await eventRouter.emit('voice_stream_start', context, executor, evaluator);
+        } else if (wasStreaming && !isStreaming) {
+          (context as any).streaming = false;
+          await eventRouter.emit('voice_stream_stop', context, executor, evaluator);
+        }
+
+        await eventRouter.emit('voice_state_update', context, executor, evaluator);
+      });
+
+      // Presence / typing
+      client.on('presenceUpdate', async (oldPresence: unknown, newPresence: unknown) => {
+        if (!newPresence) return;
+        const context = createContext();
+        (context as any).presence = newPresence;
+        (context as any).old_presence = oldPresence;
+        const user = (newPresence as { user?: MockUser })?.user;
+        if (user) {
+          (context as any).user = user;
+          (context as any).userId = user.id;
+        }
+        await eventRouter.emit('presence_update', context, executor, evaluator);
+      });
+
+      client.on('typingStart', async (typing: { user?: MockUser; channel?: unknown; guild?: MockGuild }) => {
+        const context = createContext({ user: typing.user });
+        if (typing.channel) (context as any).channel = typing.channel;
+        if (typing.guild) (context as any).guild = typing.guild;
+        await eventRouter.emit('typing_start', context, executor, evaluator);
+      });
+
+      // Scheduled events
+      const emitScheduledEvent = async (name: string, event: unknown, extra?: unknown) => {
+        const context = createContext();
+        (context as any).scheduled_event = event;
+        if (extra) Object.assign(context as Record<string, unknown>, extra);
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('guildScheduledEventCreate', (e: unknown) => emitScheduledEvent('scheduled_event_create', e));
+      client.on('guildScheduledEventDelete', (e: unknown) => emitScheduledEvent('scheduled_event_delete', e));
+      client.on('guildScheduledEventUpdate', (oldE: unknown, newE: unknown) => emitScheduledEvent('scheduled_event_update', newE, { old_scheduled_event: oldE }));
+      client.on('guildScheduledEventUserAdd', (e: unknown, user: MockUser) => emitScheduledEvent('scheduled_event_user_add', e, { user, userId: user?.id }));
+      client.on('guildScheduledEventUserRemove', (e: unknown, user: MockUser) => emitScheduledEvent('scheduled_event_user_remove', e, { user, userId: user?.id }));
+
+      // Stage instances
+      const emitStageEvent = async (name: string, stage: unknown, oldStage?: unknown) => {
+        const context = createContext();
+        (context as any).stage_instance = stage;
+        if (oldStage) (context as any).old_stage_instance = oldStage;
+        await eventRouter.emit(name, context, executor, evaluator);
+      };
+      client.on('stageInstanceCreate', (s: unknown) => emitStageEvent('stage_instance_create', s));
+      client.on('stageInstanceDelete', (s: unknown) => emitStageEvent('stage_instance_delete', s));
+      client.on('stageInstanceUpdate', (oldS: unknown, newS: unknown) => emitStageEvent('stage_instance_update', newS, oldS));
+
+      // Shard lifecycle
+      client.on('shardReady', async (shardId: number, unavailableGuilds?: Set<string>) => {
+        const context = createContext();
+        (context as any).shard_id = shardId;
+        (context as any).unavailable_guilds = unavailableGuilds ? Array.from(unavailableGuilds) : [];
+        await eventRouter.emit('shard_ready', context, executor, evaluator);
+      });
+      client.on('shardDisconnect', async (closeEvent: { code?: number; reason?: string }, shardId: number) => {
+        const context = createContext();
+        (context as any).shard_id = shardId;
+        (context as any).close_code = closeEvent?.code;
+        (context as any).close_reason = closeEvent?.reason;
+        await eventRouter.emit('shard_disconnect', context, executor, evaluator);
+      });
+      client.on('shardError', async (error: Error, shardId: number) => {
+        const context = createContext();
+        (context as any).shard_id = shardId;
+        (context as any).error = { message: error?.message, name: error?.name };
+        await eventRouter.emit('shard_error', context, executor, evaluator);
       });
 
       // Handle command interactions

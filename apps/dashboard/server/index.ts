@@ -64,17 +64,18 @@ const sessionSecret =
       })()
     : randomBytes(32).toString('hex'));
 
-app.use(
-  session({
-    secret: sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    },
-  })
-);
+// Build session middleware once and reuse it on the WS upgrade path so
+// websocket connections get the same authenticated user as HTTP requests.
+const sessionMiddleware = session({
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+  },
+});
+app.use(sessionMiddleware);
 
 // Passport configuration
 if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
@@ -162,8 +163,9 @@ app.get('/metrics', async (req, res) => {
   res.send(metrics);
 });
 
-// Initialize WebSocket server
-const wss = initWebSocket(httpServer);
+// Initialize WebSocket server with session middleware so the upgrade
+// handler can reject unauthenticated clients.
+const wss = initWebSocket(httpServer, sessionMiddleware);
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

@@ -472,6 +472,9 @@ importers:
         specifier: workspace:*
         version: link:../storage
     devDependencies:
+      '@furlow/builtins':
+        specifier: workspace:*
+        version: link:../builtins
       '@types/node':
         specifier: ^20.11.0
         version: 20.19.31

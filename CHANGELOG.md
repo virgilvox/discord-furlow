@@ -5,6 +5,42 @@ All notable changes to FURLOW will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2026-04-19 follow-up
+
+Published as `@furlow/testing@1.0.7`, `@furlow/dashboard@1.0.4`.
+
+### Added (tests)
+
+- Per-builtin behavioral integration test (`@furlow/testing`). Each builtin
+  spec is loaded into the E2E runtime and the trigger event is simulated;
+  the test asserts at least one action from the handler chain executed.
+  Catches the "handler registered against an event the runtime never
+  emits" bug class at runtime, not just by name.
+- E2E runtime now registers stub flow-control handlers (`flow_if`,
+  `flow_switch`, `flow_while`, `repeat`, `parallel`, `batch`, `try`,
+  `abort`, `return`). Specs that mix flow control with concrete actions in
+  event handler lists now run end-to-end instead of throwing
+  `ActionNotFoundError` after the first action.
+
+### Fixed (dashboard security)
+
+- `apps/dashboard` WebSocket connections now require an authenticated
+  session. Anonymous clients were previously accepted and could
+  `subscribe_guild` to any guild ID; the upgrade handler now reads the
+  express-session and rejects with HTTP 401 when no passport user is
+  present. `subscribe_guild` additionally checks that the user has
+  `MANAGE_GUILD` on the requested guild.
+- `apps/dashboard` settings POST endpoints (`/settings`, `/welcome`,
+  `/logging`, `/automod`, `/levels/:userId`) previously merged the raw
+  request body into stored state. They now whitelist allowed fields with
+  per-key type checks and reject unknown or wrong-typed keys with 400.
+
+### Documentation
+
+- README gained a Production deployment section covering required env,
+  storage, scheduler, voice prerequisites, process supervision, dashboard
+  TLS/OAuth setup, and observability endpoints.
+
 ## 2026-04-19 audit pass
 
 Published as `@furlow/core@1.0.12`, `@furlow/discord@1.0.7`,
